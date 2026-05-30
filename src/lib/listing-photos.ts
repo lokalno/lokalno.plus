@@ -23,6 +23,12 @@ export function validateListingPhotos(photos: unknown):
     if (typeof photo !== "string" || !photo.trim()) {
       return { ok: false, error: "Невірне фото в списку" };
     }
+    if (photo.startsWith("/uploads/")) {
+      return {
+        ok: false,
+        error: "Фото не збережено на сервері. Завантажте зображення ще раз.",
+      };
+    }
     if (photo.startsWith("data:") && photo.length > MAX_DATA_URL_LENGTH) {
       return {
         ok: false,
@@ -44,4 +50,12 @@ export function validateListingPhotos(photos: unknown):
 
 export function getListingPhotosPayloadSize(photos: string[]): number {
   return JSON.stringify(photos).length;
+}
+
+export function isBrokenStoredPhoto(photo: string): boolean {
+  return photo.startsWith("/uploads/");
+}
+
+export function countBrokenPhotos(photos: string[]): number {
+  return photos.filter(isBrokenStoredPhoto).length;
 }

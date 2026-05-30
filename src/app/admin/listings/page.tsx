@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { LISTING_STATUSES } from "@/lib/constants";
 import AdminListingActions from "@/components/AdminListingActions";
+import AdminListingPhotos from "@/components/AdminListingPhotos";
 
 type Props = {
   searchParams: Promise<{ status?: string }>;
@@ -84,7 +85,6 @@ export default async function AdminListingsPage({ searchParams }: Props) {
         <div className="space-y-3">
           {listings.map((listing) => {
             const photos = parsePhotos(listing.photos);
-            const preview = photos[0];
 
             return (
             <div
@@ -94,35 +94,7 @@ export default async function AdminListingsPage({ searchParams }: Props) {
               }`}
             >
               <div className="flex gap-4 min-w-0 flex-1">
-                <div className="shrink-0">
-                  {preview ? (
-                    <div className="space-y-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={preview}
-                        alt=""
-                        className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border bg-gray-100"
-                      />
-                      {photos.length > 1 && (
-                        <div className="flex flex-wrap gap-1 max-w-[112px]">
-                          {photos.slice(1, 5).map((photo, i) => (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              key={i}
-                              src={photo}
-                              alt=""
-                              className="w-12 h-12 object-cover rounded-lg border bg-gray-100"
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border bg-gray-100 flex items-center justify-center text-3xl">
-                      📦
-                    </div>
-                  )}
-                </div>
+                <AdminListingPhotos listingId={listing.id} />
 
                 <div className="min-w-0">
                   <Link href={`/listings/${listing.id}`} className="font-medium hover:text-brand-700">

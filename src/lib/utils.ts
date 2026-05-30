@@ -15,12 +15,27 @@ export function formatDate(date: Date | string): string {
 }
 
 export function parsePhotos(photos: string): string[] {
+  if (!photos?.trim()) return [];
+
   try {
     const parsed = JSON.parse(photos);
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) {
+      return parsed.filter((p): p is string => typeof p === "string" && p.trim());
+    }
+    if (typeof parsed === "string" && parsed.trim()) {
+      return [parsed];
+    }
   } catch {
-    return [];
+    if (
+      photos.startsWith("http") ||
+      photos.startsWith("data:") ||
+      photos.startsWith("/")
+    ) {
+      return [photos];
+    }
   }
+
+  return [];
 }
 
 export function formatViews(count: number): string {

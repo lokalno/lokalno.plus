@@ -29,7 +29,14 @@ export async function uploadPhotoFile(
     });
     const data = await res.json();
     if (res.ok && typeof data.url === "string") {
-      return data.url;
+      const isLocalUpload = data.url.startsWith("/uploads/");
+      const onLocalhost =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+      if (!isLocalUpload || onLocalhost) {
+        return data.url;
+      }
     }
   } catch {
     // Fall back to inline data URL below.
