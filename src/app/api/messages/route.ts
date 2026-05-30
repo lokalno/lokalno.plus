@@ -43,6 +43,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    if (receiverId === session.user.id) {
+      return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
+    }
+
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { sellerId: true },
+    });
+
+    if (!listing) {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    }
+
+    const isSeller = session.user.id === listing.sellerId;
+    const receiverIsSeller = receiverId === listing.sellerId;
+
+    if (!isSeller && !receiverIsSeller) {
+      return NextResponse.json({ error: "Invalid recipient" }, { status: 400 });
+    }
+
     const message = await prisma.message.create({
       data: {
         listingId,

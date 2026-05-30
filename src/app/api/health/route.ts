@@ -6,6 +6,6 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local",
-    upload: "v12-favorite-count",
+    upload: "v13-messages-fix",
   });
 }

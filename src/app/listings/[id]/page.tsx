@@ -174,6 +174,15 @@ export default async function ListingPage({ params }: Params) {
               </div>
             )}
 
+            {isOwner && (
+              <Link
+                href="/messages"
+                className="block w-full text-center border border-gray-200 py-2 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                💬 Повідомлення покупців
+              </Link>
+            )}
+
             {session && !isOwner && (
               <MessageForm listingId={listing.id} receiverId={listing.sellerId} />
             )}

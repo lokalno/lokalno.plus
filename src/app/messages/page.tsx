@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/utils";
 import MessagesClient from "@/components/MessagesClient";
 
-type SearchParams = Promise<{ listingId?: string }>;
+type SearchParams = Promise<{ listingId?: string; partnerId?: string }>;
 
 export default async function MessagesPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getServerSession(authOptions);
@@ -15,15 +14,43 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
     redirect("/login");
   }
 
-  await prisma.message.updateMany({
-    where: { receiverId: session.user.id, read: false },
-    data: { read: true },
-  });
+  const userId = session.user.id;
+  const { listingId, partnerId } = params;
+  const inThread = Boolean(listingId && partnerId);
+
+  if (inThread) {
+    await prisma.message.updateMany({
+      where: {
+        receiverId: userId,
+        senderId: partnerId,
+        listingId,
+        read: false,
+      },
+      data: { read: true },
+    });
+  } else if (!listingId && !partnerId) {
+    await prisma.message.updateMany({
+      where: { receiverId: userId, read: false },
+      data: { read: true },
+    });
+  }
 
   const messages = await prisma.message.findMany({
     where: {
-      OR: [{ senderId: session.user.id }, { receiverId: session.user.id }],
-      ...(params.listingId ? { listingId: params.listingId } : {}),
+      AND: [
+        { OR: [{ senderId: userId }, { receiverId: userId }] },
+        ...(listingId ? [{ listingId }] : []),
+        ...(inThread
+          ? [
+              {
+                OR: [
+                  { senderId: userId, receiverId: partnerId },
+                  { senderId: partnerId, receiverId: userId },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     include: {
       sender: { select: { id: true, name: true } },
@@ -41,8 +68,9 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
           ...m,
           createdAt: m.createdAt.toISOString(),
         }))}
-        currentUserId={session.user.id}
-        listingId={params.listingId}
+        currentUserId={userId}
+        listingId={listingId}
+        partnerId={partnerId}
       />
     </div>
   );
