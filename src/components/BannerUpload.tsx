@@ -40,7 +40,7 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
     setLoading(true);
     setMessage("");
     try {
-      const compressed = await compressImageFile(file);
+      const compressed = await compressImageFile(file, { maxWidth: 1400, maxBytes: 350_000 });
       const url = await uploadFile(compressed);
       await saveBanner(url);
       setBanner(url);

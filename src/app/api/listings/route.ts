@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assertNotBanned, getInitialListingStatus } from "@/lib/user-check";
 import { checkListingContent } from "@/lib/moderation";
+import { validateListingPhotos } from "@/lib/listing-photos";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -70,6 +71,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const photosCheck = validateListingPhotos(photos);
+    if (!photosCheck.ok) {
+      return NextResponse.json({ error: photosCheck.error }, { status: 400 });
+    }
+
     const initialStatus = await getInitialListingStatus();
 
     const listing = await prisma.listing.create({
@@ -80,7 +86,7 @@ export async function POST(request: Request) {
         category,
         condition,
         city,
-        photos: JSON.stringify(photos || []),
+        photos: JSON.stringify(photosCheck.photos),
         sellerId: session.user.id,
         status: initialStatus,
       },

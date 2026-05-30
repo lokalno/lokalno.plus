@@ -37,7 +37,7 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
   const [loading, setLoading] = useState(false);
 
   async function uploadAvatar(file: File) {
-    const compressed = await compressImageFile(file);
+    const compressed = await compressImageFile(file, { maxWidth: 800, maxBytes: 250_000 });
     const formData = new FormData();
     formData.append("file", compressed);
     const res = await fetch("/api/upload", { method: "POST", body: formData });

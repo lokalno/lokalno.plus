@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateListingPhotos } from "@/lib/listing-photos";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -45,6 +46,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   try {
     const body = await request.json();
+
+    if (body.photos !== undefined) {
+      const photosCheck = validateListingPhotos(body.photos);
+      if (!photosCheck.ok) {
+        return NextResponse.json({ error: photosCheck.error }, { status: 400 });
+      }
+      body.photos = photosCheck.photos;
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {

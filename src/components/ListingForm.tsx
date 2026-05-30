@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, CONDITIONS, MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { CATEGORIES, CONDITIONS, MAX_LISTING_PHOTOS, LISTING_PHOTO_MAX_BYTES, LISTING_PHOTO_MAX_WIDTH } from "@/lib/constants";
 import { compressImageFile } from "@/lib/compress-image";
+import { getListingPhotosPayloadSize, validateListingPhotos } from "@/lib/listing-photos";
 import SettlementSearch from "@/components/SettlementSearch";
 
 type ListingFormProps = {
@@ -31,10 +32,14 @@ export default function ListingForm({ initial }: ListingFormProps) {
   const [city, setCity] = useState(initial?.city || "Київ");
   const [photos, setPhotos] = useState<string[]>(initial?.photos || []);
   const [loading, setLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [error, setError] = useState("");
 
   async function uploadPhoto(file: File) {
-    const compressed = await compressImageFile(file);
+    const compressed = await compressImageFile(file, {
+      maxWidth: LISTING_PHOTO_MAX_WIDTH,
+      maxBytes: LISTING_PHOTO_MAX_BYTES,
+    });
     const formData = new FormData();
     formData.append("file", compressed);
 
@@ -49,18 +54,31 @@ export default function ListingForm({ initial }: ListingFormProps) {
     if (!files) return;
 
     setLoading(true);
+    setError("");
+    setUploadStatus("");
     try {
+      const filesToUpload = Array.from(files).slice(0, MAX_LISTING_PHOTOS - photos.length);
       const newPhotos: string[] = [];
-      for (const file of Array.from(files)) {
-        if (photos.length + newPhotos.length >= MAX_LISTING_PHOTOS) break;
-        const url = await uploadPhoto(file);
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        setUploadStatus(`Завантаження фото ${i + 1} з ${filesToUpload.length}...`);
+        const url = await uploadPhoto(filesToUpload[i]);
         newPhotos.push(url);
       }
-      setPhotos([...photos, ...newPhotos]);
+
+      const merged = [...photos, ...newPhotos];
+      const check = validateListingPhotos(merged);
+      if (!check.ok) {
+        throw new Error(check.error);
+      }
+
+      setPhotos(merged);
+      setUploadStatus(`Додано ${newPhotos.length} фото`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Помилка завантаження фото");
     } finally {
       setLoading(false);
+      e.target.value = "";
     }
   }
 
@@ -70,6 +88,11 @@ export default function ListingForm({ initial }: ListingFormProps) {
     setLoading(true);
 
     try {
+      const photosCheck = validateListingPhotos(photos);
+      if (!photosCheck.ok) {
+        throw new Error(photosCheck.error);
+      }
+
       const payload = {
         title,
         description,
@@ -77,8 +100,12 @@ export default function ListingForm({ initial }: ListingFormProps) {
         category,
         condition,
         city,
-        photos,
+        photos: photosCheck.photos,
       };
+
+      if (getListingPhotosPayloadSize(photosCheck.photos) > 2_500_000) {
+        throw new Error("Занадто багато великих фото. Спробуйте менше зображень.");
+      }
 
       const url = isEdit ? `/api/listings/${initial!.id}` : "/api/listings";
       const method = isEdit ? "PATCH" : "POST";
@@ -166,7 +193,11 @@ export default function ListingForm({ initial }: ListingFormProps) {
 
       <div>
         <label className="block text-sm font-medium mb-1">Фото (до {MAX_LISTING_PHOTOS})</label>
-        <input type="file" accept="image/*" multiple onChange={handleFileChange} />
+        <p className="text-xs text-gray-500 mb-2">
+          Можна кілька фото одразу. Кожне стискається автоматично для швидкого завантаження.
+        </p>
+        <input type="file" accept="image/*" multiple onChange={handleFileChange} disabled={loading || photos.length >= MAX_LISTING_PHOTOS} />
+        {uploadStatus && <p className="text-xs text-brand-700 mt-2">{uploadStatus}</p>}
         {photos.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
             {photos.map((photo, i) => (

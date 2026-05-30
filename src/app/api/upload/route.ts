@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { put } from "@vercel/blob";
 import { authOptions } from "@/lib/auth";
+import { LISTING_PHOTO_MAX_BYTES } from "@/lib/constants";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -9,7 +10,7 @@ import { randomUUID } from "crypto";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const MAX_BYTES = 900_000;
+const MAX_BYTES = LISTING_PHOTO_MAX_BYTES + 40_000;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -31,14 +32,16 @@ export async function POST(request: Request) {
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      return NextResponse.json({ error: "Максимум 8 МБ" }, { status: 400 });
+      return NextResponse.json({ error: "Максимум 8 МБ до стиснення" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
     if (buffer.length > MAX_BYTES) {
       return NextResponse.json(
-        { error: "Фото занадто велике після стиснення. Спробуйте менше зображення." },
+        {
+          error: `Фото занадто велике (${Math.round(buffer.length / 1024)} KB). Спробуйте менше зображення.`,
+        },
         { status: 400 }
       );
     }

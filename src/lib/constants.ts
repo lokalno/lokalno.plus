@@ -53,6 +53,10 @@ export const CATEGORY_ICONS: Record<(typeof CATEGORIES)[number], string> = {
 
 export const MAX_LISTING_PHOTOS = 10;
 
+/** Target size per listing photo after client compression (~180 KB). */
+export const LISTING_PHOTO_MAX_BYTES = 180_000;
+export const LISTING_PHOTO_MAX_WIDTH = 1200;
+
 export const CONDITIONS: Record<string, string> = {
   NEW: "Нове",
   GOOD: "Добрий стан",
