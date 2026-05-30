@@ -2,12 +2,17 @@ import { MAX_LISTING_PHOTOS } from "@/lib/constants";
 
 const MAX_PHOTOS_JSON_BYTES = 2_500_000;
 const MAX_DATA_URL_LENGTH = 280_000;
+const MIN_LISTING_PHOTOS = 1;
 
 export function validateListingPhotos(photos: unknown):
   | { ok: true; photos: string[] }
   | { ok: false; error: string } {
   if (!Array.isArray(photos)) {
     return { ok: false, error: "Невірний формат фото" };
+  }
+
+  if (photos.length < MIN_LISTING_PHOTOS) {
+    return { ok: false, error: "Додайте мінімум одне фото до оголошення" };
   }
 
   if (photos.length > MAX_LISTING_PHOTOS) {

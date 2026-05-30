@@ -192,11 +192,14 @@ export default function ListingForm({ initial }: ListingFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Фото (до {MAX_LISTING_PHOTOS})</label>
+        <label className="block text-sm font-medium mb-1">Фото * (мінімум 1, до {MAX_LISTING_PHOTOS})</label>
         <p className="text-xs text-gray-500 mb-2">
-          Можна кілька фото одразу. Кожне стискається автоматично для швидкого завантаження.
+          Без фото оголошення не опублікується. Можна обрати кілька фото одразу.
         </p>
         <input type="file" accept="image/*" multiple onChange={handleFileChange} disabled={loading || photos.length >= MAX_LISTING_PHOTOS} />
+        {photos.length === 0 && !loading && (
+          <p className="text-xs text-amber-700 mt-2">Додайте хоча б одне фото</p>
+        )}
         {uploadStatus && <p className="text-xs text-brand-700 mt-2">{uploadStatus}</p>}
         {photos.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
@@ -219,8 +222,8 @@ export default function ListingForm({ initial }: ListingFormProps) {
 
       <button
         type="submit"
-        disabled={loading}
-        className="w-full bg-brand-600 text-white py-3 rounded-lg font-medium hover:bg-brand-700"
+        disabled={loading || photos.length === 0}
+        className="w-full bg-brand-600 text-white py-3 rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50"
       >
         {loading ? "Збереження..." : isEdit ? "Зберегти зміни" : "Опублікувати"}
       </button>
