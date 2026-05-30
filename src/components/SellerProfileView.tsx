@@ -20,6 +20,7 @@ type Listing = {
   title: string;
   price: number;
   city: string;
+  condition: string;
   photos: string;
   createdAt: Date;
   views: number;

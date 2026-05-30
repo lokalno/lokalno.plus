@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { REPORT_REASONS } from "@/lib/constants";
 
+type ReportReason = (typeof REPORT_REASONS)[number];
+
 type ReportButtonProps = {
   listingId: string;
   isLoggedIn: boolean;
@@ -11,7 +13,7 @@ type ReportButtonProps = {
 
 export default function ReportButton({ listingId, isLoggedIn }: ReportButtonProps) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [reason, setReason] = useState<ReportReason>(REPORT_REASONS[0]);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -80,7 +82,10 @@ export default function ReportButton({ listingId, isLoggedIn }: ReportButtonProp
 
               <div>
                 <label className="block text-sm font-medium mb-1">Причина</label>
-                <select value={reason} onChange={(e) => setReason(e.target.value)}>
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value as ReportReason)}
+                >
                   {REPORT_REASONS.map((r) => (
                     <option key={r} value={r}>
                       {r}
