@@ -76,13 +76,13 @@ export default function SellerProfileActions({
       {!isOwner && (
         <Link href={messageHref} className={buttonClass}>
           <span aria-hidden>💬</span>
-          Message
+          Написати
         </Link>
       )}
 
       <button type="button" onClick={shareProfile} className={buttonClass}>
         <span aria-hidden>🔗</span>
-        Share
+        Поділитися
       </button>
     </div>
   );

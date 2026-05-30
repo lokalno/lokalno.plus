@@ -53,9 +53,9 @@ export function getSellerLevel(params: {
 }
 
 export const SELLER_LEVEL_LABELS: Record<SellerLevel, string> = {
-  NEW: "New Seller",
-  TRUSTED: "Trusted Seller",
-  TOP: "Top Seller",
+  NEW: "Новий продавець",
+  TRUSTED: "Надійний продавець",
+  TOP: "Топ продавець",
 };
 
 export const SELLER_LEVEL_STYLES: Record<SellerLevel, string> = {

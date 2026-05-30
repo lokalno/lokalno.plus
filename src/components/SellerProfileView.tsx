@@ -61,7 +61,7 @@ type SellerProfileViewProps = {
 };
 
 function formatMemberSince(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("uk-UA", { month: "long", year: "numeric" }).format(date);
 }
 
 function GlassStatCard({ label, value }: { label: string; value: string }) {
@@ -131,7 +131,7 @@ export default function SellerProfileView({
           <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-8">
             <div className="flex items-start justify-between gap-3">
               <span
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur-md ${SELLER_LEVEL_STYLES[sellerLevel]}`}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold tracking-wide backdrop-blur-md ${SELLER_LEVEL_STYLES[sellerLevel]}`}
               >
                 {sellerLevel === "TOP" && <span aria-hidden>👑</span>}
                 {sellerLevel === "TRUSTED" && <span aria-hidden>🛡️</span>}
@@ -154,7 +154,7 @@ export default function SellerProfileView({
                     {verified && (
                       <span
                         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white shadow-md"
-                        title="Verified seller"
+                        title="Перевірений продавець"
                       >
                         ✓
                       </span>
@@ -176,7 +176,7 @@ export default function SellerProfileView({
                         <span>{getRatingLabel(reviewCount)}</span>
                       </>
                     ) : (
-                      <span>No reviews yet</span>
+                      <span>Поки немає відгуків</span>
                     )}
                     <span className="text-white/50">•</span>
                     <span>{getFollowerLabel(followerCount)}</span>
@@ -202,10 +202,10 @@ export default function SellerProfileView({
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
-                <GlassStatCard label="Listings" value={String(listingCount)} />
-                <GlassStatCard label="Followers" value={String(followerCount)} />
-                <GlassStatCard label="Reviews" value={String(reviewCount)} />
-                <GlassStatCard label="Member since" value={formatMemberSince(seller.createdAt)} />
+                <GlassStatCard label="Оголошення" value={String(listingCount)} />
+                <GlassStatCard label="Підписники" value={String(followerCount)} />
+                <GlassStatCard label="Відгуки" value={String(reviewCount)} />
+                <GlassStatCard label="На сайті з" value={formatMemberSince(seller.createdAt)} />
               </div>
 
               <div className="sm:hidden">
@@ -278,7 +278,8 @@ export default function SellerProfileView({
             {isOwner ? "Мої оголошення" : "Товари продавця"}
           </h2>
           <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
-            {listingCount} items
+            {listingCount}{" "}
+            {listingCount === 1 ? "товар" : listingCount < 5 ? "товари" : "товарів"}
           </span>
         </div>
 

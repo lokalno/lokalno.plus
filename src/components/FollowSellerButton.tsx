@@ -84,7 +84,7 @@ export default function FollowSellerButton({
     <div className={variant === "hero" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
       <button type="button" onClick={toggle} disabled={loading} className={buttonClass}>
         {onDark ? (
-          <>{following ? "Following" : "Follow"}</>
+          <>{following ? "✓ Підписано" : "Підписатися"}</>
         ) : (
           <>{following ? "✓ Підписано" : "📌 Підписатися"}</>
         )}
