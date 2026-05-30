@@ -12,11 +12,38 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const listingId = searchParams.get("listingId");
+  const partnerId = searchParams.get("partnerId");
+  const userId = session.user.id;
+  const inThread = Boolean(listingId && partnerId);
+
+  if (inThread) {
+    await prisma.message.updateMany({
+      where: {
+        receiverId: userId,
+        senderId: partnerId!,
+        listingId: listingId!,
+        read: false,
+      },
+      data: { read: true },
+    });
+  }
 
   const messages = await prisma.message.findMany({
     where: {
-      ...(listingId ? { listingId } : {}),
-      OR: [{ senderId: session.user.id }, { receiverId: session.user.id }],
+      AND: [
+        { OR: [{ senderId: userId }, { receiverId: userId }] },
+        ...(listingId ? [{ listingId }] : []),
+        ...(inThread
+          ? [
+              {
+                OR: [
+                  { senderId: userId, receiverId: partnerId! },
+                  { senderId: partnerId!, receiverId: userId },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     include: {
       sender: { select: { id: true, name: true } },
@@ -26,7 +53,12 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "asc" },
   });
 
-  return NextResponse.json(messages);
+  return NextResponse.json(
+    messages.map((m) => ({
+      ...m,
+      createdAt: m.createdAt.toISOString(),
+    }))
+  );
 }
 
 export async function POST(request: Request) {
@@ -49,7 +81,7 @@ export async function POST(request: Request) {
 
     const listing = await prisma.listing.findUnique({
       where: { id: listingId },
-      select: { sellerId: true },
+      select: { sellerId: true, title: true },
     });
 
     if (!listing) {
@@ -76,7 +108,14 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(message, { status: 201 });
+    return NextResponse.json(
+      {
+        ...message,
+        createdAt: message.createdAt.toISOString(),
+        listing: { id: listingId, title: listing.title },
+      },
+      { status: 201 }
+    );
   } catch {
     return NextResponse.json({ error: "Send failed" }, { status: 500 });
   }

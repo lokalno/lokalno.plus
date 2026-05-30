@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 
 type Message = {
@@ -24,6 +23,8 @@ export type Conversation = {
   partnerName: string;
   lastMessage: Message;
 };
+
+const POLL_INTERVAL_MS = 3000;
 
 export function buildConversations(messages: Message[], currentUserId: string): Conversation[] {
   const map = new Map<string, Conversation>();
@@ -54,6 +55,14 @@ export function buildConversations(messages: Message[], currentUserId: string): 
   );
 }
 
+function buildMessagesUrl(listingId?: string, partnerId?: string) {
+  const params = new URLSearchParams();
+  if (listingId) params.set("listingId", listingId);
+  if (partnerId) params.set("partnerId", partnerId);
+  const query = params.toString();
+  return query ? `/api/messages?${query}` : "/api/messages";
+}
+
 type MessagesClientProps = {
   initialMessages: Message[];
   currentUserId: string;
@@ -67,11 +76,59 @@ export default function MessagesClient({
   listingId,
   partnerId,
 }: MessagesClientProps) {
-  const router = useRouter();
-  const messages = initialMessages;
+  const [messages, setMessages] = useState(initialMessages);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(initialMessages.length);
+
+  const inThread = Boolean(listingId && partnerId);
+  const inList = !listingId && !partnerId;
+
+  const fetchMessages = useCallback(async () => {
+    const res = await fetch(buildMessagesUrl(listingId, partnerId), { cache: "no-store" });
+    if (!res.ok) return;
+    const data: Message[] = await res.json();
+    setMessages(data);
+  }, [listingId, partnerId]);
+
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
+  useEffect(() => {
+    if (!inThread && !inList) return;
+
+    void fetchMessages();
+
+    const tick = () => {
+      if (document.visibilityState === "visible") {
+        void fetchMessages();
+      }
+    };
+
+    const intervalId = window.setInterval(tick, POLL_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void fetchMessages();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [fetchMessages, inThread, inList]);
+
+  useEffect(() => {
+    if (!inThread || messages.length <= prevCountRef.current) {
+      prevCountRef.current = messages.length;
+      return;
+    }
+
+    prevCountRef.current = messages.length;
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, inThread]);
 
   const lastMessage = messages[messages.length - 1];
   const replyReceiverId =
@@ -112,10 +169,10 @@ export default function MessagesClient({
 
     setContent("");
     setLoading(false);
-    router.refresh();
+    await fetchMessages();
   }
 
-  if (!listingId && !partnerId) {
+  if (inList) {
     const conversations = buildConversations(messages, currentUserId);
 
     if (conversations.length === 0) {
@@ -181,7 +238,7 @@ export default function MessagesClient({
         </Link>
       </div>
 
-      <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+      <div ref={scrollRef} className="p-4 space-y-4 max-h-96 overflow-y-auto">
         {messages.map((msg) => {
           const isMine = msg.senderId === currentUserId;
           return (
