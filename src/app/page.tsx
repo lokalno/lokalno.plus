@@ -10,6 +10,14 @@ import HomeRightSidebar from "@/components/HomeRightSidebar";
 import Pagination from "@/components/Pagination";
 import { LISTINGS_PER_PAGE, parsePageParam } from "@/lib/catalog";
 
+const listingSoldCountInclude = {
+  _count: {
+    select: {
+      orders: { where: { paymentStatus: "PAID" as const } },
+    },
+  },
+};
+
 type SearchParams = Promise<{
   city?: string;
   category?: string;
@@ -90,7 +98,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     prisma.listing.count({ where }),
     prisma.listing.findMany({
       where,
-      include: { seller: { select: { name: true } } },
+      include: {
+        seller: { select: { name: true } },
+        ...listingSoldCountInclude,
+      },
       orderBy: getOrderBy(params.sort),
       skip: (page - 1) * LISTINGS_PER_PAGE,
       take: LISTINGS_PER_PAGE,
@@ -98,6 +109,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     showLanding
       ? prisma.listing.findMany({
           where: { status: "ACTIVE" },
+          include: listingSoldCountInclude,
           orderBy: { views: "desc" },
           take: 8,
         })
@@ -105,6 +117,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     showLanding
       ? prisma.listing.findMany({
           where: { status: "ACTIVE" },
+          include: listingSoldCountInclude,
           orderBy: { createdAt: "desc" },
           take: 4,
         })

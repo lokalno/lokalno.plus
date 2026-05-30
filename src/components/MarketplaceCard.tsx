@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { formatPrice, parsePhotos, formatTimeAgo, shortLocation } from "@/lib/utils";
+import { getListingSoldCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 
 type MarketplaceCardProps = {
-  listing: {
+  listing: ListingWithSoldCount & {
     id: string;
     title: string;
     price: number;
@@ -17,6 +18,7 @@ type MarketplaceCardProps = {
 export default function MarketplaceCard({ listing, badge }: MarketplaceCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
+  const soldCount = getListingSoldCount(listing);
   const isNew =
     badge === "new" ||
     (!badge && Date.now() - new Date(listing.createdAt).getTime() < 3 * 24 * 60 * 60 * 1000);
@@ -49,6 +51,11 @@ export default function MarketplaceCard({ listing, badge }: MarketplaceCardProps
         <span className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 shadow-sm">
           ♡
         </span>
+        {soldCount > 0 && (
+          <span className="absolute bottom-2 left-2 bg-green-600/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md">
+            ✓ {formatSoldCountLabel(soldCount)}
+          </span>
+        )}
       </div>
       <div className="p-3">
         <h3 className="font-medium text-gray-900 text-sm truncate">{listing.title}</h3>

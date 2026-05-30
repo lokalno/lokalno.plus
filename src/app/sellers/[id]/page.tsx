@@ -26,7 +26,14 @@ export default async function SellerPage({ params }: Params) {
       banned: true,
       listings: {
         where: { status: "ACTIVE" },
-        include: { seller: { select: { name: true } } },
+        include: {
+          seller: { select: { name: true } },
+          _count: {
+            select: {
+              orders: { where: { paymentStatus: "PAID" } },
+            },
+          },
+        },
         orderBy: { createdAt: "desc" },
       },
       reviewsReceived: {

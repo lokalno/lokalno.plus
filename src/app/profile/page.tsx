@@ -33,7 +33,14 @@ export default async function ProfilePage({
         createdAt: true,
         listings: {
           where: { status: { in: ["ACTIVE", "PENDING"] } },
-          include: { seller: { select: { name: true } } },
+          include: {
+            seller: { select: { name: true } },
+            _count: {
+              select: {
+                orders: { where: { paymentStatus: "PAID" } },
+              },
+            },
+          },
           orderBy: { createdAt: "desc" },
         },
         reviewsReceived: {

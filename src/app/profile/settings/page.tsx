@@ -21,7 +21,14 @@ export default async function ProfileSettingsPage() {
       include: {
         listings: {
           orderBy: { createdAt: "desc" },
-          include: { seller: { select: { name: true } } },
+          include: {
+            seller: { select: { name: true } },
+            _count: {
+              select: {
+                orders: { where: { paymentStatus: "PAID" } },
+              },
+            },
+          },
         },
       },
     }),

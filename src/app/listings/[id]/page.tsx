@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos, formatViews } from "@/lib/utils";
 import { formatListingStock } from "@/lib/listing-stock";
+import { getListingSoldCount, formatSoldCount } from "@/lib/listing-sales";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
 import OrderCheckoutForm from "@/components/OrderCheckoutForm";
 import MessageForm from "@/components/MessageForm";
@@ -30,6 +31,13 @@ export default async function ListingPage({ params }: Params) {
       seller: {
         select: { id: true, name: true, city: true, createdAt: true, phone: true, avatar: true },
       },
+      _count: {
+        select: {
+          orders: {
+            where: { paymentStatus: "PAID" },
+          },
+        },
+      },
     },
   });
 
@@ -38,6 +46,7 @@ export default async function ListingPage({ params }: Params) {
   const photos = parsePhotos(listing.photos);
   const isOwner = session?.user?.id === listing.sellerId;
   const inStock = listing.stock > 0;
+  const soldCount = getListingSoldCount(listing);
   const canBuy = session && !isOwner && listing.status === "ACTIVE" && inStock;
 
   const [similar, sellerStats] = await Promise.all([
@@ -47,7 +56,14 @@ export default async function ListingPage({ params }: Params) {
         category: listing.category,
         id: { not: listing.id },
       },
-      include: { seller: { select: { name: true } } },
+      include: {
+        seller: { select: { name: true } },
+        _count: {
+          select: {
+            orders: { where: { paymentStatus: "PAID" } },
+          },
+        },
+      },
       take: 4,
       orderBy: { views: "desc" },
     }),
@@ -124,6 +140,9 @@ export default async function ListingPage({ params }: Params) {
             <p>
               <span className="font-medium">В наявності:</span>{" "}
               {inStock ? formatListingStock(listing.stock) : "немає"}
+            </p>
+            <p>
+              <span className="font-medium">Продано:</span> {formatSoldCount(soldCount)}
             </p>
             <p>
               <span className="font-medium">Опубліковано:</span> {formatDate(listing.createdAt)}

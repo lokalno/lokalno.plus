@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { CONDITIONS } from "@/lib/constants";
+import { getListingSoldCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 
 type ListingCardProps = {
-  listing: {
+  listing: ListingWithSoldCount & {
     id: string;
     title: string;
     price: number;
@@ -18,6 +19,7 @@ type ListingCardProps = {
 export default function ListingCard({ listing }: ListingCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
+  const soldCount = getListingSoldCount(listing);
 
   return (
     <Link
@@ -40,6 +42,11 @@ export default function ListingCard({ listing }: ListingCardProps) {
         {listing.views != null && (
           <span className="absolute bottom-2 right-2 bg-black/55 text-white text-[10px] px-1.5 py-0.5 rounded-md">
             👁 {listing.views}
+          </span>
+        )}
+        {soldCount > 0 && (
+          <span className="absolute bottom-2 left-2 bg-green-600/90 text-white text-[10px] px-1.5 py-0.5 rounded-md">
+            ✓ {formatSoldCountLabel(soldCount)}
           </span>
         )}
       </div>
