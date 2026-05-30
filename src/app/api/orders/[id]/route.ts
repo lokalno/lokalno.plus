@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions, requireAdmin } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
@@ -28,17 +28,35 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { status } = await request.json();
 
+  if (status === "CANCELLED" && order.status !== "CANCELLED" && order.status !== "COMPLETED") {
+    const updated = await prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.order.update({
+        where: { id },
+        data: { status: "CANCELLED" },
+      });
+
+      const listing = await tx.listing.findUnique({ where: { id: order.listingId } });
+      if (listing) {
+        const newStock = listing.stock + 1;
+        await tx.listing.update({
+          where: { id: order.listingId },
+          data: {
+            stock: newStock,
+            ...(listing.status === "SOLD" ? { status: "ACTIVE" } : {}),
+          },
+        });
+      }
+
+      return currentOrder;
+    });
+
+    return NextResponse.json(updated);
+  }
+
   const updated = await prisma.order.update({
     where: { id },
     data: { status },
   });
-
-  if (status === "COMPLETED") {
-    await prisma.listing.update({
-      where: { id: order.listingId },
-      data: { status: "SOLD" },
-    });
-  }
 
   return NextResponse.json(updated);
 }

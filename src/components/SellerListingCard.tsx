@@ -10,6 +10,7 @@ type SellerListingCardProps = {
     city: string;
     condition: string;
     status: string;
+    stock: number;
     photos: string;
     views: number;
     seller: { name: string };
@@ -38,6 +39,9 @@ export default function SellerListingCard({ listing }: SellerListingCardProps) {
         )}
         <span className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
           📷 {photos.length}
+        </span>
+        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+          📦 {listing.stock}
         </span>
         {listing.status !== "ACTIVE" && (
           <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">

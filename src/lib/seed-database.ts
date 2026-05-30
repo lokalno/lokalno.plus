@@ -95,6 +95,7 @@ export async function seedDatabase(prisma: PrismaClient) {
       city: item.city,
       status: "ACTIVE",
       photos: listingPhotos(seedKey.replace(/\s/g, "")),
+      stock: Math.floor(Math.random() * 8) + 1,
       views: Math.floor(Math.random() * 450) + 15,
       sellerId: sellers[index % sellers.length].id,
     };

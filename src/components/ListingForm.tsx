@@ -16,6 +16,7 @@ type ListingFormProps = {
     category: string;
     condition: string;
     city: string;
+    stock?: number;
     photos: string[];
   };
 };
@@ -30,6 +31,7 @@ export default function ListingForm({ initial }: ListingFormProps) {
   const [category, setCategory] = useState(initial?.category || CATEGORIES[0]);
   const [condition, setCondition] = useState(initial?.condition || "GOOD");
   const [city, setCity] = useState(initial?.city || "Київ");
+  const [stock, setStock] = useState(initial?.stock?.toString() || "1");
   const [photos, setPhotos] = useState<string[]>(initial?.photos || []);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -93,6 +95,7 @@ export default function ListingForm({ initial }: ListingFormProps) {
         category,
         condition,
         city,
+        stock: Number(stock),
         photos: photosCheck.photos,
       };
 
@@ -161,6 +164,18 @@ export default function ListingForm({ initial }: ListingFormProps) {
             onChange={(e) => setPrice(e.target.value)}
             required
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Кількість в наявності *</label>
+          <input
+            type="number"
+            min="1"
+            max="9999"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">Скільки одиниць товару зараз є у продажу</p>
         </div>
         <SettlementSearch value={city} onChange={setCity} label="Місто / село" required />
       </div>

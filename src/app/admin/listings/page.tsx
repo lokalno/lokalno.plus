@@ -108,6 +108,7 @@ export default async function AdminListingsPage({ searchParams }: Props) {
                     {LISTING_STATUSES[listing.status] || listing.status} · {formatDate(listing.createdAt)}
                     · 👁 {listing.views}
                     {photos.length > 0 ? ` · 📷 ${photos.length}` : " · без фото"}
+                    {listing.stock > 0 ? ` · 📦 ${listing.stock} шт.` : " · немає на складі"}
                   </p>
                   {listing.status === "PENDING" && (
                     <>

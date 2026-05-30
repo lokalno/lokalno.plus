@@ -23,6 +23,7 @@ type Listing = {
   city: string;
   condition: string;
   status: string;
+  stock: number;
   photos: string;
   createdAt: Date;
   views: number;

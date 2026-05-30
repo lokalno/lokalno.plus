@@ -46,18 +46,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: shippingCheck.error }, { status: 400 });
     }
 
-    const listing = await prisma.listing.findUnique({
-      where: { id: listingId },
-    });
-
-    if (!listing || listing.status !== "ACTIVE") {
-      return NextResponse.json({ error: "Оголошення недоступне для покупки" }, { status: 400 });
-    }
-
-    if (listing.sellerId === session.user.id) {
-      return NextResponse.json({ error: "Не можна купити власне оголошення" }, { status: 400 });
-    }
-
     const existingPending = await prisma.order.findFirst({
       where: {
         listingId,
@@ -73,17 +61,55 @@ export async function POST(request: Request) {
       );
     }
 
-    const order = await prisma.order.create({
-      data: {
-        listingId,
-        buyerId: session.user.id,
-        sellerId: listing.sellerId,
-        ...shippingCheck.data,
-      },
+    const order = await prisma.$transaction(async (tx) => {
+      const listing = await tx.listing.findUnique({
+        where: { id: listingId },
+      });
+
+      if (!listing || listing.status !== "ACTIVE") {
+        throw new Error("UNAVAILABLE");
+      }
+
+      if (listing.sellerId === session.user!.id) {
+        throw new Error("OWN_LISTING");
+      }
+
+      if (listing.stock < 1) {
+        throw new Error("OUT_OF_STOCK");
+      }
+
+      const newStock = listing.stock - 1;
+
+      await tx.listing.update({
+        where: { id: listingId },
+        data: {
+          stock: newStock,
+          ...(newStock === 0 ? { status: "SOLD" } : {}),
+        },
+      });
+
+      return tx.order.create({
+        data: {
+          listingId,
+          buyerId: session.user!.id,
+          sellerId: listing.sellerId,
+          ...shippingCheck.data,
+        },
+      });
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "OUT_OF_STOCK") {
+      return NextResponse.json({ error: "Товар відсутній на складі" }, { status: 400 });
+    }
+    if (message === "OWN_LISTING") {
+      return NextResponse.json({ error: "Не можна купити власне оголошення" }, { status: 400 });
+    }
+    if (message === "UNAVAILABLE") {
+      return NextResponse.json({ error: "Оголошення недоступне для покупки" }, { status: 400 });
+    }
     return NextResponse.json({ error: "Не вдалося створити замовлення" }, { status: 500 });
   }
 }

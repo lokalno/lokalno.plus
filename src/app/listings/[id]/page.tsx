@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos, formatViews } from "@/lib/utils";
+import { formatListingStock } from "@/lib/listing-stock";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
 import OrderCheckoutForm from "@/components/OrderCheckoutForm";
 import MessageForm from "@/components/MessageForm";
@@ -35,7 +36,8 @@ export default async function ListingPage({ params }: Params) {
 
   const photos = parsePhotos(listing.photos);
   const isOwner = session?.user?.id === listing.sellerId;
-  const canBuy = session && !isOwner && listing.status === "ACTIVE";
+  const inStock = listing.stock > 0;
+  const canBuy = session && !isOwner && listing.status === "ACTIVE" && inStock;
 
   const [similar, sellerStats] = await Promise.all([
     prisma.listing.findMany({
@@ -99,10 +101,13 @@ export default async function ListingPage({ params }: Params) {
 
           <p className="text-3xl font-bold text-brand-700 mt-2">{formatPrice(listing.price)}</p>
 
-          {isOwner && (
-            <div className="mt-3 p-3 bg-brand-50 border border-brand-100 rounded-xl">
+          {isOwner && listing.status === "ACTIVE" && (
+            <div className="mt-3 p-3 bg-brand-50 border border-brand-100 rounded-xl space-y-1">
               <p className="text-xs text-brand-600">
                 Кожен унікальний відвідувач додає +1 перегляд до вашого оголошення
+              </p>
+              <p className="text-xs text-brand-800 font-medium">
+                Залишок на складі: {formatListingStock(listing.stock)}
               </p>
             </div>
           )}
@@ -119,6 +124,10 @@ export default async function ListingPage({ params }: Params) {
               <span className="font-medium">Локація:</span> {listing.city}
             </p>
             <p>
+              <span className="font-medium">В наявності:</span>{" "}
+              {inStock ? formatListingStock(listing.stock) : "немає"}
+            </p>
+            <p>
               <span className="font-medium">Опубліковано:</span> {formatDate(listing.createdAt)}
             </p>
             <p>
@@ -128,6 +137,12 @@ export default async function ListingPage({ params }: Params) {
 
           <div className="mt-6 space-y-3">
             {canBuy && <OrderCheckoutForm listingId={listing.id} />}
+
+            {session && !isOwner && listing.status === "ACTIVE" && !inStock && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 text-center">
+                Товар тимчасово відсутній
+              </div>
+            )}
 
             {session && !isOwner && (
               <MessageForm listingId={listing.id} receiverId={listing.sellerId} />

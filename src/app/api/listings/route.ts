@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { assertNotBanned, getInitialListingStatus } from "@/lib/user-check";
 import { checkListingContent } from "@/lib/moderation";
 import { validateListingPhotos } from "@/lib/listing-photos";
+import { validateListingStock } from "@/lib/listing-stock";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, condition, city, photos } = body;
+    const { title, description, price, category, condition, city, photos, stock } = body;
 
     if (!title || !description || !price || !category || !condition || !city) {
       return NextResponse.json(
@@ -76,6 +77,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: photosCheck.error }, { status: 400 });
     }
 
+    const stockCheck = validateListingStock(stock ?? 1);
+    if (!stockCheck.ok) {
+      return NextResponse.json({ error: stockCheck.error }, { status: 400 });
+    }
+
     const initialStatus = await getInitialListingStatus();
 
     const listing = await prisma.listing.create({
@@ -87,6 +93,7 @@ export async function POST(request: Request) {
         condition,
         city,
         photos: JSON.stringify(photosCheck.photos),
+        stock: stockCheck.stock,
         sellerId: session.user.id,
         status: initialStatus,
       },

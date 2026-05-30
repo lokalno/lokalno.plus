@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validateListingPhotos, hasListingPhotos } from "@/lib/listing-photos";
+import { validateListingStock } from "@/lib/listing-stock";
 import { parsePhotos } from "@/lib/utils";
 
 type Params = { params: Promise<{ id: string }> };
@@ -56,6 +57,14 @@ export async function PATCH(request: Request, { params }: Params) {
       body.photos = photosCheck.photos;
     }
 
+    if (body.stock !== undefined) {
+      const stockCheck = validateListingStock(body.stock);
+      if (!stockCheck.ok) {
+        return NextResponse.json({ error: stockCheck.error }, { status: 400 });
+      }
+      body.stock = stockCheck.stock;
+    }
+
     if (body.status !== undefined) {
       const nextStatus = body.status;
       if (nextStatus === "ACTIVE" && !hasListingPhotos(listing.photos)) {
@@ -79,6 +88,7 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.category !== undefined ? { category: body.category } : {}),
         ...(body.condition !== undefined ? { condition: body.condition } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
+        ...(body.stock !== undefined ? { stock: body.stock } : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(body.photos !== undefined ? { photos: JSON.stringify(body.photos) } : {}),
       },

@@ -100,6 +100,7 @@ model Listing {
   city        String
   status      String    @default("ACTIVE")
   photos      String
+  stock       Int       @default(1)
   views       Int       @default(0)
   sellerId    String
   seller      User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)

@@ -38,6 +38,7 @@ export default async function EditListingPage({ params }: Params) {
           category: listing.category,
           condition: listing.condition,
           city: listing.city,
+          stock: listing.stock,
           photos: parsePhotos(listing.photos),
         }}
       />
