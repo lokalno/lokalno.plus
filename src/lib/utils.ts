@@ -20,7 +20,7 @@ export function parsePhotos(photos: string): string[] {
   try {
     const parsed = JSON.parse(photos);
     if (Array.isArray(parsed)) {
-      return parsed.filter((p): p is string => typeof p === "string" && p.trim());
+      return parsed.filter((p): p is string => typeof p === "string" && p.trim().length > 0);
     }
     if (typeof parsed === "string" && parsed.trim()) {
       return [parsed];
