@@ -5,8 +5,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
+import { PAYMENT_STATUSES } from "@/lib/wallet";
 import { formatOrderDelivery } from "@/lib/order-shipping";
 import OrderActions from "@/components/OrderActions";
+import OrderPayButton from "@/components/OrderPayButton";
 import ReviewForm from "@/components/ReviewForm";
 
 export default async function OrdersPage() {
@@ -91,7 +93,25 @@ export default async function OrdersPage() {
                     <span className="font-medium">
                       {ORDER_STATUSES[order.status] || order.status}
                     </span>
+                    {" · "}
+                    <span className="font-medium">
+                      {PAYMENT_STATUSES[order.paymentStatus] || order.paymentStatus}
+                    </span>
                   </p>
+
+                  {isBuyer && order.status !== "CANCELLED" && (
+                    <OrderPayButton
+                      orderId={order.id}
+                      price={order.listing.price}
+                      paymentStatus={order.paymentStatus}
+                    />
+                  )}
+
+                  {!isBuyer && order.paymentStatus === "PAID" && (
+                    <p className="text-sm text-brand-700 font-medium mt-2">
+                      ✓ Оплачено · {formatPrice(order.listing.price)} на вашому балансі
+                    </p>
+                  )}
 
                   {deliveryLines.length > 0 && (
                     <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700">

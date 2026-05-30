@@ -19,6 +19,10 @@ model User {
   role             String    @default("USER")
   banned           Boolean   @default(false)
   bannedReason     String?
+  balance          Float     @default(0)
+  payoutCardHolder String?
+  payoutCardNumber String?
+  payoutBankName   String?
   createdAt        DateTime  @default(now())
   listings         Listing[]
   sentMessages     Message[] @relation("SentMessages")
@@ -32,6 +36,8 @@ model User {
   following       SellerFollow[] @relation("Following")
   followers       SellerFollow[] @relation("Followers")
   supportTickets  SupportTicket[]
+  walletTransactions WalletTransaction[]
+  withdrawals        Withdrawal[]
 }
 
 model SellerFollow {
@@ -130,6 +136,8 @@ model Order {
   deliveryRaion      String   @default("")
   deliveryCity       String   @default("")
   deliveryWarehouse  String   @default("")
+  paymentStatus      String   @default("UNPAID")
+  paidAt             DateTime?
   createdAt          DateTime @default(now())
 }
 
@@ -168,4 +176,31 @@ model SupportTicket {
   adminNote String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WalletTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float
+  type         String
+  description  String
+  orderId      String?
+  withdrawalId String?
+  createdAt    DateTime @default(now())
+}
+
+model Withdrawal {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float
+  status       String    @default("PENDING")
+  cardHolder   String
+  cardLast4    String
+  cardNumber   String
+  bankName     String?
+  adminNote    String?
+  createdAt    DateTime  @default(now())
+  processedAt  DateTime?
 }

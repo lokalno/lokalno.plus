@@ -35,6 +35,7 @@ export default function HeaderNav({
       <Link href="/favorites" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Обране</Link>
       <Link href="/subscriptions" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Підписки</Link>
       <Link href="/orders" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Замовлення</Link>
+      <Link href="/profile/wallet" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>💰 Баланс</Link>
       <Link href="/messages" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>
         Повідомлення{unreadCount > 0 ? ` (${unreadCount})` : ""}
       </Link>
@@ -144,6 +145,7 @@ export default function HeaderNav({
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border shadow-lg py-1 z-50 text-sm">
                   <Link href="/profile" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Мій профіль</Link>
                   <Link href="/profile/settings" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Налаштування</Link>
+                  <Link href="/profile/wallet" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>💰 Баланс</Link>
                   <Link href="/orders" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Замовлення</Link>
                   <Link href="/subscriptions" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підписки</Link>
                   <Link href="/contact" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підтримка</Link>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { reversePaidOrder } from "@/lib/wallet-credit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,8 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (status === "CANCELLED" && order.status !== "CANCELLED" && order.status !== "COMPLETED") {
     const updated = await prisma.$transaction(async (tx) => {
+      await reversePaidOrder(tx, id);
+
       const currentOrder = await tx.order.update({
         where: { id },
         data: { status: "CANCELLED" },

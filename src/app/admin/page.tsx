@@ -13,7 +13,7 @@ export default async function AdminPage() {
   const isAdmin = await requireAdmin(session.user.id);
   if (!isAdmin) redirect("/");
 
-  const [usersCount, listingsCount, ordersCount, activeListings, pendingReports, pendingListings, openSupport] =
+  const [usersCount, listingsCount, ordersCount, activeListings, pendingReports, pendingListings, openSupport, pendingWithdrawals] =
     await Promise.all([
     prisma.user.count(),
     prisma.listing.count(),
@@ -22,6 +22,7 @@ export default async function AdminPage() {
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.listing.count({ where: { status: "PENDING" } }),
     countOpenSupportTickets(),
+    prisma.withdrawal.count({ where: { status: "PENDING" } }),
   ]);
 
   return (
@@ -111,6 +112,21 @@ export default async function AdminPage() {
             )}
           </h2>
           <p className="text-sm text-gray-500">Повідомлення від користувачів</p>
+        </Link>
+
+        <Link
+          href="/admin/withdrawals"
+          className="bg-white rounded-xl border p-6 hover:shadow-md transition-shadow border-green-100"
+        >
+          <h2 className="font-semibold text-lg mb-1">
+            💰 Виведення коштів
+            {pendingWithdrawals > 0 && (
+              <span className="ml-2 text-sm bg-green-600 text-white px-2 py-0.5 rounded-full">
+                {pendingWithdrawals}
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-gray-500">Перекази на банківські картки</p>
         </Link>
 
         <Link
