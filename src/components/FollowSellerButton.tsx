@@ -11,6 +11,7 @@ type FollowSellerButtonProps = {
   initialFollowerCount: number;
   compact?: boolean;
   onDark?: boolean;
+  variant?: "default" | "hero";
   hideFollowerCount?: boolean;
 };
 
@@ -22,6 +23,7 @@ export default function FollowSellerButton({
   initialFollowerCount,
   compact = false,
   onDark = false,
+  variant = "default",
   hideFollowerCount = false,
 }: FollowSellerButtonProps) {
   const router = useRouter();
@@ -51,35 +53,44 @@ export default function FollowSellerButton({
     router.refresh();
   }
 
+  const heroClass = following
+    ? "border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100"
+    : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700 shadow-md";
+
+  const buttonClass =
+    variant === "hero"
+      ? `inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${heroClass}`
+      : compact
+        ? `text-xs px-3 py-1.5 rounded-lg border font-medium ${
+            onDark
+              ? following
+                ? "border-white/40 bg-white/15 text-white"
+                : "border-white/30 bg-white/10 text-white hover:bg-white/20"
+              : following
+                ? "border-brand-200 bg-brand-50 text-brand-800"
+                : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+          }`
+        : `text-sm px-4 py-2 rounded-lg border font-medium ${
+            onDark
+              ? following
+                ? "border-white/40 bg-white/15 text-white hover:bg-white/20"
+                : "border-white/30 bg-white/10 text-white hover:bg-white/20"
+              : following
+                ? "border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100"
+                : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+          }`;
+
   return (
-    <div className={compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={loading}
-        className={
-          compact
-            ? `text-xs px-3 py-1.5 rounded-lg border font-medium ${
-                onDark
-                  ? following
-                    ? "border-white/40 bg-white/15 text-white"
-                    : "border-white/30 bg-white/10 text-white hover:bg-white/20"
-                  : following
-                    ? "border-brand-200 bg-brand-50 text-brand-800"
-                    : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
-              }`
-            : `text-sm px-4 py-2 rounded-lg border font-medium ${
-                onDark
-                  ? following
-                    ? "border-white/40 bg-white/15 text-white hover:bg-white/20"
-                    : "border-white/30 bg-white/10 text-white hover:bg-white/20"
-                  : following
-                    ? "border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100"
-                    : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
-              }`
-        }
-      >
-        {following ? "✓ Підписано" : "📌 Підписатися"}
+    <div className={variant === "hero" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
+      <button type="button" onClick={toggle} disabled={loading} className={buttonClass}>
+        {variant === "hero" ? (
+          <>
+            <span aria-hidden>{following ? "✓" : "+"}</span>
+            {following ? "Підписано" : "Підписатися"}
+          </>
+        ) : (
+          <>{following ? "✓ Підписано" : "📌 Підписатися"}</>
+        )}
       </button>
       {!hideFollowerCount && (
         <p

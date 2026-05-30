@@ -1,7 +1,7 @@
 type UserAvatarProps = {
   name: string;
   avatar?: string | null;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
 };
 
 const sizes = {
@@ -9,6 +9,7 @@ const sizes = {
   md: "w-16 h-16 text-xl",
   lg: "w-24 h-24 text-3xl",
   xl: "w-28 h-28 sm:w-32 sm:h-32 text-4xl",
+  "2xl": "w-32 h-32 sm:w-36 sm:h-36 text-5xl",
 };
 
 export default function UserAvatar({ name, avatar, size = "md" }: UserAvatarProps) {

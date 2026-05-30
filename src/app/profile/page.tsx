@@ -56,7 +56,7 @@ export default async function ProfilePage({
   if (!user) redirect("/login");
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold">Мій профіль</h1>
         <div className="flex flex-wrap gap-2">
