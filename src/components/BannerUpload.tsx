@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { compressImageFile } from "@/lib/compress-image";
 
 type BannerUploadProps = {
   initialBanner?: string | null;
@@ -39,7 +40,8 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
     setLoading(true);
     setMessage("");
     try {
-      const url = await uploadFile(file);
+      const compressed = await compressImageFile(file);
+      const url = await uploadFile(compressed);
       await saveBanner(url);
       setBanner(url);
       setMessage("Банер збережено!");

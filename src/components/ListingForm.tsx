@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CONDITIONS, MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { compressImageFile } from "@/lib/compress-image";
 import SettlementSearch from "@/components/SettlementSearch";
 
 type ListingFormProps = {
@@ -33,8 +34,9 @@ export default function ListingForm({ initial }: ListingFormProps) {
   const [error, setError] = useState("");
 
   async function uploadPhoto(file: File) {
+    const compressed = await compressImageFile(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressed);
 
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();

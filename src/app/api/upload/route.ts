@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { put } from "@vercel/blob";
 import { authOptions } from "@/lib/auth";
-import { processUploadImage } from "@/lib/process-upload-image";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
+
+const MAX_BYTES = 900_000;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -32,9 +34,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Максимум 8 МБ" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const { buffer, contentType } = await processUploadImage(Buffer.from(bytes));
-    const filename = `${randomUUID()}.jpg`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    if (buffer.length > MAX_BYTES) {
+      return NextResponse.json(
+        { error: "Фото занадто велике після стиснення. Спробуйте менше зображення." },
+        { status: 400 }
+      );
+    }
+
+    const contentType = file.type === "image/gif" ? "image/gif" : file.type || "image/jpeg";
+    const ext = contentType === "image/png" ? "png" : contentType === "image/gif" ? "gif" : "jpg";
+    const filename = `${randomUUID()}.${ext}`;
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(`uploads/${session.user.id}/${filename}`, buffer, {

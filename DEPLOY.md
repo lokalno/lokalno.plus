@@ -49,8 +49,9 @@ npx prisma db seed
 
 ## 5. Обмеження production
 
-- Завантаження фото (`/api/upload`) на Vercel **не зберігаються** постійно — потрібен Cloudinary/S3 (наступний крок).
-- Локальна папка `lokalno-ua` з SQLite — для роботи на ноутбуці; на сервері — PostgreSQL (Neon).
+- Фото зберігаються через `/api/upload` (Vercel Blob або вбудовано в базу).
+- Рекомендовано: Vercel → **Storage → Blob** → Create → Connect to project (додає `BLOB_READ_WRITE_TOKEN`).
+- Після змін у `prisma/schema.prisma` один раз локально: `npx prisma db push` (з `DATABASE_URL` від Neon).
 
 ## Далі
 
