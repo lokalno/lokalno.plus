@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 type AdminListingPhotosProps = {
   listingId: string;
@@ -14,6 +15,8 @@ export default function AdminListingPhotos({ listingId }: AdminListingPhotosProp
   const [photos, setPhotos] = useState<string[]>([]);
   const [failed, setFailed] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +45,19 @@ export default function AdminListingPhotos({ listingId }: AdminListingPhotosProp
     return !photo || isBrokenPhotoUrl(photo) || failed.has(index);
   }
 
-  const hasBrokenPhotos = photos.some((photo, index) => photoBroken(index));
+  const validPhotoEntries = photos
+    .map((photo, index) => ({ photo, index }))
+    .filter(({ index }) => !photoBroken(index));
+  const validPhotos = validPhotoEntries.map(({ photo }) => photo);
+  const hasBrokenPhotos = photos.some((_, index) => photoBroken(index));
+
+  function openLightbox(index: number) {
+    if (photoBroken(index)) return;
+    const validIndex = validPhotoEntries.findIndex(({ index: photoIndex }) => photoIndex === index);
+    if (validIndex === -1) return;
+    setLightboxIndex(validIndex);
+    setLightboxOpen(true);
+  }
 
   if (loading) {
     return (
@@ -66,55 +81,82 @@ export default function AdminListingPhotos({ listingId }: AdminListingPhotosProp
   const previewBroken = photoBroken(0);
 
   return (
-    <div className="shrink-0 space-y-2">
-      {previewBroken ? (
-        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center text-center p-2">
-          <span className="text-2xl">⚠️</span>
-          <span className="text-[10px] text-red-700 mt-1 leading-tight">
-            Фото не завантажилось
-          </span>
-        </div>
-      ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={photos[0]}
-          alt=""
-          className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border bg-gray-100"
-          onError={() => markFailed(0)}
-        />
-      )}
+    <>
+      <div className="shrink-0 space-y-2">
+        {previewBroken ? (
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center text-center p-2">
+            <span className="text-2xl">⚠️</span>
+            <span className="text-[10px] text-red-700 mt-1 leading-tight">
+              Фото не завантажилось
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openLightbox(0)}
+            className="block rounded-xl border overflow-hidden cursor-zoom-in hover:brightness-95 transition"
+            aria-label="Відкрити фото на весь екран"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photos[0]}
+              alt=""
+              className="w-24 h-24 sm:w-28 sm:h-28 object-cover bg-gray-100"
+              onError={() => markFailed(0)}
+            />
+          </button>
+        )}
 
-      {photos.length > 1 && (
-        <div className="flex flex-wrap gap-1 max-w-[112px]">
-          {photos.slice(1, 5).map((photo, i) => {
-            const index = i + 1;
-            const isBroken = photoBroken(index);
-            return isBroken ? (
-              <div
-                key={index}
-                className="w-12 h-12 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center text-xs"
-              >
-                ⚠️
-              </div>
-            ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                key={index}
-                src={photo}
-                alt=""
-                className="w-12 h-12 object-cover rounded-lg border bg-gray-100"
-                onError={() => markFailed(index)}
-              />
-            );
-          })}
-        </div>
-      )}
+        {photos.length > 1 && (
+          <div className="flex flex-wrap gap-1 max-w-[112px]">
+            {photos.slice(1, 5).map((photo, i) => {
+              const index = i + 1;
+              const isBroken = photoBroken(index);
+              return isBroken ? (
+                <div
+                  key={index}
+                  className="w-12 h-12 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center text-xs"
+                >
+                  ⚠️
+                </div>
+              ) : (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => openLightbox(index)}
+                  className="rounded-lg border overflow-hidden cursor-zoom-in hover:brightness-95 transition"
+                  aria-label={`Відкрити фото ${index + 1}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo}
+                    alt=""
+                    className="w-12 h-12 object-cover bg-gray-100"
+                    onError={() => markFailed(index)}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-      {hasBrokenPhotos && (
-        <p className="text-[10px] text-amber-800 max-w-[112px] leading-tight">
-          Попросіть продавця відредагувати оголошення і завантажити фото знову.
-        </p>
-      )}
-    </div>
+        {validPhotos.length > 0 && (
+          <p className="text-[10px] text-gray-500 max-w-[112px]">Натисніть для повного екрану</p>
+        )}
+
+        {hasBrokenPhotos && (
+          <p className="text-[10px] text-amber-800 max-w-[112px] leading-tight">
+            Попросіть продавця відредагувати оголошення і завантажити фото знову.
+          </p>
+        )}
+      </div>
+
+      <PhotoLightbox
+        photos={validPhotos}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
+    </>
   );
 }
