@@ -18,6 +18,7 @@ export default async function FavoritesPage() {
           _count: {
             select: {
               orders: { where: { paymentStatus: "PAID" } },
+              favorites: true,
             },
           },
         },

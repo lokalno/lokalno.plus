@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { CONDITIONS } from "@/lib/constants";
-import { getListingSoldCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
+import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, formatFavoriteCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 
 type ListingCardProps = {
   listing: ListingWithSoldCount & {
@@ -20,6 +20,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
   const soldCount = getListingSoldCount(listing);
+  const favoriteCount = getListingFavoriteCount(listing);
 
   return (
     <Link
@@ -47,6 +48,11 @@ export default function ListingCard({ listing }: ListingCardProps) {
         {soldCount > 0 && (
           <span className="absolute bottom-2 left-2 bg-green-600/90 text-white text-[10px] px-1.5 py-0.5 rounded-md">
             ✓ {formatSoldCountLabel(soldCount)}
+          </span>
+        )}
+        {favoriteCount > 0 && (
+          <span className="absolute top-2 left-2 bg-rose-600/90 text-white text-[10px] px-1.5 py-0.5 rounded-md">
+            {formatFavoriteCountLabel(favoriteCount)}
           </span>
         )}
       </div>

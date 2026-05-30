@@ -6,12 +6,17 @@ import { useRouter } from "next/navigation";
 type FavoriteButtonProps = {
   listingId: string;
   isLoggedIn: boolean;
+  initialFavorited?: boolean;
 };
 
-export default function FavoriteButton({ listingId, isLoggedIn }: FavoriteButtonProps) {
+export default function FavoriteButton({
+  listingId,
+  isLoggedIn,
+  initialFavorited = false,
+}: FavoriteButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [favorited, setFavorited] = useState(false);
+  const [favorited, setFavorited] = useState(initialFavorited);
 
   async function toggle() {
     if (!isLoggedIn) {

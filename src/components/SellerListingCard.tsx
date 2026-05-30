@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPrice, parsePhotos, formatViews } from "@/lib/utils";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
-import { getListingSoldCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
+import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, formatFavoriteCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 
 type SellerListingCardProps = {
   listing: ListingWithSoldCount & {
@@ -22,6 +22,7 @@ export default function SellerListingCard({ listing }: SellerListingCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
   const soldCount = getListingSoldCount(listing);
+  const favoriteCount = getListingFavoriteCount(listing);
 
   return (
     <Link
@@ -50,8 +51,17 @@ export default function SellerListingCard({ listing }: SellerListingCardProps) {
             ✓ {formatSoldCountLabel(soldCount)}
           </span>
         )}
+        {favoriteCount > 0 && (
+          <span className="absolute top-2 right-2 bg-rose-600/90 text-white text-xs px-2 py-0.5 rounded-full">
+            {formatFavoriteCountLabel(favoriteCount)}
+          </span>
+        )}
         {listing.status !== "ACTIVE" && (
-          <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+          <span
+            className={`absolute bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full ${
+              favoriteCount > 0 ? "top-10 right-2" : "top-2 right-2"
+            }`}
+          >
             {LISTING_STATUSES[listing.status] || listing.status}
           </span>
         )}

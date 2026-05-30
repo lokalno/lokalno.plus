@@ -38,6 +38,7 @@ export default async function ProfilePage({
             _count: {
               select: {
                 orders: { where: { paymentStatus: "PAID" } },
+                favorites: true,
               },
             },
           },

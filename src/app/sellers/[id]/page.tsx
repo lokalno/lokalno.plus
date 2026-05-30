@@ -31,6 +31,7 @@ export default async function SellerPage({ params }: Params) {
           _count: {
             select: {
               orders: { where: { paymentStatus: "PAID" } },
+              favorites: true,
             },
           },
         },

@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos, formatViews } from "@/lib/utils";
 import { formatListingStock } from "@/lib/listing-stock";
-import { getListingSoldCount, formatSoldCount } from "@/lib/listing-sales";
+import { getListingSoldCount, getListingFavoriteCount, formatSoldCount, formatFavoriteCount } from "@/lib/listing-sales";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
 import OrderCheckoutForm from "@/components/OrderCheckoutForm";
 import MessageForm from "@/components/MessageForm";
@@ -36,6 +36,7 @@ export default async function ListingPage({ params }: Params) {
           orders: {
             where: { paymentStatus: "PAID" },
           },
+          favorites: true,
         },
       },
     },
@@ -47,9 +48,10 @@ export default async function ListingPage({ params }: Params) {
   const isOwner = session?.user?.id === listing.sellerId;
   const inStock = listing.stock > 0;
   const soldCount = getListingSoldCount(listing);
+  const favoriteCount = getListingFavoriteCount(listing);
   const canBuy = session && !isOwner && listing.status === "ACTIVE" && inStock;
 
-  const [similar, sellerStats] = await Promise.all([
+  const [similar, sellerStats, userFavorite] = await Promise.all([
     prisma.listing.findMany({
       where: {
         status: "ACTIVE",
@@ -61,6 +63,7 @@ export default async function ListingPage({ params }: Params) {
         _count: {
           select: {
             orders: { where: { paymentStatus: "PAID" } },
+            favorites: true,
           },
         },
       },
@@ -72,6 +75,13 @@ export default async function ListingPage({ params }: Params) {
       _avg: { rating: true },
       _count: true,
     }),
+    session?.user?.id
+      ? prisma.favorite.findUnique({
+          where: {
+            userId_listingId: { userId: session.user.id, listingId: id },
+          },
+        })
+      : Promise.resolve(null),
   ]);
 
   const sellerRating = sellerStats._count > 0 ? sellerStats._avg.rating : null;
@@ -145,6 +155,9 @@ export default async function ListingPage({ params }: Params) {
               <span className="font-medium">Продано:</span> {formatSoldCount(soldCount)}
             </p>
             <p>
+              <span className="font-medium">Збережено:</span> {formatFavoriteCount(favoriteCount)}
+            </p>
+            <p>
               <span className="font-medium">Опубліковано:</span> {formatDate(listing.createdAt)}
             </p>
             <p>
@@ -195,8 +208,12 @@ export default async function ListingPage({ params }: Params) {
               </Link>
             )}
 
-            {!isOwner && session && (
-              <FavoriteButton listingId={listing.id} isLoggedIn={Boolean(session)} />
+            {!isOwner && (
+              <FavoriteButton
+                listingId={listing.id}
+                isLoggedIn={Boolean(session)}
+                initialFavorited={Boolean(userFavorite)}
+              />
             )}
 
             <ShareButton title={listing.title} />

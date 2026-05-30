@@ -14,6 +14,7 @@ const listingSoldCountInclude = {
   _count: {
     select: {
       orders: { where: { paymentStatus: "PAID" as const } },
+      favorites: true,
     },
   },
 };
