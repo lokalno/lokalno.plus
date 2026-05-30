@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidMessageImageUrl } from "@/lib/message-image";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -69,10 +70,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { listingId, receiverId, content } = await request.json();
+    const body = await request.json();
+    const { listingId, receiverId, content, imageUrl } = body;
+    const text = typeof content === "string" ? content.trim() : "";
+    const photo = typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : null;
 
-    if (!listingId || !receiverId || !content?.trim()) {
+    if (!listingId || !receiverId) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    if (!text && !photo) {
+      return NextResponse.json({ error: "Введіть текст або додайте фото" }, { status: 400 });
+    }
+
+    if (photo && !isValidMessageImageUrl(photo)) {
+      return NextResponse.json({ error: "Некоректне фото" }, { status: 400 });
     }
 
     if (receiverId === session.user.id) {
@@ -100,7 +112,8 @@ export async function POST(request: Request) {
         listingId,
         senderId: session.user.id,
         receiverId,
-        content: content.trim(),
+        content: text,
+        imageUrl: photo,
       },
       include: {
         sender: { select: { id: true, name: true } },

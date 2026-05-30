@@ -150,6 +150,7 @@ model Message {
   receiverId String
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
   content    String
+  imageUrl   String?
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
 }

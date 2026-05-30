@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { messagePreview } from "@/lib/message-image";
+import MessageBubble from "@/components/MessageBubble";
+import MessageChatInput from "@/components/MessageChatInput";
 
 type Message = {
   id: string;
   content: string;
+  imageUrl?: string | null;
   createdAt: string;
   senderId: string;
   receiverId: string;
@@ -144,9 +148,10 @@ export default function MessagesClient({
         : lastMessage.receiver.name
       : null;
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!content.trim() || !replyReceiverId || !activeListingId) return;
+  async function handleSend(payload: { content: string; imageUrl: string | null }) {
+    if ((!payload.content && !payload.imageUrl) || !replyReceiverId || !activeListingId) {
+      return false;
+    }
 
     setLoading(true);
     setError("");
@@ -156,7 +161,8 @@ export default function MessagesClient({
       body: JSON.stringify({
         listingId: activeListingId,
         receiverId: replyReceiverId,
-        content,
+        content: payload.content,
+        imageUrl: payload.imageUrl,
       }),
     });
 
@@ -164,12 +170,13 @@ export default function MessagesClient({
       const data = await res.json().catch(() => ({}));
       setError(data.error || "Не вдалося надіслати повідомлення");
       setLoading(false);
-      return;
+      return false;
     }
 
     setContent("");
     setLoading(false);
     await fetchMessages();
+    return true;
   }
 
   if (inList) {
@@ -196,7 +203,10 @@ export default function MessagesClient({
                 <p className="font-medium text-gray-900 truncate">{conversation.partnerName}</p>
                 <p className="text-sm text-gray-500 truncate">{conversation.listingTitle}</p>
                 <p className="text-sm text-gray-700 mt-1 truncate">
-                  {conversation.lastMessage.content}
+                  {messagePreview(
+                    conversation.lastMessage.content,
+                    conversation.lastMessage.imageUrl
+                  )}
                 </p>
               </div>
               <span className="text-xs text-gray-400 shrink-0">
@@ -243,40 +253,28 @@ export default function MessagesClient({
           const isMine = msg.senderId === currentUserId;
           return (
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] rounded-xl px-4 py-2 ${
-                  isMine ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-900"
-                }`}
-              >
-                <p>{msg.content}</p>
-                <p className={`text-xs mt-1 ${isMine ? "text-brand-100" : "text-gray-400"}`}>
-                  {msg.sender.name} · {formatDate(msg.createdAt)}
-                </p>
-              </div>
+              <MessageBubble
+                content={msg.content}
+                imageUrl={msg.imageUrl}
+                senderName={msg.sender.name}
+                createdAt={msg.createdAt}
+                isMine={isMine}
+              />
             </div>
           );
         })}
       </div>
 
       {replyReceiverId && activeListingId && (
-        <form onSubmit={handleSend} className="p-4 border-t space-y-2">
-          <div className="flex gap-2">
-            <input
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Ваше повідомлення..."
-              className="flex-1"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700"
-            >
-              Надіслати
-            </button>
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </form>
+        <div className="p-4 border-t">
+          <MessageChatInput
+            content={content}
+            onContentChange={setContent}
+            onSend={handleSend}
+            loading={loading}
+            error={error}
+          />
+        </div>
       )}
     </div>
   );
