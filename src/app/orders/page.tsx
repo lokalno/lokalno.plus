@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
+import { formatOrderDelivery } from "@/lib/order-shipping";
 import OrderActions from "@/components/OrderActions";
 import ReviewForm from "@/components/ReviewForm";
 
@@ -51,6 +52,7 @@ export default async function OrdersPage() {
               isBuyer &&
               order.status === "COMPLETED" &&
               !reviewedOrderIds.has(order.id);
+            const deliveryLines = formatOrderDelivery(order);
 
             return (
               <div key={order.id} className="bg-white rounded-xl border p-4 flex gap-4">
@@ -90,6 +92,15 @@ export default async function OrdersPage() {
                       {ORDER_STATUSES[order.status] || order.status}
                     </span>
                   </p>
+
+                  {deliveryLines.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700">
+                      <p className="font-medium text-blue-900 mb-1">📦 Доставка Nova Poshta</p>
+                      {deliveryLines.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                  )}
 
                   <OrderActions
                     orderId={order.id}

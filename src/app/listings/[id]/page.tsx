@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos, formatViews } from "@/lib/utils";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
-import BuyButton from "@/components/BuyButton";
+import OrderCheckoutForm from "@/components/OrderCheckoutForm";
 import MessageForm from "@/components/MessageForm";
 import ReportButton from "@/components/ReportButton";
 import ViewTracker from "@/components/ViewTracker";
@@ -127,7 +127,7 @@ export default async function ListingPage({ params }: Params) {
           </div>
 
           <div className="mt-6 space-y-3">
-            {canBuy && <BuyButton listingId={listing.id} />}
+            {canBuy && <OrderCheckoutForm listingId={listing.id} />}
 
             {session && !isOwner && (
               <MessageForm listingId={listing.id} receiverId={listing.sellerId} />

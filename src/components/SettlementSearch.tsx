@@ -13,6 +13,7 @@ type Settlement = {
 type SettlementSearchProps = {
   value: string;
   onChange: (value: string) => void;
+  onSelectSettlement?: (settlement: Settlement) => void;
   label?: string;
   required?: boolean;
   placeholder?: string;
@@ -21,6 +22,7 @@ type SettlementSearchProps = {
 export default function SettlementSearch({
   value,
   onChange,
+  onSelectSettlement,
   label = "Населений пункт",
   required = false,
   placeholder = "Напр. Татарбунари, Київ або tatarbunary…",
@@ -64,6 +66,7 @@ export default function SettlementSearch({
 
   function select(item: Settlement) {
     onChange(item.full);
+    onSelectSettlement?.(item);
     setQuery(item.full);
     setOpen(false);
   }

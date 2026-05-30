@@ -113,15 +113,23 @@ model Listing {
 }
 
 model Order {
-  id        String   @id @default(cuid())
-  listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id])
-  buyerId   String
-  buyer     User     @relation("BuyerOrders", fields: [buyerId], references: [id])
-  sellerId  String
-  seller    User     @relation("SellerOrders", fields: [sellerId], references: [id])
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
+  id                 String   @id @default(cuid())
+  listingId          String
+  listing            Listing  @relation(fields: [listingId], references: [id])
+  buyerId            String
+  buyer              User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId           String
+  seller             User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  status             String   @default("PENDING")
+  deliveryMethod     String   @default("NOVA_POSHTA")
+  recipientFirstName String   @default("")
+  recipientLastName  String   @default("")
+  recipientPhone     String   @default("")
+  deliveryOblast     String   @default("")
+  deliveryRaion      String   @default("")
+  deliveryCity       String   @default("")
+  deliveryWarehouse  String   @default("")
+  createdAt          DateTime @default(now())
 }
 
 model Message {
