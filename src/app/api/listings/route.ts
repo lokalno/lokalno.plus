@@ -1,0 +1,93 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { assertNotBanned, getInitialListingStatus } from "@/lib/user-check";
+import { checkListingContent } from "@/lib/moderation";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const city = searchParams.get("city");
+  const category = searchParams.get("category");
+  const q = searchParams.get("q");
+  const sellerId = searchParams.get("sellerId");
+  const status = searchParams.get("status") || "ACTIVE";
+
+  const listings = await prisma.listing.findMany({
+    where: {
+      status,
+      ...(city ? { city } : {}),
+      ...(category ? { category } : {}),
+      ...(sellerId ? { sellerId } : {}),
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q } },
+              { description: { contains: q } },
+            ],
+          }
+        : {}),
+    },
+    include: {
+      seller: {
+        select: { id: true, name: true, city: true, avatar: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(listings);
+}
+
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const banCheck = await assertNotBanned(session.user.id);
+  if (!banCheck.ok) {
+    return NextResponse.json({ error: banCheck.error }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const { title, description, price, category, condition, city, photos } = body;
+
+    if (!title || !description || !price || !category || !condition || !city) {
+      return NextResponse.json(
+        { error: "Заповніть усі обов'язкові поля" },
+        { status: 400 }
+      );
+    }
+
+    const forbidden = checkListingContent(title.trim(), description.trim());
+    if (forbidden) {
+      return NextResponse.json(
+        { error: `Заборонене слово в оголошенні: «${forbidden}». Оголошення не опубліковано.` },
+        { status: 400 }
+      );
+    }
+
+    const initialStatus = await getInitialListingStatus();
+
+    const listing = await prisma.listing.create({
+      data: {
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price),
+        category,
+        condition,
+        city,
+        photos: JSON.stringify(photos || []),
+        sellerId: session.user.id,
+        status: initialStatus,
+      },
+    });
+
+    return NextResponse.json(listing, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Помилка створення" }, { status: 500 });
+  }
+}

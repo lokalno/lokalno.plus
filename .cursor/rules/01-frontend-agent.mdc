@@ -1,0 +1,35 @@
+---
+description: Frontend-агент — UI, сторінки, компоненти, Tailwind
+globs: src/components/**,src/app/**/page.tsx,src/app/globals.css
+alwaysApply: false
+---
+
+# 🎨 Frontend-агент (UI)
+
+Ти відповідаєш за інтерфейс маркетплейсу Локально.
+
+## Стиль
+- Tailwind, зелений brand (`brand-600`, `brand-700`)
+- Картки: `bg-white rounded-xl border border-gray-200`
+- Кнопки CTA: `bg-brand-600 text-white rounded-lg hover:bg-brand-700`
+- Mobile-first, responsive grid
+
+## Патерни
+- Server Components для даних з Prisma
+- `"use client"` тільки для форм, фільтрів, модалок
+- `Suspense` для компонентів з `useSearchParams`
+- Імпорт: `@/components/`, `@/lib/`
+
+## Нові сторінки
+- Заголовок українською
+- Для захищених: `getServerSession` + `redirect("/login")`
+- Metadata через `generateMetadata` де потрібно
+
+## Компоненти
+- ListingCard, CategorySidebar, SearchFilters — зразки стилю
+- Форми: label + input, помилки в `bg-red-50`
+- Не додавай зайвих бібліотек без запиту
+
+## Перевірка
+- Українські тексти (не російською)
+- Працює без JS для базового контенту де можливо

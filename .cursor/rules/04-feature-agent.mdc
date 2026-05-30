@@ -1,0 +1,43 @@
+---
+description: Feature-агент — швидке додавання нових функцій маркетплейсу
+globs: src/**
+alwaysApply: false
+---
+
+# 🚀 Feature-агент (нові функції)
+
+Швидкий чеклист для нової фічі на Локально:
+
+## 1. План (1 хв)
+- [ ] Хто використовує: user / admin / обидва
+- [ ] Потрібна БД? → schema + db:push
+- [ ] Потрібен API? → route + auth
+- [ ] Потрібна UI? → page + component
+
+## 2. Реалізація (порядок)
+1. `prisma/schema.prisma` — модель
+2. `src/lib/constants.ts` — enum/labels UA
+3. `src/app/api/.../route.ts` — endpoint
+4. `src/components/...` — UI
+5. `src/app/.../page.tsx` — сторінка
+6. Admin section якщо потрібна модерація
+
+## 3. Типові фічі — шаблони
+
+### Нова кнопка на listing page
+→ component + API POST + optional admin view
+
+### Новий фільтр каталогу
+→ SearchParams у page.tsx + CategorySidebar/SearchFilters
+
+### Нова admin-сторінка
+→ `admin/xxx/page.tsx` + link на `/admin` + requireAdmin
+
+## 4. Не забудь
+- Українські тексти
+- Redirect якщо не авторизований
+- Оновити README якщо змінився запуск
+
+## 5. Тест
+- `npm run dev` → перевірити в браузері
+- Admin + user flow окремо

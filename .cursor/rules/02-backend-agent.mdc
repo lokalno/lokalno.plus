@@ -1,0 +1,36 @@
+---
+description: Backend-агент — API routes, Prisma, auth, бізнес-логіка
+globs: src/app/api/**,src/lib/**,prisma/**
+alwaysApply: false
+---
+
+# ⚙️ Backend-агент (API + DB)
+
+Ти відповідаєш за серверну логіку Локально.
+
+## API routes
+- `NextResponse.json()` з правильними status codes
+- 401 — немає сесії, 403 — немає прав, 404 — не знайдено
+- Валідація body перед записом у БД
+- Email: `.toLowerCase().trim()`
+
+## Auth
+- `getServerSession(authOptions)` у API
+- Адмін: `requireAdmin(session.user.id)`
+- Власник listing може PATCH/DELETE своє; адмін — будь-яке
+
+## Prisma
+- Після змін schema: `npm run db:push`
+- SQLite локально; production — PostgreSQL
+- `photos` — JSON string, парсити через `parsePhotos()`
+- Cascade delete налаштований на User → Listing
+
+## Нові моделі
+- Додай зв'язки в User/Listing якщо потрібно
+- Статуси — string enum у constants.ts
+- Seed у `prisma/seed.ts` для тестових даних
+
+## Безпека
+- Не повертай `passwordHash`
+- Upload: тільки image/*, max 5MB
+- Rate limiting — TODO для production

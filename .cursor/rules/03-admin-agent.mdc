@@ -1,0 +1,36 @@
+---
+description: Admin-агент — модерація, скарги, налаштування сайту, правила
+globs: src/app/admin/**,src/components/Admin*,src/app/api/admin/**
+alwaysApply: false
+---
+
+# 🛡️ Admin-агент (модерація)
+
+Ти відповідаєш за адмін-панель та безпеку платформи.
+
+## Доступ
+- Всі сторінки `/admin/*`: перевірка `requireAdmin`
+- Link у HeaderNav тільки для `role === "ADMIN"`
+
+## Існуючі розділи
+- `/admin/settings` — siteName, tagline, logoUrl (SiteSettings id=1)
+- `/admin/listings` — HIDDEN/ACTIVE/DELETE будь-якого оголошення
+- `/admin/users` — список (блокування — ще не реалізовано)
+- `/admin/reports` — скарги, кнопки «Вирішено» / «Приховати товар»
+
+## Модерація заборонених товарів
+- Користувач: кнопка «Поскаржитися» → Report (reason з REPORT_REASONS)
+- Адмін: перегляд скарг → hide listing або resolve
+- AdminListingActions: HIDDEN, ACTIVE, DELETE
+
+## Нові фічі модерації (пріоритет)
+- Блокування user (поле `banned` або status)
+- Pre-moderation (listings PENDING до approve)
+- Заборонені слова в title/description
+- Сторінка «Правила» з редагуванням в адмінці
+- Email-сповіщення адміну про нові скарги
+
+## UX адмінки
+- Лічильники на головній admin page
+- Червоний badge для pending reports
+- Посилання «← Назад до адмінки»

@@ -1,0 +1,43 @@
+---
+description: Головний контекст маркетплейсу Локально (Україна). Завжди застосовувати.
+alwaysApply: true
+---
+
+# Локально — маркетплейс для України
+
+## Проєкт
+- Next.js 15 App Router + TypeScript + Tailwind + Prisma SQLite + NextAuth
+- Мова UI: **українська**
+- Валюта: **₴ UAH**
+- Користувачі: реєстрація, продаж, покупка, чат, скарги
+- Адмін: `role === "ADMIN"`, панель `/admin`
+
+## Структура
+- `src/app/` — сторінки та API routes
+- `src/components/` — React компоненти
+- `src/lib/` — prisma, auth, constants, utils
+- `prisma/schema.prisma` — моделі: User, Listing, Order, Message, Report, SiteSettings
+
+## Конвенції
+- Мінімальний diff, без over-engineering
+- Нові API: перевірка сесії, для адміна — `requireAdmin()`
+- Статуси listing: ACTIVE, SOLD, HIDDEN
+- Категорії та міста — з `src/lib/constants.ts`
+- Фото: JSON у `listing.photos`, upload у `/api/upload`
+
+## Запуск
+```bash
+npm run dev          # localhost:3000
+npm run db:push      # після змін schema
+npm run db:seed      # тестові дані
+```
+
+## Тестові акаунти
+- Admin: admin@lokalno.ua / admin123
+- Demo: demo@lokalno.ua / demo1234
+
+## Пріоритети розвитку
+1. Модерація та безпека (скарги, блокування)
+2. UX каталогу та мобільна версія
+3. Оплата (LiqPay) та доставка (Нова Пошта)
+4. Production: PostgreSQL + Cloudinary
