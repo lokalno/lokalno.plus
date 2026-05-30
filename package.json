@@ -11,7 +11,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "build:settlements": "tsx scripts/build-settlements.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && next build"
+    "vercel-build": "prisma generate && prisma db push && next build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

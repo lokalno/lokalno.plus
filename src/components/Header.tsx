@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { countOpenSupportTickets } from "@/lib/support-tickets";
 import HeaderNav from "./HeaderNav";
 import HeaderSearch from "./HeaderSearch";
 
@@ -24,7 +25,7 @@ export default async function Header() {
           ? prisma.listing.count({ where: { status: "PENDING" } })
           : Promise.resolve(0),
         isAdmin
-          ? prisma.supportTicket.count({ where: { status: "OPEN" } })
+          ? countOpenSupportTickets()
           : Promise.resolve(0),
       ])
     : [0, null, 0, 0];

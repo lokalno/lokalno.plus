@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { countOpenSupportTickets } from "@/lib/support-tickets";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -20,7 +21,7 @@ export default async function AdminPage() {
     prisma.listing.count({ where: { status: "ACTIVE" } }),
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.listing.count({ where: { status: "PENDING" } }),
-    prisma.supportTicket.count({ where: { status: "OPEN" } }),
+    countOpenSupportTickets(),
   ]);
 
   return (
