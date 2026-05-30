@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { LISTING_STATUSES } from "@/lib/constants";
 import AdminListingActions from "@/components/AdminListingActions";
 
@@ -82,31 +82,70 @@ export default async function AdminListingsPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          {listings.map((listing) => (
+          {listings.map((listing) => {
+            const photos = parsePhotos(listing.photos);
+            const preview = photos[0];
+
+            return (
             <div
               key={listing.id}
-              className={`bg-white rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              className={`bg-white rounded-xl border p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-4 ${
                 listing.status === "PENDING" ? "border-amber-300 bg-amber-50/40" : ""
               }`}
             >
-              <div>
-                <Link href={`/listings/${listing.id}`} className="font-medium hover:text-brand-700">
-                  {listing.title}
-                </Link>
-                <p className="text-sm text-gray-500">
-                  {formatPrice(listing.price)} · {listing.city} · {listing.seller.name}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {LISTING_STATUSES[listing.status] || listing.status} · {formatDate(listing.createdAt)}
-                  · 👁 {listing.views}
-                </p>
-                {listing.status === "PENDING" && (
-                  <p className="text-xs text-amber-700 mt-1">{listing.seller.email}</p>
-                )}
+              <div className="flex gap-4 min-w-0 flex-1">
+                <div className="shrink-0">
+                  {preview ? (
+                    <div className="space-y-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={preview}
+                        alt=""
+                        className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border bg-gray-100"
+                      />
+                      {photos.length > 1 && (
+                        <div className="flex flex-wrap gap-1 max-w-[112px]">
+                          {photos.slice(1, 5).map((photo, i) => (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              key={i}
+                              src={photo}
+                              alt=""
+                              className="w-12 h-12 object-cover rounded-lg border bg-gray-100"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border bg-gray-100 flex items-center justify-center text-3xl">
+                      📦
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <Link href={`/listings/${listing.id}`} className="font-medium hover:text-brand-700">
+                    {listing.title}
+                  </Link>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formatPrice(listing.price)} · {listing.city} · {listing.seller.name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {LISTING_STATUSES[listing.status] || listing.status} · {formatDate(listing.createdAt)}
+                    · 👁 {listing.views}
+                    {photos.length > 0 ? ` · 📷 ${photos.length}` : " · без фото"}
+                  </p>
+                  {listing.status === "PENDING" && (
+                    <p className="text-xs text-amber-700 mt-1">{listing.seller.email}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mt-2 line-clamp-3">{listing.description}</p>
+                </div>
               </div>
               <AdminListingActions listingId={listing.id} status={listing.status} />
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
