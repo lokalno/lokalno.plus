@@ -4,8 +4,11 @@ import Link from "next/link";
 import FollowSellerButton from "./FollowSellerButton";
 import PublicFollowPreview from "./PublicFollowPreview";
 
-const heroButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 hover:shadow-md disabled:opacity-60";
+const lightButtonClass =
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60";
+
+const bannerButtonClass =
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/25 disabled:opacity-60";
 
 type SellerProfileActionsProps = {
   sellerId: string;
@@ -17,6 +20,7 @@ type SellerProfileActionsProps = {
   followerCount: number;
   isOwner: boolean;
   showAsPublic?: boolean;
+  inBanner?: boolean;
 };
 
 export default function SellerProfileActions({
@@ -29,7 +33,10 @@ export default function SellerProfileActions({
   followerCount,
   isOwner,
   showAsPublic = false,
+  inBanner = false,
 }: SellerProfileActionsProps) {
+  const buttonClass = inBanner ? bannerButtonClass : lightButtonClass;
+
   async function shareProfile() {
     const url =
       typeof window !== "undefined"
@@ -51,9 +58,9 @@ export default function SellerProfileActions({
   const messageHref = firstListingId ? `/listings/${firstListingId}` : "/messages";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <div className={`flex flex-wrap items-center gap-2 ${inBanner ? "justify-end" : ""}`}>
       {isOwner && showAsPublic ? (
-        <PublicFollowPreview followerCount={followerCount} onDark hideFollowerCount />
+        <PublicFollowPreview followerCount={followerCount} onDark={inBanner} hideFollowerCount />
       ) : !isOwner ? (
         <FollowSellerButton
           sellerId={sellerId}
@@ -61,21 +68,21 @@ export default function SellerProfileActions({
           isOwner={false}
           initialFollowing={isFollowing}
           initialFollowerCount={followerCount}
-          variant="hero"
+          onDark={inBanner}
           hideFollowerCount
         />
       ) : null}
 
       {!isOwner && (
-        <Link href={messageHref} className={heroButtonClass}>
+        <Link href={messageHref} className={buttonClass}>
           <span aria-hidden>💬</span>
-          Написати
+          Message
         </Link>
       )}
 
-      <button type="button" onClick={shareProfile} className={heroButtonClass}>
+      <button type="button" onClick={shareProfile} className={buttonClass}>
         <span aria-hidden>🔗</span>
-        Поділитися
+        Share
       </button>
     </div>
   );

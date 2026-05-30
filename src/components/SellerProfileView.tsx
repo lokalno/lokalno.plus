@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatDate, formatSellerLocation, parsePhotos } from "@/lib/utils";
+import { resolveSellerBannerUrl } from "@/lib/seller-banner";
 import {
   formatStars,
   getFollowerLabel,
@@ -65,18 +66,9 @@ function formatMemberSince(date: Date) {
 
 function GlassStatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-[108px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 shadow-xl backdrop-blur-md">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">{label}</p>
-      <p className="mt-1 text-xl font-bold text-white">{value}</p>
-    </div>
-  );
-}
-
-function LightStatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-gray-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-md">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">{label}</p>
-      <p className="mt-1 text-lg font-bold text-gray-900">{value}</p>
+    <div className="min-w-[120px] shrink-0 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 backdrop-blur-md">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{label}</p>
+      <p className="mt-1 text-lg font-bold text-white sm:text-xl">{value}</p>
     </div>
   );
 }
@@ -108,6 +100,7 @@ export default function SellerProfileView({
   });
   const resolvedProfilePath = profilePath ?? (isOwner ? "/profile" : `/sellers/${seller.id}`);
   const firstActiveListing = seller.listings.find((listing) => listing.status === "ACTIVE");
+  const bannerUrl = resolveSellerBannerUrl(seller.banner);
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -122,125 +115,112 @@ export default function SellerProfileView({
 
   return (
     <>
-      <section className="relative mb-10">
-        <div className="relative h-[320px] overflow-hidden rounded-3xl shadow-2xl ring-1 ring-black/5">
-          {seller.banner ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={seller.banner}
-              alt=""
-              className="absolute inset-0 h-full w-full scale-105 object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-brand-800 to-brand-600" />
-          )}
+      <section className="relative mb-8">
+        <div className="relative h-[360px] overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={bannerUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+          <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
 
           {showOwnerBannerEdit && <BannerUpload initialBanner={seller.banner} compact />}
 
-          <div className="absolute left-4 top-4 sm:left-6 sm:top-6">
-            <span
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur-md ${SELLER_LEVEL_STYLES[sellerLevel]}`}
-            >
-              {sellerLevel === "TOP" && <span aria-hidden>👑</span>}
-              {sellerLevel === "TRUSTED" && <span aria-hidden>🛡️</span>}
-              {sellerLevel === "NEW" && <span aria-hidden>✨</span>}
-              {SELLER_LEVEL_LABELS[sellerLevel]}
-            </span>
-          </div>
-
-          <div className="absolute bottom-4 right-4 left-4 hidden sm:flex sm:justify-end">
-            <div className="flex flex-wrap gap-2">
-              <GlassStatCard label="Listings" value={String(listingCount)} />
-              <GlassStatCard label="Followers" value={String(followerCount)} />
-              <GlassStatCard label="Reviews" value={String(reviewCount)} />
-              <GlassStatCard label="Member since" value={formatMemberSince(seller.createdAt)} />
+          <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-3">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur-md ${SELLER_LEVEL_STYLES[sellerLevel]}`}
+              >
+                {sellerLevel === "TOP" && <span aria-hidden>👑</span>}
+                {sellerLevel === "TRUSTED" && <span aria-hidden>🛡️</span>}
+                {sellerLevel === "NEW" && <span aria-hidden>✨</span>}
+                {SELLER_LEVEL_LABELS[sellerLevel]}
+              </span>
             </div>
-          </div>
-        </div>
 
-        <div className="relative z-10 -mt-16 px-4 sm:-mt-20 sm:px-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-              <div className="shrink-0 rounded-full p-1 ring-4 ring-white shadow-2xl">
-                <UserAvatar name={seller.name} avatar={seller.avatar} size="2xl" />
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex min-w-0 items-end gap-4">
+                <div className="shrink-0 rounded-full ring-4 ring-white/90 shadow-lg">
+                  <UserAvatar name={seller.name} avatar={seller.avatar} size="2xl" />
+                </div>
+
+                <div className="min-w-0 pb-1 text-white">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-sm sm:text-4xl">
+                      {seller.name}
+                    </h1>
+                    {verified && (
+                      <span
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white shadow-md"
+                        title="Verified seller"
+                      >
+                        ✓
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-1 text-sm text-white/90 sm:text-base">
+                    {formatSellerLocation(seller.city)}
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/85">
+                    {avgRating !== null ? (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 font-medium text-white">
+                          <span className="text-yellow-300">{formatStars(avgRating)}</span>
+                          {avgRating.toFixed(1)}
+                        </span>
+                        <span className="text-white/50">•</span>
+                        <span>{getRatingLabel(reviewCount)}</span>
+                      </>
+                    ) : (
+                      <span>No reviews yet</span>
+                    )}
+                    <span className="text-white/50">•</span>
+                    <span>{getFollowerLabel(followerCount)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="min-w-0 pb-1">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                    {seller.name}
-                  </h1>
-                  {verified && (
-                    <span
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-md"
-                      title="Verified seller"
-                    >
-                      ✓
-                    </span>
-                  )}
-                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-gray-700 backdrop-blur-sm sm:hidden">
-                    {SELLER_LEVEL_LABELS[sellerLevel]}
-                  </span>
-                </div>
-
-                <p className="mt-2 text-base text-gray-600">{formatSellerLocation(seller.city)}</p>
-
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-700">
-                  {avgRating !== null ? (
-                    <span className="inline-flex items-center gap-2 font-medium">
-                      <span className="text-yellow-500">{formatStars(avgRating)}</span>
-                      <span>{avgRating.toFixed(1)}</span>
-                      <span className="text-gray-500">({getRatingLabel(reviewCount)})</span>
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">⭐ Поки немає відгуків</span>
-                  )}
-                  <span className="hidden text-gray-300 sm:inline">•</span>
-                  <span>{getFollowerLabel(followerCount)}</span>
-                  <span className="hidden text-gray-300 sm:inline">•</span>
-                  <span>
-                    {listingCount}{" "}
-                    {listingCount === 1 ? "оголошення" : listingCount < 5 ? "оголошення" : "оголошень"}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
-                  <LightStatCard label="Listings" value={String(listingCount)} />
-                  <LightStatCard label="Followers" value={String(followerCount)} />
-                  <LightStatCard label="Reviews" value={String(reviewCount)} />
-                  <LightStatCard label="Member since" value={formatMemberSince(seller.createdAt)} />
-                </div>
-
-                <div className="mt-5">
-                  <SellerProfileActions
-                    sellerId={seller.id}
-                    sellerName={seller.name}
-                    profilePath={resolvedProfilePath}
-                    firstListingId={firstActiveListing?.id}
-                    isLoggedIn={isLoggedIn}
-                    isFollowing={isFollowing}
-                    followerCount={followerCount}
-                    isOwner={isOwner}
-                    showAsPublic={showAsPublic}
-                  />
-                </div>
+              <div className="hidden shrink-0 sm:block">
+                <SellerProfileActions
+                  sellerId={seller.id}
+                  sellerName={seller.name}
+                  profilePath={resolvedProfilePath}
+                  firstListingId={firstActiveListing?.id}
+                  isLoggedIn={isLoggedIn}
+                  isFollowing={isFollowing}
+                  followerCount={followerCount}
+                  isOwner={isOwner}
+                  showAsPublic={showAsPublic}
+                  inBanner
+                />
               </div>
             </div>
 
-            <div className="hidden lg:grid grid-cols-2 gap-2 xl:grid-cols-4">
-              <LightStatCard label="Listings" value={String(listingCount)} />
-              <LightStatCard label="Followers" value={String(followerCount)} />
-              <LightStatCard label="Reviews" value={String(reviewCount)} />
-              <div className="rounded-2xl border border-gray-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-md">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-                  Member since
-                </p>
-                <p className="mt-1 text-sm font-bold leading-snug text-gray-900">
-                  {formatDate(seller.createdAt)}
-                </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+                <GlassStatCard label="Listings" value={String(listingCount)} />
+                <GlassStatCard label="Followers" value={String(followerCount)} />
+                <GlassStatCard label="Reviews" value={String(reviewCount)} />
+                <GlassStatCard label="Member since" value={formatMemberSince(seller.createdAt)} />
+              </div>
+
+              <div className="sm:hidden">
+                <SellerProfileActions
+                  sellerId={seller.id}
+                  sellerName={seller.name}
+                  profilePath={resolvedProfilePath}
+                  firstListingId={firstActiveListing?.id}
+                  isLoggedIn={isLoggedIn}
+                  isFollowing={isFollowing}
+                  followerCount={followerCount}
+                  isOwner={isOwner}
+                  showAsPublic={showAsPublic}
+                  inBanner
+                />
               </div>
             </div>
           </div>
