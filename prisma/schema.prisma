@@ -31,6 +31,7 @@ model User {
   reviewsReceived Review[] @relation("ReviewsReceived")
   following       SellerFollow[] @relation("Following")
   followers       SellerFollow[] @relation("Followers")
+  supportTickets  SupportTicket[]
 }
 
 model SellerFollow {
@@ -145,4 +146,17 @@ model SiteSettings {
   rulesContent   String  @default("")
   privacyContent String  @default("")
   preModeration  Boolean @default(true)
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  message   String
+  phone     String?
+  status    String   @default("OPEN")
+  adminNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

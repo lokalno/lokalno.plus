@@ -12,7 +12,7 @@ export default async function AdminPage() {
   const isAdmin = await requireAdmin(session.user.id);
   if (!isAdmin) redirect("/");
 
-  const [usersCount, listingsCount, ordersCount, activeListings, pendingReports, pendingListings] =
+  const [usersCount, listingsCount, ordersCount, activeListings, pendingReports, pendingListings, openSupport] =
     await Promise.all([
     prisma.user.count(),
     prisma.listing.count(),
@@ -20,6 +20,7 @@ export default async function AdminPage() {
     prisma.listing.count({ where: { status: "ACTIVE" } }),
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.listing.count({ where: { status: "PENDING" } }),
+    prisma.supportTicket.count({ where: { status: "OPEN" } }),
   ]);
 
   return (
@@ -29,11 +30,23 @@ export default async function AdminPage() {
       {pendingListings > 0 && (
         <Link
           href="/admin/listings?status=pending"
-          className="mb-8 block rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 hover:from-amber-600 hover:to-amber-700 transition-shadow shadow-md hover:shadow-lg"
+          className="mb-4 block rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 hover:from-amber-600 hover:to-amber-700 transition-shadow shadow-md hover:shadow-lg"
         >
           <p className="text-lg font-bold">✓ Підтвердити оголошення</p>
           <p className="text-amber-50 mt-1">
             {pendingListings} нових оголошень чекають модерації — натисніть тут
+          </p>
+        </Link>
+      )}
+
+      {openSupport > 0 && (
+        <Link
+          href="/admin/support"
+          className="mb-8 block rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 hover:from-blue-600 hover:to-blue-700 transition-shadow shadow-md hover:shadow-lg"
+        >
+          <p className="text-lg font-bold">💬 Нові звернення в підтримку</p>
+          <p className="text-blue-50 mt-1">
+            {openSupport} повідомлень від користувачів — натисніть тут
           </p>
         </Link>
       )}
@@ -82,6 +95,21 @@ export default async function AdminPage() {
         >
           <h2 className="font-semibold text-lg mb-1">👥 Користувачі</h2>
           <p className="text-sm text-gray-500">Блокування, список</p>
+        </Link>
+
+        <Link
+          href="/admin/support"
+          className="bg-white rounded-xl border p-6 hover:shadow-md transition-shadow border-blue-100"
+        >
+          <h2 className="font-semibold text-lg mb-1">
+            💬 Підтримка
+            {openSupport > 0 && (
+              <span className="ml-2 text-sm bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                {openSupport}
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-gray-500">Повідомлення від користувачів</p>
         </Link>
 
         <Link

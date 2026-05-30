@@ -10,6 +10,7 @@ type HeaderNavProps = {
   session: Session | null;
   unreadCount?: number;
   pendingListings?: number;
+  openSupport?: number;
   userAvatar?: string | null;
   userName?: string;
 };
@@ -18,6 +19,7 @@ export default function HeaderNav({
   session,
   unreadCount = 0,
   pendingListings = 0,
+  openSupport = 0,
   userAvatar = null,
   userName = "",
 }: HeaderNavProps) {
@@ -36,6 +38,7 @@ export default function HeaderNav({
       <Link href="/messages" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>
         Повідомлення{unreadCount > 0 ? ` (${unreadCount})` : ""}
       </Link>
+      <Link href="/contact" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Підтримка</Link>
       <Link href="/profile" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Мій профіль</Link>
       <Link href="/profile/settings" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Налаштування</Link>
       {isAdmin && (
@@ -46,6 +49,13 @@ export default function HeaderNav({
             onClick={() => setOpen(false)}
           >
             ✓ Модерація{pendingListings > 0 ? ` (${pendingListings})` : ""}
+          </Link>
+          <Link
+            href="/admin/support"
+            className="bg-blue-600 text-white px-3 py-2 rounded-xl block text-center font-medium"
+            onClick={() => setOpen(false)}
+          >
+            💬 Підтримка{openSupport > 0 ? ` (${openSupport})` : ""}
           </Link>
           <Link href="/admin" className="text-orange-600 py-2 block font-medium" onClick={() => setOpen(false)}>Адмін-панель</Link>
         </>
@@ -80,18 +90,32 @@ export default function HeaderNav({
         </Link>
 
         {isAdmin && (
-          <Link
-            href="/admin/listings?status=pending"
-            className="ml-2 relative bg-amber-500 text-white px-4 py-2 rounded-xl hover:bg-amber-600 font-medium text-sm whitespace-nowrap"
-            title="Підтвердити нові оголошення"
-          >
-            ✓ Модерація
-            {pendingListings > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
-                {pendingListings > 99 ? "99+" : pendingListings}
-              </span>
-            )}
-          </Link>
+          <>
+            <Link
+              href="/admin/listings?status=pending"
+              className="ml-2 relative bg-amber-500 text-white px-4 py-2 rounded-xl hover:bg-amber-600 font-medium text-sm whitespace-nowrap"
+              title="Підтвердити нові оголошення"
+            >
+              ✓ Модерація
+              {pendingListings > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                  {pendingListings > 99 ? "99+" : pendingListings}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/admin/support"
+              className="ml-2 relative bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 font-medium text-sm whitespace-nowrap"
+              title="Повідомлення від користувачів у підтримку"
+            >
+              💬 Підтримка
+              {openSupport > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                  {openSupport > 99 ? "99+" : openSupport}
+                </span>
+              )}
+            </Link>
+          </>
         )}
 
         <Link
@@ -122,6 +146,7 @@ export default function HeaderNav({
                   <Link href="/profile/settings" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Налаштування</Link>
                   <Link href="/orders" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Замовлення</Link>
                   <Link href="/subscriptions" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підписки</Link>
+                  <Link href="/contact" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підтримка</Link>
                   {isAdmin && (
                     <>
                       <Link
@@ -130,6 +155,13 @@ export default function HeaderNav({
                         onClick={() => setProfileOpen(false)}
                       >
                         ✓ Модерація{pendingListings > 0 ? ` (${pendingListings})` : ""}
+                      </Link>
+                      <Link
+                        href="/admin/support"
+                        className="block px-4 py-2 text-blue-700 font-medium hover:bg-blue-50"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        💬 Звернення{openSupport > 0 ? ` (${openSupport})` : ""}
                       </Link>
                       <Link href="/admin" className="block px-4 py-2 text-orange-600 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Адмін-панель</Link>
                     </>

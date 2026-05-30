@@ -11,7 +11,7 @@ export default async function Header() {
 
   const isAdmin = session?.user?.role === "ADMIN";
 
-  const [unreadCount, user, pendingListings] = session?.user?.id
+  const [unreadCount, user, pendingListings, openSupport] = session?.user?.id
     ? await Promise.all([
         prisma.message.count({
           where: { receiverId: session.user.id, read: false },
@@ -23,8 +23,11 @@ export default async function Header() {
         isAdmin
           ? prisma.listing.count({ where: { status: "PENDING" } })
           : Promise.resolve(0),
+        isAdmin
+          ? prisma.supportTicket.count({ where: { status: "OPEN" } })
+          : Promise.resolve(0),
       ])
-    : [0, null, 0];
+    : [0, null, 0, 0];
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -46,6 +49,7 @@ export default async function Header() {
           session={session}
           unreadCount={unreadCount}
           pendingListings={pendingListings}
+          openSupport={openSupport}
           userAvatar={user?.avatar}
           userName={user?.name}
         />

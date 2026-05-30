@@ -86,3 +86,16 @@ export const REPORT_STATUSES: Record<string, string> = {
   REVIEWED: "Переглянута",
   RESOLVED: "Вирішена",
 };
+
+export const SUPPORT_SUBJECTS = [
+  "Питання по сайту",
+  "Проблема з акаунтом",
+  "Проблема з оголошенням",
+  "Скарга",
+  "Інше",
+] as const;
+
+export const SUPPORT_STATUSES: Record<string, string> = {
+  OPEN: "Нове",
+  RESOLVED: "Вирішено",
+};
