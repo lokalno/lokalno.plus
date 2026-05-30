@@ -29,6 +29,9 @@ export default async function EditListingPage({ params }: Params) {
           зміни» — після цього адмін зможе підтвердити публікацію.
         </div>
       )}
+      <p className="mb-4 text-sm text-gray-600">
+        Тут можна змінити ціну, опис, фото та <strong>кількість на складі</strong> в будь-який час.
+      </p>
       <ListingForm
         initial={{
           id: listing.id,

@@ -175,7 +175,9 @@ export default function ListingForm({ initial }: ListingFormProps) {
             onChange={(e) => setStock(e.target.value)}
             required
           />
-          <p className="text-xs text-gray-500 mt-1">Скільки одиниць товару зараз є у продажу</p>
+          <p className="text-xs text-gray-500 mt-1">
+          Скільки одиниць товару зараз є у продажу. Можна змінити пізніше на сторінці оголошення.
+        </p>
         </div>
         <SettlementSearch value={city} onChange={setCity} label="Місто / село" required />
       </div>

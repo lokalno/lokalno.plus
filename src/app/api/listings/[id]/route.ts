@@ -65,6 +65,13 @@ export async function PATCH(request: Request, { params }: Params) {
       body.stock = stockCheck.stock;
     }
 
+    let autoStatus: string | undefined;
+    if (body.stock !== undefined && body.status === undefined) {
+      if (body.stock > 0 && listing.status === "SOLD" && hasListingPhotos(listing.photos)) {
+        autoStatus = "ACTIVE";
+      }
+    }
+
     if (body.status !== undefined) {
       const nextStatus = body.status;
       if (nextStatus === "ACTIVE" && !hasListingPhotos(listing.photos)) {
@@ -90,6 +97,7 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.city !== undefined ? { city: body.city } : {}),
         ...(body.stock !== undefined ? { stock: body.stock } : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
+        ...(autoStatus ? { status: autoStatus } : {}),
         ...(body.photos !== undefined ? { photos: JSON.stringify(body.photos) } : {}),
       },
     });

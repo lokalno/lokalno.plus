@@ -15,6 +15,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ShareButton from "@/components/ShareButton";
 import MarkSoldButton from "@/components/MarkSoldButton";
 import ListingCard from "@/components/ListingCard";
+import ListingStockEditor from "@/components/ListingStockEditor";
 import SellerCornerBadge from "@/components/SellerCornerBadge";
 
 type Params = { params: Promise<{ id: string }> };
@@ -101,15 +102,12 @@ export default async function ListingPage({ params }: Params) {
 
           <p className="text-3xl font-bold text-brand-700 mt-2">{formatPrice(listing.price)}</p>
 
-          {isOwner && listing.status === "ACTIVE" && (
-            <div className="mt-3 p-3 bg-brand-50 border border-brand-100 rounded-xl space-y-1">
-              <p className="text-xs text-brand-600">
-                Кожен унікальний відвідувач додає +1 перегляд до вашого оголошення
-              </p>
-              <p className="text-xs text-brand-800 font-medium">
-                Залишок на складі: {formatListingStock(listing.stock)}
-              </p>
-            </div>
+          {isOwner && (
+            <ListingStockEditor
+              listingId={listing.id}
+              initialStock={listing.stock}
+              listingStatus={listing.status}
+            />
           )}
 
           <div className="mt-4 space-y-2 text-sm text-gray-600">
