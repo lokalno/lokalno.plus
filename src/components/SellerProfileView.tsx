@@ -99,7 +99,8 @@ export default function SellerProfileView({
     followerCount,
   });
   const resolvedProfilePath = profilePath ?? (isOwner ? "/profile" : `/sellers/${seller.id}`);
-  const firstActiveListing = seller.listings.find((listing) => listing.status === "ACTIVE");
+  const messageListing =
+    seller.listings.find((listing) => listing.status === "ACTIVE") ?? seller.listings[0];
   const bannerUrl = resolveSellerBannerUrl(seller.banner);
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map((star) => ({
@@ -189,7 +190,7 @@ export default function SellerProfileView({
                   sellerId={seller.id}
                   sellerName={seller.name}
                   profilePath={resolvedProfilePath}
-                  firstListingId={firstActiveListing?.id}
+                  firstListingId={messageListing?.id}
                   isLoggedIn={isLoggedIn}
                   isFollowing={isFollowing}
                   followerCount={followerCount}
@@ -213,7 +214,7 @@ export default function SellerProfileView({
                   sellerId={seller.id}
                   sellerName={seller.name}
                   profilePath={resolvedProfilePath}
-                  firstListingId={firstActiveListing?.id}
+                  firstListingId={messageListing?.id}
                   isLoggedIn={isLoggedIn}
                   isFollowing={isFollowing}
                   followerCount={followerCount}

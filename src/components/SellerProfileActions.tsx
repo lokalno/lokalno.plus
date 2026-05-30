@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import FollowSellerButton from "./FollowSellerButton";
 import PublicFollowPreview from "./PublicFollowPreview";
 
@@ -35,7 +36,13 @@ export default function SellerProfileActions({
   showAsPublic = false,
   inBanner = false,
 }: SellerProfileActionsProps) {
+  const router = useRouter();
   const buttonClass = inBanner ? bannerButtonClass : lightButtonClass;
+
+  const chatHref =
+    firstListingId != null
+      ? `/messages?listingId=${firstListingId}&partnerId=${sellerId}`
+      : null;
 
   async function shareProfile() {
     const url =
@@ -55,7 +62,17 @@ export default function SellerProfileActions({
     }
   }
 
-  const messageHref = firstListingId ? `/listings/${firstListingId}` : "/messages";
+  function openChat() {
+    if (!chatHref) {
+      alert("У продавця поки немає оголошень для чату.");
+      return;
+    }
+    if (!isLoggedIn) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(chatHref)}`);
+      return;
+    }
+    router.push(chatHref);
+  }
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${inBanner ? "justify-end" : ""}`}>
@@ -73,17 +90,17 @@ export default function SellerProfileActions({
         />
       ) : null}
 
-      {!isOwner && (
-        <Link href={messageHref} className={buttonClass}>
-          <span aria-hidden>💬</span>
-          Написати
-        </Link>
-      )}
-
       <button type="button" onClick={shareProfile} className={buttonClass}>
         <span aria-hidden>🔗</span>
         Поділитися
       </button>
+
+      {!isOwner && (
+        <button type="button" onClick={openChat} className={buttonClass}>
+          <span aria-hidden>💬</span>
+          Написати
+        </button>
+      )}
     </div>
   );
 }
