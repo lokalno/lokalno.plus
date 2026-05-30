@@ -44,8 +44,8 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
       setBanner(url);
       setMessage("Банер збережено!");
       router.refresh();
-    } catch {
-      setMessage("Помилка завантаження");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Помилка завантаження");
     } finally {
       setLoading(false);
     }

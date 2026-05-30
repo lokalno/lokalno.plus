@@ -57,8 +57,8 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
         body: JSON.stringify({ avatar: url }),
       });
       router.refresh();
-    } catch {
-      setMessage("Помилка завантаження фото");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Помилка завантаження фото");
     } finally {
       setLoading(false);
     }

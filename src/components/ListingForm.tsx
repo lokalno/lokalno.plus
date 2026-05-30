@@ -38,7 +38,6 @@ export default function ListingForm({ initial }: ListingFormProps) {
 
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();
-
     if (!res.ok) throw new Error(data.error || "Upload failed");
     return data.url as string;
   }
@@ -56,8 +55,8 @@ export default function ListingForm({ initial }: ListingFormProps) {
         newPhotos.push(url);
       }
       setPhotos([...photos, ...newPhotos]);
-    } catch {
-      setError("Помилка завантаження фото");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Помилка завантаження фото");
     } finally {
       setLoading(false);
     }

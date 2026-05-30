@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { put } from "@vercel/blob";
 import { authOptions } from "@/lib/auth";
+import { processUploadImage } from "@/lib/process-upload-image";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Увійдіть, щоб завантажити фото" }, { status: 401 });
   }
 
   try {
@@ -17,28 +21,41 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "No file" }, { status: 400 });
+      return NextResponse.json({ error: "Файл не обрано" }, { status: 400 });
     }
 
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Only images allowed" }, { status: 400 });
+      return NextResponse.json({ error: "Дозволені лише зображення" }, { status: 400 });
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "Max 5MB" }, { status: 400 });
+    if (file.size > 8 * 1024 * 1024) {
+      return NextResponse.json({ error: "Максимум 8 МБ" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const ext = path.extname(file.name) || ".jpg";
-    const filename = `${randomUUID()}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const { buffer, contentType } = await processUploadImage(Buffer.from(bytes));
+    const filename = `${randomUUID()}.jpg`;
 
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, filename), buffer);
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`uploads/${session.user.id}/${filename}`, buffer, {
+        access: "public",
+        contentType,
+      });
+      return NextResponse.json({ url: blob.url });
+    }
 
-    return NextResponse.json({ url: `/uploads/${filename}` });
-  } catch {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    if (!process.env.VERCEL) {
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(path.join(uploadDir, filename), buffer);
+      return NextResponse.json({ url: `/uploads/${filename}` });
+    }
+
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${contentType};base64,${base64}`;
+    return NextResponse.json({ url: dataUrl });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Помилка завантаження";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
