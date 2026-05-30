@@ -9,7 +9,9 @@ import HeaderSearch from "./HeaderSearch";
 export default async function Header() {
   const session = await getServerSession(authOptions);
 
-  const [unreadCount, user] = session?.user?.id
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  const [unreadCount, user, pendingListings] = session?.user?.id
     ? await Promise.all([
         prisma.message.count({
           where: { receiverId: session.user.id, read: false },
@@ -18,8 +20,11 @@ export default async function Header() {
           where: { id: session.user.id },
           select: { name: true, avatar: true },
         }),
+        isAdmin
+          ? prisma.listing.count({ where: { status: "PENDING" } })
+          : Promise.resolve(0),
       ])
-    : [0, null];
+    : [0, null, 0];
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -40,6 +45,7 @@ export default async function Header() {
         <HeaderNav
           session={session}
           unreadCount={unreadCount}
+          pendingListings={pendingListings}
           userAvatar={user?.avatar}
           userName={user?.name}
         />

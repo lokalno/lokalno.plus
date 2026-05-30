@@ -37,9 +37,9 @@ export default function AdminListingActions({ listingId, status }: AdminListingA
         <button
           onClick={() => updateStatus("ACTIVE")}
           disabled={loading}
-          className="text-sm bg-brand-600 text-white px-3 py-1 rounded-lg hover:bg-brand-700"
+          className="text-sm bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 font-semibold"
         >
-          ✓ Схвалити
+          ✓ Підтвердити
         </button>
       )}
       {status === "ACTIVE" ? (

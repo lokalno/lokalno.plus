@@ -26,6 +26,18 @@ export default async function AdminPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Адмін-панель</h1>
 
+      {pendingListings > 0 && (
+        <Link
+          href="/admin/listings?status=pending"
+          className="mb-8 block rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 hover:from-amber-600 hover:to-amber-700 transition-shadow shadow-md hover:shadow-lg"
+        >
+          <p className="text-lg font-bold">✓ Підтвердити оголошення</p>
+          <p className="text-amber-50 mt-1">
+            {pendingListings} нових оголошень чекають модерації — натисніть тут
+          </p>
+        </Link>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: "Користувачі", value: usersCount },
