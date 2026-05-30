@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { validateListingPhotos } from "@/lib/listing-photos";
+import { validateListingPhotos, hasListingPhotos } from "@/lib/listing-photos";
+import { parsePhotos } from "@/lib/utils";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -53,6 +54,20 @@ export async function PATCH(request: Request, { params }: Params) {
         return NextResponse.json({ error: photosCheck.error }, { status: 400 });
       }
       body.photos = photosCheck.photos;
+    }
+
+    if (body.status !== undefined) {
+      const nextStatus = body.status;
+      if (nextStatus === "ACTIVE" && !hasListingPhotos(listing.photos)) {
+        const updatedPhotos =
+          body.photos !== undefined ? body.photos : parsePhotos(listing.photos);
+        if (!Array.isArray(updatedPhotos) || updatedPhotos.length === 0) {
+          return NextResponse.json(
+            { error: "Неможливо опублікувати оголошення без фото" },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const updated = await prisma.listing.update({

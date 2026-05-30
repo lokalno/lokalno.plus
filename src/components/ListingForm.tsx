@@ -112,8 +112,12 @@ export default function ListingForm({ initial }: ListingFormProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Помилка");
 
-      if (!isEdit && data.status === "PENDING") {
-        router.push("/profile?pending=1");
+      if (!isEdit) {
+        router.push(
+          data.status === "PENDING"
+            ? `/listings/${data.id}?pending=1`
+            : `/listings/${data.id}`
+        );
       } else {
         router.push(`/listings/${data.id}`);
       }

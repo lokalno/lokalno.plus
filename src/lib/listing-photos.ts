@@ -1,4 +1,5 @@
 import { MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { parsePhotos } from "@/lib/utils";
 
 const MAX_PHOTOS_JSON_BYTES = 2_500_000;
 const MAX_DATA_URL_LENGTH = 280_000;
@@ -58,4 +59,8 @@ export function isBrokenStoredPhoto(photo: string): boolean {
 
 export function countBrokenPhotos(photos: string[]): number {
   return photos.filter(isBrokenStoredPhoto).length;
+}
+
+export function hasListingPhotos(photosJson: string): boolean {
+  return parsePhotos(photosJson).length > 0;
 }

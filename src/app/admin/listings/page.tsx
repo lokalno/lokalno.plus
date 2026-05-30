@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
+import { hasListingPhotos } from "@/lib/listing-photos";
 import { LISTING_STATUSES } from "@/lib/constants";
 import AdminListingActions from "@/components/AdminListingActions";
 import AdminListingPhotos from "@/components/AdminListingPhotos";
@@ -109,12 +110,24 @@ export default async function AdminListingsPage({ searchParams }: Props) {
                     {photos.length > 0 ? ` · 📷 ${photos.length}` : " · без фото"}
                   </p>
                   {listing.status === "PENDING" && (
-                    <p className="text-xs text-amber-700 mt-1">{listing.seller.email}</p>
+                    <>
+                      <p className="text-xs text-amber-700 mt-1">{listing.seller.email}</p>
+                      {!hasListingPhotos(listing.photos) && (
+                        <p className="text-xs text-red-700 mt-2 font-medium">
+                          Немає фото — напишіть продавцю ({listing.seller.email}), щоб відкрив
+                          оголошення → Редагувати → завантажив фото знову.
+                        </p>
+                      )}
+                    </>
                   )}
                   <p className="text-sm text-gray-600 mt-2 line-clamp-3">{listing.description}</p>
                 </div>
               </div>
-              <AdminListingActions listingId={listing.id} status={listing.status} />
+              <AdminListingActions
+                listingId={listing.id}
+                status={listing.status}
+                hasPhotos={hasListingPhotos(listing.photos)}
+              />
             </div>
             );
           })}

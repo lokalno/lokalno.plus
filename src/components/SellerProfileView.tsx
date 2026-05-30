@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { formatDate, formatSellerLocation, formatTenure, getTypicalResponseLabel } from "@/lib/utils";
+import { formatDate, formatSellerLocation, formatTenure, getTypicalResponseLabel, parsePhotos } from "@/lib/utils";
 import { formatStars, getFollowerLabel, getRatingLabel, isVerifiedSeller } from "@/lib/seller-stats";
 import ListingCard from "./ListingCard";
+import SellerListingCard from "./SellerListingCard";
 import UserAvatar from "./UserAvatar";
 import FollowSellerButton from "./FollowSellerButton";
 import PublicFollowPreview from "./PublicFollowPreview";
@@ -21,6 +22,7 @@ type Listing = {
   price: number;
   city: string;
   condition: string;
+  status: string;
   photos: string;
   createdAt: Date;
   views: number;
@@ -84,6 +86,12 @@ export default function SellerProfileView({
     star,
     count: seller.reviewsReceived.filter((r) => r.rating === star).length,
   }));
+
+  const pendingWithoutPhotos = isOwner
+    ? seller.listings.filter(
+        (listing) => listing.status === "PENDING" && parsePhotos(listing.photos).length === 0
+      )
+    : [];
 
   return (
     <>
@@ -218,16 +226,36 @@ export default function SellerProfileView({
       )}
 
       <section>
+        {isOwner && pendingWithoutPhotos.length > 0 && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 space-y-2">
+            <p className="font-medium text-red-900">Потрібно додати фото</p>
+            {pendingWithoutPhotos.map((listing) => (
+              <p key={listing.id} className="text-sm text-red-800">
+                Оголошення «{listing.title}» на модерації без фото.{" "}
+                <Link href={`/listings/${listing.id}/edit`} className="font-semibold underline">
+                  Додати фото зараз
+                </Link>
+              </p>
+            ))}
+          </div>
+        )}
+
         <h2 className="text-lg font-semibold mb-4">
-          Оголошення продавця ({seller.listings.length})
+          {isOwner ? "Мої оголошення" : "Оголошення продавця"} ({seller.listings.length})
         </h2>
         {seller.listings.length === 0 ? (
-          <p className="text-gray-500">Немає активних оголошень</p>
+          <p className="text-gray-500">
+            {isOwner ? "У вас поки немає оголошень" : "Немає активних оголошень"}
+          </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {seller.listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
+            {seller.listings.map((listing) =>
+              isOwner ? (
+                <SellerListingCard key={listing.id} listing={listing} />
+              ) : (
+                <ListingCard key={listing.id} listing={listing} />
+              )
+            )}
           </div>
         )}
       </section>

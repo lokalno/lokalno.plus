@@ -23,6 +23,12 @@ export default async function EditListingPage({ params }: Params) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Редагувати оголошення</h1>
+      {parsePhotos(listing.photos).length === 0 && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          У цьому оголошенні немає фото. Додайте хоча б одне зображення нижче і натисніть «Зберегти
+          зміни» — після цього адмін зможе підтвердити публікацію.
+        </div>
+      )}
       <ListingForm
         initial={{
           id: listing.id,

@@ -56,7 +56,9 @@ export default function AdminListingPhotos({ listingId }: AdminListingPhotosProp
         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border bg-gray-100 flex items-center justify-center text-3xl">
           📦
         </div>
-        <p className="text-[10px] text-red-600 max-w-[112px]">Фото відсутні в базі</p>
+        <p className="text-[10px] text-red-600 max-w-[112px] leading-tight">
+          Фото не збережено. Продавець має відредагувати оголошення.
+        </p>
       </div>
     );
   }

@@ -61,6 +61,21 @@ export default async function ListingPage({ params }: Params) {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <ViewTracker listingId={listing.id} isOwner={isOwner} />
 
+      {isOwner && photos.length === 0 && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="font-medium text-red-900">Додайте фото до оголошення</p>
+          <p className="text-sm text-red-800 mt-1">
+            Без фото оголошення не пройде модерацію і не з&apos;явиться в каталозі.
+          </p>
+          <Link
+            href={`/listings/${listing.id}/edit`}
+            className="inline-block mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Завантажити фото
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <ListingGallery photos={photos} title={listing.title} />
 

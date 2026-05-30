@@ -32,7 +32,7 @@ export default async function ProfilePage({
         banner: true,
         createdAt: true,
         listings: {
-          where: { status: "ACTIVE" },
+          where: { status: { in: ["ACTIVE", "PENDING"] } },
           include: { seller: { select: { name: true } } },
           orderBy: { createdAt: "desc" },
         },

@@ -6,9 +6,14 @@ import { useState } from "react";
 type AdminListingActionsProps = {
   listingId: string;
   status: string;
+  hasPhotos: boolean;
 };
 
-export default function AdminListingActions({ listingId, status }: AdminListingActionsProps) {
+export default function AdminListingActions({
+  listingId,
+  status,
+  hasPhotos,
+}: AdminListingActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -36,8 +41,9 @@ export default function AdminListingActions({ listingId, status }: AdminListingA
       {status === "PENDING" && (
         <button
           onClick={() => updateStatus("ACTIVE")}
-          disabled={loading}
-          className="text-sm bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 font-semibold"
+          disabled={loading || !hasPhotos}
+          title={!hasPhotos ? "Спочатку продавець має додати фото" : undefined}
+          className="text-sm bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ✓ Підтвердити
         </button>
