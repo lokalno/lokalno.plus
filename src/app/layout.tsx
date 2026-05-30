@@ -8,15 +8,24 @@ import { getSiteSettings } from "@/lib/site-settings";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSiteSettings();
-  return {
-    title: {
-      default: settings.siteName,
-      template: `%s | ${settings.siteName}`,
-    },
-    description: settings.tagline,
-  };
+  try {
+    const settings = await getSiteSettings();
+    return {
+      title: {
+        default: settings.siteName,
+        template: `%s | ${settings.siteName}`,
+      },
+      description: settings.tagline,
+    };
+  } catch {
+    return {
+      title: { default: "Локально", template: "%s | Локально" },
+      description: "Купуй і продавай локально в Україні",
+    };
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

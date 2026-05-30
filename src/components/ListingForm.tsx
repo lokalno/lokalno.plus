@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CONDITIONS, MAX_LISTING_PHOTOS, LISTING_PHOTO_MAX_BYTES, LISTING_PHOTO_MAX_WIDTH } from "@/lib/constants";
-import { compressImageFile } from "@/lib/compress-image";
 import { getListingPhotosPayloadSize, validateListingPhotos } from "@/lib/listing-photos";
+import { uploadPhotoFile } from "@/lib/upload-photo";
 import SettlementSearch from "@/components/SettlementSearch";
 
 type ListingFormProps = {
@@ -36,17 +36,10 @@ export default function ListingForm({ initial }: ListingFormProps) {
   const [error, setError] = useState("");
 
   async function uploadPhoto(file: File) {
-    const compressed = await compressImageFile(file, {
+    return uploadPhotoFile(file, {
       maxWidth: LISTING_PHOTO_MAX_WIDTH,
       maxBytes: LISTING_PHOTO_MAX_BYTES,
     });
-    const formData = new FormData();
-    formData.append("file", compressed);
-
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    return data.url as string;
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {

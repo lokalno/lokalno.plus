@@ -7,7 +7,7 @@ import SettlementSearch from "./SettlementSearch";
 import BannerUpload from "./BannerUpload";
 import { formatDate } from "@/lib/utils";
 import { formatStars, getRatingLabel, getFollowerLabel } from "@/lib/seller-stats";
-import { compressImageFile } from "@/lib/compress-image";
+import { uploadPhotoFile } from "@/lib/upload-photo";
 
 type ProfileFormProps = {
   initial: {
@@ -37,13 +37,7 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
   const [loading, setLoading] = useState(false);
 
   async function uploadAvatar(file: File) {
-    const compressed = await compressImageFile(file, { maxWidth: 800, maxBytes: 250_000 });
-    const formData = new FormData();
-    formData.append("file", compressed);
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    return data.url as string;
+    return uploadPhotoFile(file, { maxWidth: 800, maxBytes: 250_000 });
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {

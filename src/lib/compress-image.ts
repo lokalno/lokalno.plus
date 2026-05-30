@@ -10,7 +10,7 @@ export async function compressImageFile(
   const maxWidth = options.maxWidth ?? 1600;
   const maxBytes = options.maxBytes ?? 350_000;
 
-  if (!file.type.startsWith("image/")) {
+  if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif)$/i.test(file.name)) {
     throw new Error("Дозволені лише зображення (JPG, PNG, WEBP)");
   }
 
@@ -21,7 +21,12 @@ export async function compressImageFile(
     return file;
   }
 
-  const bitmap = await createImageBitmap(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("Формат фото не підтримується. Збережіть як JPG або PNG.");
+  }
   const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
 
   try {

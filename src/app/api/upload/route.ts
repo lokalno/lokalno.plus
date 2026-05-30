@@ -12,6 +12,10 @@ export const maxDuration = 30;
 
 const MAX_BYTES = LISTING_PHOTO_MAX_BYTES + 40_000;
 
+function dataUrlFromBuffer(buffer: Buffer, contentType: string) {
+  return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
@@ -51,11 +55,15 @@ export async function POST(request: Request) {
     const filename = `${randomUUID()}.${ext}`;
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(`uploads/${session.user.id}/${filename}`, buffer, {
-        access: "public",
-        contentType,
-      });
-      return NextResponse.json({ url: blob.url });
+      try {
+        const blob = await put(`uploads/${session.user.id}/${filename}`, buffer, {
+          access: "public",
+          contentType,
+        });
+        return NextResponse.json({ url: blob.url });
+      } catch {
+        // Blob misconfigured — fall back to inline data URL.
+      }
     }
 
     if (!process.env.VERCEL) {
@@ -65,9 +73,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ url: `/uploads/${filename}` });
     }
 
-    const base64 = buffer.toString("base64");
-    const dataUrl = `data:${contentType};base64,${base64}`;
-    return NextResponse.json({ url: dataUrl });
+    return NextResponse.json({ url: dataUrlFromBuffer(buffer, contentType) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Помилка завантаження";
     return NextResponse.json({ error: message }, { status: 500 });

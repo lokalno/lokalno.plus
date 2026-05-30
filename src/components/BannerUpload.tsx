@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { compressImageFile } from "@/lib/compress-image";
+import { uploadPhotoFile } from "@/lib/upload-photo";
 
 type BannerUploadProps = {
   initialBanner?: string | null;
@@ -17,12 +17,7 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
   const [message, setMessage] = useState("");
 
   async function uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    return data.url as string;
+    return uploadPhotoFile(file, { maxWidth: 1400, maxBytes: 350_000 });
   }
 
   async function saveBanner(url: string | null) {
@@ -40,8 +35,7 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
     setLoading(true);
     setMessage("");
     try {
-      const compressed = await compressImageFile(file, { maxWidth: 1400, maxBytes: 350_000 });
-      const url = await uploadFile(compressed);
+      const url = await uploadFile(file);
       await saveBanner(url);
       setBanner(url);
       setMessage("Банер збережено!");
