@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import OrderLabelButton from "@/components/OrderLabelDevNotice";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatOrderPaymentStatus } from "@/lib/order-payment";
@@ -180,13 +181,20 @@ export default function OrderDetailsModal({
           )}
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Link
-              href={`/orders/${order.id}/label`}
-              target="_blank"
-              className="inline-flex flex-1 items-center justify-center rounded-lg border border-violet-300 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100"
-            >
-              🖨️ Роздрукувати етикетку / QR
-            </Link>
+            {isSeller ? (
+              <OrderLabelButton
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100"
+                label="Етикетка / QR"
+              />
+            ) : (
+              <Link
+                href={`/orders/${order.id}/label`}
+                target="_blank"
+                className="inline-flex flex-1 items-center justify-center rounded-lg border border-violet-300 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100"
+              >
+                🖨️ Роздрукувати етикетку / QR
+              </Link>
+            )}
             <button
               type="button"
               onClick={onClose}

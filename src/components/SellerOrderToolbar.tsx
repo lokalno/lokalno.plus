@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
+import OrderLabelButton from "@/components/OrderLabelDevNotice";
 import type { OrderListItem } from "@/components/OrdersList";
 
 type SellerOrderToolbarProps = {
@@ -50,14 +50,9 @@ export default function SellerOrderToolbar({ order }: SellerOrderToolbarProps) {
           <span aria-hidden>👁️</span>
           Деталі замовлення
         </button>
-        <Link
-          href={`/orders/${order.id}/label`}
-          target="_blank"
+        <OrderLabelButton
           className={`${toolbarBtnBase} border border-violet-200 bg-violet-50 text-violet-900 hover:border-violet-300 hover:bg-violet-100`}
-        >
-          <span aria-hidden>🖨️</span>
-          Етикетка / QR
-        </Link>
+        />
         {order.status === "PENDING" && (
           <button
             type="button"
