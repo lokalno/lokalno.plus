@@ -37,7 +37,10 @@ export default async function AdminOrdersPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">🛒 Замовлення</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Останні {orders.length} замовлень з номерами {formatOrderNumber(10001)} …
+          Останні {orders.length} замовлень ·{" "}
+          <Link href="/admin/order-support" className="font-medium text-brand-700 hover:underline">
+            пошук за ORD-номером →
+          </Link>
         </p>
       </div>
 
