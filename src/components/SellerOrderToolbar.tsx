@@ -48,7 +48,7 @@ export default function SellerOrderToolbar({ order }: SellerOrderToolbarProps) {
           className={`${toolbarBtnBase} border border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800`}
         >
           <span aria-hidden>👁️</span>
-          Деталі замовлення
+          Відправити замовлення покупцю
         </button>
         <OrderLabelButton
           className={`${toolbarBtnBase} border border-violet-200 bg-violet-50 text-violet-900 hover:border-violet-300 hover:bg-violet-100`}
