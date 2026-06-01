@@ -28,3 +28,36 @@ export function formatListingStock(stock: number): string {
   if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return `${n} штуки`;
   return `${n} штук`;
 }
+
+export type StockAvailabilityLevel = "none" | "last" | "low" | "normal";
+
+export function getStockAvailabilityLevel(stock: number): StockAvailabilityLevel {
+  if (stock <= 0) return "none";
+  if (stock === 1) return "last";
+  if (stock <= 5) return "low";
+  return "normal";
+}
+
+export function getListingStockBadgeText(stock: number): string {
+  const level = getStockAvailabilityLevel(stock);
+  if (level === "none") return "Немає в наявності";
+  if (level === "last") return "Остання штука на складі";
+  if (level === "low") return `Залишилось ${formatListingStock(stock)}`;
+  return `В наявності: ${formatListingStock(stock)}`;
+}
+
+export function getOrderQuantityHint(maxStock: number, quantity: number): string {
+  if (maxStock === 1) {
+    return "На складі лише 1 штука — замовити можна тільки її.";
+  }
+
+  if (quantity >= maxStock) {
+    return `Це максимум: на складі більше немає (лише ${formatListingStock(maxStock)}).`;
+  }
+
+  if (maxStock <= 5) {
+    return `На складі залишилось ${formatListingStock(maxStock)} — оберіть, скільки потрібно.`;
+  }
+
+  return `Доступно для замовлення: ${formatListingStock(maxStock)}.`;
+}

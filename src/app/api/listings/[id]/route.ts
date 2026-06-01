@@ -4,27 +4,40 @@ import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validateListingPhotos, hasListingPhotos } from "@/lib/listing-photos";
 import { validateListingStock } from "@/lib/listing-stock";
+import { validateItemLocation } from "@/lib/listing-location";
+import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
+  const session = await getServerSession(authOptions);
   const { id } = await params;
 
-  const listing = await prisma.listing.findUnique({
-    where: { id },
-    include: {
-      seller: {
-        select: { id: true, name: true, city: true, avatar: true, createdAt: true },
+  try {
+    const listing = await prisma.listing.findUnique({
+      where: { id },
+      include: {
+        seller: {
+          select: { id: true, name: true, city: true, avatar: true, createdAt: true },
+        },
       },
-    },
-  });
+    });
 
-  if (!listing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!listing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const isOwner = session?.user?.id === listing.sellerId;
+    const isAdmin = session?.user?.role === "ADMIN";
+    if (!isOwner && !isAdmin && listing.status !== "ACTIVE" && listing.status !== "SOLD") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(listing);
+  } catch {
+    return NextResponse.json({ error: "Оголошення тимчасово недоступне" }, { status: 503 });
   }
-
-  return NextResponse.json(listing);
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -67,13 +80,27 @@ export async function PATCH(request: Request, { params }: Params) {
 
     let autoStatus: string | undefined;
     if (body.stock !== undefined && body.status === undefined) {
-      if (body.stock > 0 && listing.status === "SOLD" && hasListingPhotos(listing.photos)) {
+      if (
+        body.stock > 0 &&
+        listing.status === "SOLD" &&
+        hasListingPhotos(listing.photos)
+      ) {
         autoStatus = "ACTIVE";
       }
     }
 
+    const sellerAllowedStatuses = ["ACTIVE", "SOLD", "HIDDEN"];
     if (body.status !== undefined) {
       const nextStatus = body.status;
+      if (!isAdmin && !sellerAllowedStatuses.includes(nextStatus)) {
+        return NextResponse.json({ error: "Невірний статус" }, { status: 400 });
+      }
+      if (!isAdmin && listing.status === "PENDING" && nextStatus === "ACTIVE") {
+        return NextResponse.json(
+          { error: "Оголошення на модерації — дочекайтеся схвалення адміністратора" },
+          { status: 400 }
+        );
+      }
       if (nextStatus === "ACTIVE" && !hasListingPhotos(listing.photos)) {
         const updatedPhotos =
           body.photos !== undefined ? body.photos : parsePhotos(listing.photos);
@@ -86,6 +113,25 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    if (body.itemLocation !== undefined) {
+      const itemLocationCheck = validateItemLocation(body.itemLocation);
+      if (!itemLocationCheck.ok) {
+        return NextResponse.json({ error: itemLocationCheck.error }, { status: 400 });
+      }
+
+      const forbiddenLocation = checkListingContent(itemLocationCheck.value, "");
+      if (forbiddenLocation) {
+        return NextResponse.json(
+          {
+            error: `Заборонене слово в позиції на складі: «${forbiddenLocation}».`,
+          },
+          { status: 400 }
+        );
+      }
+
+      body.itemLocation = itemLocationCheck.value;
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {
@@ -93,12 +139,19 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.description !== undefined ? { description: body.description.trim() } : {}),
         ...(body.price !== undefined ? { price: Number(body.price) } : {}),
         ...(body.category !== undefined ? { category: body.category } : {}),
+        ...(body.brand !== undefined
+          ? { brand: typeof body.brand === "string" && body.brand.trim() ? body.brand.trim() : null }
+          : {}),
         ...(body.condition !== undefined ? { condition: body.condition } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
+        ...(body.itemLocation !== undefined ? { itemLocation: body.itemLocation } : {}),
         ...(body.stock !== undefined ? { stock: body.stock } : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(autoStatus ? { status: autoStatus } : {}),
         ...(body.photos !== undefined ? { photos: JSON.stringify(body.photos) } : {}),
+        ...(body.allowPriceOffers !== undefined
+          ? { allowPriceOffers: Boolean(body.allowPriceOffers) }
+          : {}),
       },
     });
 

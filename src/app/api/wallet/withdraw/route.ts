@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertNotBanned } from "@/lib/user-check";
 import { validatePayoutCard, validateWithdrawalAmount } from "@/lib/wallet";
-
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
@@ -11,8 +11,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const body = await request.json();
+  const banCheck = await assertNotBanned(session.user.id);
+  if (!banCheck.ok) {
+    return NextResponse.json({ error: banCheck.error }, { status: 403 });
+  }
+
+  try {    const body = await request.json();
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -100,7 +104,17 @@ export async function POST(request: Request) {
       return created;
     });
 
-    return NextResponse.json(withdrawal, { status: 201 });
+    return NextResponse.json(
+      {
+        id: withdrawal.id,
+        amount: withdrawal.amount,
+        status: withdrawal.status,
+        cardLast4: withdrawal.cardLast4,
+        bankName: withdrawal.bankName,
+        createdAt: withdrawal.createdAt,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "INSUFFICIENT") {
       return NextResponse.json({ error: "Недостатньо коштів на балансі" }, { status: 400 });

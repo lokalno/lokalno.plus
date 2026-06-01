@@ -7,16 +7,20 @@ import MessagesClient from "@/components/MessagesClient";
 type SearchParams = Promise<{ listingId?: string; partnerId?: string }>;
 
 export default async function MessagesPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getServerSession(authOptions);
   const params = await searchParams;
+  const { listingId, partnerId } = params;
+  const inThread = Boolean(listingId && partnerId);
+  const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    redirect("/login");
+    const returnParams = new URLSearchParams();
+    if (listingId) returnParams.set("listingId", listingId);
+    if (partnerId) returnParams.set("partnerId", partnerId);
+    const returnTo = returnParams.toString() ? `/messages?${returnParams}` : "/messages";
+    redirect(`/login?callbackUrl=${encodeURIComponent(returnTo)}`);
   }
 
   const userId = session.user.id;
-  const { listingId, partnerId } = params;
-  const inThread = Boolean(listingId && partnerId);
 
   if (inThread) {
     await prisma.message.updateMany({
@@ -35,30 +39,47 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
     });
   }
 
-  const messages = await prisma.message.findMany({
-    where: {
-      AND: [
-        { OR: [{ senderId: userId }, { receiverId: userId }] },
-        ...(listingId ? [{ listingId }] : []),
-        ...(inThread
-          ? [
-              {
-                OR: [
-                  { senderId: userId, receiverId: partnerId },
-                  { senderId: partnerId, receiverId: userId },
-                ],
-              },
-            ]
-          : []),
-      ],
-    },
-    include: {
-      sender: { select: { id: true, name: true } },
-      receiver: { select: { id: true, name: true } },
-      listing: { select: { id: true, title: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const [messages, threadMeta] = await Promise.all([
+    prisma.message.findMany({
+      where: {
+        AND: [
+          { OR: [{ senderId: userId }, { receiverId: userId }] },
+          ...(listingId ? [{ listingId }] : []),
+          ...(inThread
+            ? [
+                {
+                  OR: [
+                    { senderId: userId, receiverId: partnerId },
+                    { senderId: partnerId, receiverId: userId },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      },
+      include: {
+        sender: { select: { id: true, name: true } },
+        receiver: { select: { id: true, name: true } },
+        listing: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    inThread && listingId && partnerId
+      ? Promise.all([
+          prisma.user.findUnique({
+            where: { id: partnerId },
+            select: { name: true },
+          }),
+          prisma.listing.findUnique({
+            where: { id: listingId },
+            select: { title: true },
+          }),
+        ]).then(([partner, listing]) => ({
+          partnerName: partner?.name ?? "Користувач",
+          listingTitle: listing?.title ?? "Товар",
+        }))
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -71,6 +92,8 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
         currentUserId={userId}
         listingId={listingId}
         partnerId={partnerId}
+        threadPartnerName={threadMeta?.partnerName}
+        threadListingTitle={threadMeta?.listingTitle}
       />
     </div>
   );

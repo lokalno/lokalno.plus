@@ -7,7 +7,7 @@ import ListingCard from "@/components/ListingCard";
 
 export default async function FavoritesPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect("/login?callbackUrl=/favorites");
 
   const favorites = await prisma.favorite.findMany({
     where: { userId: session.user.id },
@@ -33,12 +33,24 @@ export default async function FavoritesPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Обране ({listings.length})</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Обране</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Тут зібрані оголошення, які ви додали сердечком на сторінці товару. Зараз збережено:{" "}
+          <span className="font-semibold text-gray-900">{listings.length}</span>
+        </p>
+      </div>
 
       {listings.length === 0 ? (
-        <div className="bg-white rounded-xl border p-8 text-center text-gray-500">
-          <p className="mb-3">Немає обраних товарів</p>
-          <Link href="/" className="text-brand-700 hover:underline">Перейти до каталогу</Link>
+        <div className="rounded-xl border bg-white p-8 text-center text-gray-500">
+          <p className="mb-2 text-4xl">♡</p>
+          <p className="mb-1 font-medium text-gray-800">Поки немає обраних товарів</p>
+          <p className="mb-4 text-sm">
+            Натисніть сердечко на фото оголошення — воно з&apos;явиться тут.
+          </p>
+          <Link href="/" className="text-brand-700 hover:underline">
+            Перейти до каталогу
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

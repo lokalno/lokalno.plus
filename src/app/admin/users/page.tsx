@@ -1,12 +1,21 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 import AdminUserActions from "@/components/AdminUserActions";
+import AdminUsersSearch from "@/components/AdminUsersSearch";
 
-export default async function AdminUsersPage() {
+type SearchParams = Promise<{ q?: string }>;
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) redirect("/login");
@@ -14,7 +23,18 @@ export default async function AdminUsersPage() {
   const isAdmin = await requireAdmin(session.user.id);
   if (!isAdmin) redirect("/");
 
+  const query = params.q?.trim() || "";
+
   const users = await prisma.user.findMany({
+    where: query
+      ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+            { city: { contains: query, mode: "insensitive" } },
+          ],
+        }
+      : undefined,
     select: {
       id: true,
       email: true,
@@ -34,7 +54,24 @@ export default async function AdminUsersPage() {
       <Link href="/admin" className="text-sm text-gray-500 hover:text-brand-700 mb-4 inline-block">
         ← Назад до адмінки
       </Link>
-      <h1 className="text-2xl font-bold mb-6">Користувачі ({users.length})</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        Користувачі
+        {query ? ` · знайдено ${users.length}` : ` (${users.length})`}
+      </h1>
+      <p className="mb-4 text-sm text-gray-500">
+        Тільки адміністратор може блокувати або назавжди видалити профіль користувача.
+      </p>
+
+      <Suspense fallback={<div className="mb-6 h-11 rounded-xl bg-gray-100 animate-pulse" />}>
+        <AdminUsersSearch />
+      </Suspense>
+
+      {query && users.length === 0 && (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+          <p className="text-3xl mb-2">🔍</p>
+          <p>Нікого не знайдено за запитом «{query}»</p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {users.map((user) => (
@@ -54,7 +91,9 @@ export default async function AdminUsersPage() {
                   <span className="ml-1 text-xs bg-red-100 text-red-700 px-1 rounded">заблоковано</span>
                 )}
               </p>
-              <p className="text-sm text-gray-500">{user.email} · {user.city}</p>
+              <p className="text-sm text-gray-500">
+                {user.email} · {user.city}
+              </p>
               <p className="text-xs text-gray-400">
                 {user._count.listings} оголошень · {formatDate(user.createdAt)}
               </p>
@@ -64,6 +103,7 @@ export default async function AdminUsersPage() {
             </div>
             <AdminUserActions
               userId={user.id}
+              userName={user.name}
               banned={user.banned}
               isAdmin={user.role === "ADMIN"}
             />

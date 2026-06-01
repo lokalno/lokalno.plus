@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { getOrderTotalFromRecord, getOrderQuantity } from "@/lib/order-total";
 
 export async function creditSellerForPaidOrder(
   tx: Prisma.TransactionClient,
@@ -17,7 +18,7 @@ export async function creditSellerForPaidOrder(
     throw new Error("ORDER_CANCELLED");
   }
 
-  const amount = order.listing.price;
+  const amount = getOrderTotalFromRecord(order);
 
   await tx.order.update({
     where: { id: orderId },
@@ -56,7 +57,7 @@ export async function reversePaidOrder(
     return;
   }
 
-  const amount = order.listing.price;
+  const amount = getOrderTotalFromRecord(order);
 
   await tx.order.update({
     where: { id: orderId },

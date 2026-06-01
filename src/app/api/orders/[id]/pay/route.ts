@@ -35,6 +35,13 @@ export async function POST(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Замовлення скасовано" }, { status: 400 });
   }
 
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_MOCK_PAYMENT !== "true") {
+    return NextResponse.json(
+      { error: "Оплата тимчасово недоступна. Зверніться до продавця." },
+      { status: 503 }
+    );
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await creditSellerForPaidOrder(tx, id);

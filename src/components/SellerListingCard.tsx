@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { formatPrice, parsePhotos, formatViews } from "@/lib/utils";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
-import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, formatFavoriteCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
+import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
+import ListingFavoriteBadge from "@/components/ListingFavoriteBadge";
 
 type SellerListingCardProps = {
   listing: ListingWithSoldCount & {
@@ -14,20 +15,33 @@ type SellerListingCardProps = {
     stock: number;
     photos: string;
     views: number;
+    itemLocation?: string | null;
     seller: { name: string };
   };
+  compact?: boolean;
+  showStoragePosition?: boolean;
 };
 
-export default function SellerListingCard({ listing }: SellerListingCardProps) {
+export default function SellerListingCard({
+  listing,
+  compact = false,
+  showStoragePosition = false,
+}: SellerListingCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
   const soldCount = getListingSoldCount(listing);
   const favoriteCount = getListingFavoriteCount(listing);
 
+  const badgeClass = compact
+    ? "absolute bg-black/60 text-white text-[10px] px-1.5 py-0 rounded-md"
+    : "absolute bg-black/60 text-white text-xs px-2 py-0.5 rounded-full";
+
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+      className={`group bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${
+        compact ? "rounded-lg" : "rounded-xl"
+      }`}
     >
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
         {photo ? (
@@ -38,42 +52,77 @@ export default function SellerListingCard({ listing }: SellerListingCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">📦</div>
+          <div
+            className={`w-full h-full flex items-center justify-center text-gray-400 ${
+              compact ? "text-2xl" : "text-4xl"
+            }`}
+          >
+            📦
+          </div>
         )}
-        <span className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+        <span className={`${badgeClass} top-1.5 left-1.5`}>
           📷 {photos.length}
         </span>
-        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
-          📦 {listing.stock}
-        </span>
-        {soldCount > 0 && (
-          <span className="absolute bottom-2 right-2 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded-full">
-            ✓ {formatSoldCountLabel(soldCount)}
-          </span>
-        )}
-        {favoriteCount > 0 && (
-          <span className="absolute top-2 right-2 bg-rose-600/90 text-white text-xs px-2 py-0.5 rounded-full">
-            {formatFavoriteCountLabel(favoriteCount)}
-          </span>
-        )}
         {listing.status !== "ACTIVE" && (
           <span
-            className={`absolute bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full ${
-              favoriteCount > 0 ? "top-10 right-2" : "top-2 right-2"
+            className={`${
+              compact
+                ? "absolute top-7 left-1.5 bg-yellow-500 text-white text-[10px] px-1.5 py-0 rounded-md"
+                : "absolute top-10 left-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full"
             }`}
           >
             {LISTING_STATUSES[listing.status] || listing.status}
           </span>
         )}
+        <ListingFavoriteBadge
+          count={favoriteCount}
+          className={
+            compact ? "top-1.5 right-1.5 gap-0.5 px-1.5 py-0.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3" : ""
+          }
+        />
+        <span className={`${badgeClass} bottom-1.5 left-1.5`}>
+          📦 {listing.stock}
+        </span>
+        {soldCount > 0 && (
+          <span
+            className={`${
+              compact
+                ? "absolute bottom-1.5 right-1.5 bg-green-600/90 text-white text-[10px] px-1.5 py-0 rounded-md"
+                : "absolute bottom-2 right-2 bg-green-600/90 text-white text-xs px-2 py-0.5 rounded-full"
+            }`}
+          >
+            ✓ {formatSoldCountLabel(soldCount)}
+          </span>
+        )}
       </div>
-      <div className="p-3">
-        <h3 className="font-medium text-gray-900 truncate">{listing.title}</h3>
-        <p className="text-brand-700 font-bold mt-1">{formatPrice(listing.price)}</p>
-        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-          <span>{listing.city}</span>
-          <span>{CONDITIONS[listing.condition] || listing.condition}</span>
-        </div>
-        <p className="text-xs text-brand-700 font-medium mt-2 flex items-center gap-1">
+      <div className={compact ? "p-2" : "p-3"}>
+        <h3 className={`font-medium text-gray-900 truncate ${compact ? "text-xs" : ""}`}>
+          {listing.title}
+        </h3>
+        {showStoragePosition && listing.itemLocation && (
+          <p
+            className={`truncate font-mono font-semibold text-amber-900 ${
+              compact ? "mt-0.5 text-[10px]" : "mt-1 text-xs"
+            }`}
+            title={listing.itemLocation}
+          >
+            📍 {listing.itemLocation}
+          </p>
+        )}
+        <p className={`text-brand-700 font-bold ${compact ? "mt-0.5 text-sm" : "mt-1"}`}>
+          {formatPrice(listing.price)}
+        </p>
+        {!compact && (
+          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+            <span>{listing.city}</span>
+            <span>{CONDITIONS[listing.condition] || listing.condition}</span>
+          </div>
+        )}
+        <p
+          className={`text-brand-700 font-medium flex items-center gap-1 ${
+            compact ? "mt-1 text-[10px] text-gray-500" : "mt-2 text-xs"
+          }`}
+        >
           👁 {formatViews(listing.views)}
         </p>
       </div>

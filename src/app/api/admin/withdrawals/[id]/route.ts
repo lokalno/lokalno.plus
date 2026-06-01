@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { maskCardNumber } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
+function sanitizeWithdrawal<T extends { cardNumber: string }>(row: T) {
+  const { cardNumber, ...rest } = row;
+  return { ...rest, cardLast4: cardNumber.slice(-4), cardMasked: maskCardNumber(cardNumber) };
+}
 export async function PATCH(request: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
   const { id } = await params;
@@ -64,7 +69,7 @@ export async function PATCH(request: Request, { params }: Params) {
       return result;
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(sanitizeWithdrawal(updated));
   }
 
   const updated = await prisma.withdrawal.update({
@@ -76,5 +81,5 @@ export async function PATCH(request: Request, { params }: Params) {
     },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json(sanitizeWithdrawal(updated));
 }

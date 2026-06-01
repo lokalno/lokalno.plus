@@ -27,8 +27,11 @@ export async function POST(request: Request) {
 
   const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
 
+  if (process.env.NODE_ENV === "development") {
+    console.info("[forgot-password] reset link created for", normalized);
+  }
+
   return NextResponse.json({
-    message: "Посилання для скидання створено",
-    resetUrl,
+    message: "Якщо email існує, інструкції надіслано на пошту",
   });
 }

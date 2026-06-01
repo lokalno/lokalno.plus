@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { getSiteSettings } from "./site-settings";
 
 export async function getActiveUser(userId: string) {
   return prisma.user.findUnique({
@@ -7,7 +8,9 @@ export async function getActiveUser(userId: string) {
   });
 }
 
-export async function assertNotBanned(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function assertNotBanned(
+  userId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await getActiveUser(userId);
   if (!user) return { ok: false, error: "Користувача не знайдено" };
   if (user.banned) {
@@ -20,6 +23,10 @@ export async function assertNotBanned(userId: string): Promise<{ ok: true } | { 
 }
 
 export async function getInitialListingStatus(): Promise<"PENDING" | "ACTIVE"> {
-  const settings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
-  return settings?.preModeration !== false ? "PENDING" : "ACTIVE";
+  try {
+    const settings = await getSiteSettings();
+    return settings.preModeration !== false ? "PENDING" : "ACTIVE";
+  } catch {
+    return "PENDING";
+  }
 }

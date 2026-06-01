@@ -5,39 +5,73 @@ import { signOut } from "next-auth/react";
 import { useState } from "react";
 import type { Session } from "next-auth";
 import UserAvatar from "./UserAvatar";
+import OrdersNavLink from "./OrdersNavLink";
+import { FavoriteHeartIcon } from "./FavoriteButton";
+import {
+  NotificationCountBadge,
+  NotificationDot,
+  useHeaderNotifications,
+} from "./HeaderNotifications";
 
 type HeaderNavProps = {
   session: Session | null;
   unreadCount?: number;
+  unreadPriceOffers?: number;
+  favoriteCount?: number;
   pendingListings?: number;
   openSupport?: number;
   userAvatar?: string | null;
   userName?: string;
+  ordersHref?: string;
 };
 
 export default function HeaderNav({
   session,
   unreadCount = 0,
+  unreadPriceOffers = 0,
+  favoriteCount = 0,
   pendingListings = 0,
   openSupport = 0,
   userAvatar = null,
   userName = "",
+  ordersHref = "/orders",
 }: HeaderNavProps) {
   const isAdmin = session?.user?.role === "ADMIN";
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { counts } = useHeaderNotifications(Boolean(session?.user?.id));
+  const liveMessages = session?.user?.id ? counts.unreadMessages : unreadCount;
+  const livePriceOffers = session?.user?.id ? counts.unreadPriceOffers : unreadPriceOffers;
+  const liveTotal = liveMessages + livePriceOffers;
 
   const mobileLinks = session ? (
     <>
       <Link href="/listings/new" className="bg-brand-600 text-white px-3 py-2 rounded-xl hover:bg-brand-700 font-medium block text-center" onClick={() => setOpen(false)}>
         + Додати оголошення
       </Link>
-      <Link href="/favorites" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Обране</Link>
+      <Link href="/favorites" className="flex items-center gap-2 py-2 text-rose-700 font-medium" onClick={() => setOpen(false)}>
+        <FavoriteHeartIcon filled={favoriteCount > 0} className="h-5 w-5" />
+        Обране{favoriteCount > 0 ? ` (${favoriteCount})` : ""}
+      </Link>
       <Link href="/subscriptions" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Підписки</Link>
-      <Link href="/orders" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Замовлення</Link>
+      <OrdersNavLink href={ordersHref} className="text-gray-700 py-2 block" onNavigate={() => setOpen(false)}>
+        Мої замовлення
+      </OrdersNavLink>
       <Link href="/profile/wallet" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>💰 Баланс</Link>
-      <Link href="/messages" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>
-        Повідомлення{unreadCount > 0 ? ` (${unreadCount})` : ""}
+      <Link href="/messages" className="relative flex items-center gap-2 py-2 text-gray-700" onClick={() => setOpen(false)}>
+        <span className="relative inline-flex">
+          💬
+          <NotificationDot count={liveTotal} className="-right-0.5 -top-0.5" />
+        </span>
+        Повідомлення{liveMessages > 0 ? ` (${liveMessages})` : ""}
+        {livePriceOffers > 0 ? ` · пропозиції (${livePriceOffers})` : ""}
+      </Link>
+      <Link href="/profile/price-offers" className="relative flex items-center gap-2 py-2 text-gray-700" onClick={() => setOpen(false)}>
+        <span className="relative inline-flex">
+          💰
+          <NotificationDot count={livePriceOffers} className="-right-0.5 -top-0.5" />
+        </span>
+        Пропозиції цін{livePriceOffers > 0 ? ` (${livePriceOffers})` : ""}
       </Link>
       <Link href="/contact" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Підтримка</Link>
       <Link href="/profile" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>Мій профіль</Link>
@@ -75,20 +109,34 @@ export default function HeaderNav({
   return (
     <>
       <nav className="hidden lg:flex items-center gap-1 shrink-0">
-        <Link href="/favorites" className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Обране">
-          <span className="text-xl">♡</span>
-        </Link>
-        <Link href="/messages" className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Повідомлення">
-          <span className="text-xl">💬</span>
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 bg-brand-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
+        <Link
+          href="/favorites"
+          className="relative flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-gray-700 hover:bg-rose-50 md:px-3"
+          title="Обране — збережені оголошення"
+        >
+          <FavoriteHeartIcon filled={favoriteCount > 0} className="h-5 w-5" />
+          <span className="hidden text-sm font-medium md:inline">Обране</span>
+          {favoriteCount > 0 && (
+            <span className="absolute -top-0.5 right-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white md:static md:ml-0.5">
+              {favoriteCount > 99 ? "99+" : favoriteCount}
             </span>
           )}
         </Link>
-        <Link href="/orders" className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Замовлення">
-          <span className="text-xl">🔔</span>
+        <Link href="/messages" className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Повідомлення">
+          <span className="text-xl">💬</span>
+          <NotificationCountBadge count={liveMessages} />
         </Link>
+        <Link
+          href="/profile/price-offers"
+          className="relative hidden p-2.5 rounded-xl hover:bg-gray-100 text-gray-600 md:flex"
+          title="Пропозиції цін"
+        >
+          <span className="text-xl">💰</span>
+          <NotificationCountBadge count={livePriceOffers} />
+        </Link>
+        <OrdersNavLink href={ordersHref} className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Мої замовлення">
+          <span className="text-xl">🔔</span>
+        </OrdersNavLink>
 
         {isAdmin && (
           <>
@@ -144,9 +192,14 @@ export default function HeaderNav({
                 <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border shadow-lg py-1 z-50 text-sm">
                   <Link href="/profile" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Мій профіль</Link>
+                  <Link href="/favorites" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>
+                    ♡ Обране{favoriteCount > 0 ? ` (${favoriteCount})` : ""}
+                  </Link>
                   <Link href="/profile/settings" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Налаштування</Link>
                   <Link href="/profile/wallet" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>💰 Баланс</Link>
-                  <Link href="/orders" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Замовлення</Link>
+                  <OrdersNavLink href={ordersHref} className="block px-4 py-2 hover:bg-gray-50" onNavigate={() => setProfileOpen(false)}>
+                    🛒 Мої замовлення
+                  </OrdersNavLink>
                   <Link href="/subscriptions" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підписки</Link>
                   <Link href="/contact" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Підтримка</Link>
                   {isAdmin && (

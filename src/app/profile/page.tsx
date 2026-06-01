@@ -4,8 +4,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SellerProfileView from "@/components/SellerProfileView";
+import OrdersNavLink from "@/components/OrdersNavLink";
 
-type SearchParams = Promise<{ pending?: string }>;
+export const dynamic = "force-dynamic";
+
+type SearchParams = Promise<{ pending?: string; tab?: string }>;
 
 export default async function ProfilePage({
   searchParams,
@@ -21,7 +24,7 @@ export default async function ProfilePage({
 
   const userId = session.user.id;
 
-  const [user, followerCount] = await Promise.all([
+  const [user, followerCount, sellerOrders] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -51,12 +54,39 @@ export default async function ProfilePage({
       },
     }),
     prisma.sellerFollow.count({ where: { sellerId: userId } }),
+    prisma.order.findMany({
+      where: { sellerId: userId },
+      include: {
+        listing: true,
+        buyer: { select: { name: true } },
+        seller: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   if (!user) redirect("/login");
 
+  if (params.tab === "orders") {
+    redirect("/orders");
+  }
+
+  if (params.tab === "stats") {
+    redirect("/profile/analytics");
+  }
+
+  const profileTab =
+    params.tab === "reviews" ||
+    params.tab === "achievements" ||
+    params.tab === "followers" ||
+    params.tab === "stats" ||
+    params.tab === "about" ||
+    params.tab === "listings"
+      ? params.tab
+      : undefined;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto overflow-x-visible px-3 py-6 sm:px-4 sm:py-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold">Мій профіль</h1>
         <div className="flex flex-wrap gap-2">
@@ -72,6 +102,12 @@ export default async function ProfilePage({
           >
             💰 Мій баланс
           </Link>
+          <OrdersNavLink
+            href="/orders"
+            className="inline-flex items-center gap-1.5 rounded-xl border-2 border-brand-600 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100"
+          >
+            🛒 Мої замовлення
+          </OrdersNavLink>
           <Link
             href="/listings/new"
             className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
@@ -97,6 +133,12 @@ export default async function ProfilePage({
         showAsPublic
         backHref="/"
         backLabel="← До каталогу"
+        sellerOrders={sellerOrders.map((order) => ({
+          ...order,
+          createdAt: order.createdAt.toISOString(),
+        }))}
+        currentUserId={userId}
+        initialTab={profileTab}
       />
     </div>
   );

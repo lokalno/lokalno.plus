@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import FollowSellerButton from "./FollowSellerButton";
 import PublicFollowPreview from "./PublicFollowPreview";
 
 const lightButtonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60";
 
-const bannerButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/25 disabled:opacity-60";
+const bannerSecondaryButtonClass =
+  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/25 bg-zinc-900/70 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-zinc-800/85 disabled:opacity-60 md:rounded-xl md:px-3.5 md:py-2 md:text-sm";
 
 type SellerProfileActionsProps = {
   sellerId: string;
@@ -36,13 +35,15 @@ export default function SellerProfileActions({
   showAsPublic = false,
   inBanner = false,
 }: SellerProfileActionsProps) {
-  const router = useRouter();
-  const buttonClass = inBanner ? bannerButtonClass : lightButtonClass;
+  const secondaryClass = inBanner ? bannerSecondaryButtonClass : lightButtonClass;
 
   const chatHref =
     firstListingId != null
-      ? `/messages?listingId=${firstListingId}&partnerId=${sellerId}`
+      ? `/messages?listingId=${encodeURIComponent(firstListingId)}&partnerId=${encodeURIComponent(sellerId)}`
       : null;
+  const loginHref = chatHref
+    ? `/login?callbackUrl=${encodeURIComponent(chatHref)}`
+    : null;
 
   async function shareProfile() {
     const url =
@@ -62,20 +63,8 @@ export default function SellerProfileActions({
     }
   }
 
-  function openChat() {
-    if (!chatHref) {
-      alert("У продавця поки немає оголошень для чату.");
-      return;
-    }
-    if (!isLoggedIn) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(chatHref)}`);
-      return;
-    }
-    router.push(chatHref);
-  }
-
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${inBanner ? "justify-end" : ""}`}>
+    <div className={`flex flex-wrap items-center gap-1.5 md:gap-2 ${inBanner ? "justify-end" : ""}`}>
       {isOwner && showAsPublic ? (
         <PublicFollowPreview followerCount={followerCount} onDark={inBanner} hideFollowerCount />
       ) : !isOwner ? (
@@ -85,22 +74,38 @@ export default function SellerProfileActions({
           isOwner={false}
           initialFollowing={isFollowing}
           initialFollowerCount={followerCount}
+          variant={inBanner ? "bannerPremium" : "default"}
           onDark={inBanner}
           hideFollowerCount
         />
       ) : null}
 
-      <button type="button" onClick={shareProfile} className={buttonClass}>
+      {!isOwner &&
+        (chatHref ? (
+          <Link
+            href={isLoggedIn ? chatHref : loginHref!}
+            className={secondaryClass}
+            prefetch={false}
+          >
+            <span aria-hidden>💬</span>
+            Написати
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="У продавця поки немає оголошень для чату"
+            className={secondaryClass}
+          >
+            <span aria-hidden>💬</span>
+            Написати
+          </button>
+        ))}
+
+      <button type="button" onClick={shareProfile} className={secondaryClass}>
         <span aria-hidden>🔗</span>
         Поділитися
       </button>
-
-      {!isOwner && (
-        <button type="button" onClick={openChat} className={buttonClass}>
-          <span aria-hidden>💬</span>
-          Написати
-        </button>
-      )}
     </div>
   );
 }

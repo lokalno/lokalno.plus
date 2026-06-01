@@ -17,6 +17,8 @@ type SettlementSearchProps = {
   label?: string;
   required?: boolean;
   placeholder?: string;
+  hideHint?: boolean;
+  showLocationIcon?: boolean;
 };
 
 export default function SettlementSearch({
@@ -26,6 +28,8 @@ export default function SettlementSearch({
   label = "Населений пункт",
   required = false,
   placeholder = "Напр. Татарбунари, Київ або tatarbunary…",
+  hideHint = false,
+  showLocationIcon = false,
 }: SettlementSearchProps) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<Settlement[]>([]);
@@ -77,19 +81,42 @@ export default function SettlementSearch({
         {label}
         {required ? " *" : ""}
       </label>
-      <input
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          onChange(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        required={required}
-        placeholder={placeholder}
-        autoComplete="off"
-      />
-      <p className="text-[11px] text-gray-400 mt-1">Усі міста та села України — знайдіть через пошук</p>
+      <div className="relative">
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            onChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          required={required}
+          placeholder={placeholder}
+          autoComplete="off"
+          className={showLocationIcon ? "pr-10" : undefined}
+        />
+        {showLocationIcon && (
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </span>
+        )}
+      </div>
+      {!hideHint && (
+        <p className="text-[11px] text-gray-400 mt-1">Усі міста та села України — знайдіть через пошук</p>
+      )}
 
       {open && (
         <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">

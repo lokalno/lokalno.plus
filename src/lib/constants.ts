@@ -59,9 +59,42 @@ export const LISTING_PHOTO_MAX_WIDTH = 1200;
 
 export const CONDITIONS: Record<string, string> = {
   NEW: "Нове",
+  LIKE_NEW: "Вживане — як нове",
   GOOD: "Добрий стан",
   FAIR: "Задовільний",
 };
+
+export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[]> = {
+  Транспорт: ["Легкові авто", "Мото", "Вантажівки", "Запчастини", "Інше"],
+  Нерухомість: ["Квартири", "Будинки", "Земля", "Комерційна", "Оренда"],
+  Електроніка: ["Мобільні телефони", "Ноутбуки", "Планшети", "Аудіо", "Фото", "Інше"],
+  "Дім і сад": ["Меблі", "Кухня", "Інструменти", "Сад", "Декор"],
+  "Одяг і взуття": ["Чоловіче", "Жіноче", "Дитяче", "Взуття", "Аксесуари"],
+  "Для дітей": ["Іграшки", "Коляски", "Одяг", "Меблі", "Інше"],
+  "Спорт і відпочинок": ["Велосипеди", "Тренажери", "Туризм", "Ігри", "Інше"],
+  "Краса і здоров'я": ["Косметика", "Парфумерія", "Догляд", "Медтехніка"],
+  Послуги: ["Ремонт", "Навчання", "Краса", "Транспорт", "Інше"],
+  Тварини: ["Собаки", "Коти", "Птахи", "Акваріум", "Товари"],
+  "Хобі та розваги": ["Книги", "Музика", "Колекції", "Рукоділля", "Інше"],
+  Інше: ["Інше"],
+};
+
+export function formatListingCategory(main: string, sub?: string): string {
+  if (sub && sub !== "Інше") return `${main} > ${sub}`;
+  return main;
+}
+
+export function parseListingCategory(value: string): { main: string; sub: string } {
+  const parts = value.split(" > ").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return { main: parts[0], sub: parts.slice(1).join(" > ") };
+  }
+  const main = CATEGORIES.includes(parts[0] as (typeof CATEGORIES)[number])
+    ? parts[0]
+    : CATEGORIES[0];
+  const subs = CATEGORY_SUBCATEGORIES[main as (typeof CATEGORIES)[number]] ?? ["Інше"];
+  return { main, sub: subs[0] ?? "Інше" };
+}
 
 export const LISTING_STATUSES: Record<string, string> = {
   PENDING: "На модерації",
@@ -71,8 +104,9 @@ export const LISTING_STATUSES: Record<string, string> = {
 };
 
 export const ORDER_STATUSES: Record<string, string> = {
-  PENDING: "Очікує",
-  CONFIRMED: "Підтверджено",
+  PENDING: "В обробці",
+  CONFIRMED: "Прийнято продавцем",
+  SHIPPED: "Відправлено",
   COMPLETED: "Завершено",
   CANCELLED: "Скасовано",
 };

@@ -13,3 +13,14 @@ input, select, textarea {
 button:disabled {
   @apply opacity-50 cursor-not-allowed;
 }
+
+@media print {
+  header,
+  footer {
+    display: none !important;
+  }
+
+  main {
+    min-height: auto !important;
+  }
+}

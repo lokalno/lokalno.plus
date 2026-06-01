@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertNotBanned } from "@/lib/user-check";
 import { isValidMessageImageUrl } from "@/lib/message-image";
-
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
@@ -52,8 +52,8 @@ export async function GET(request: Request) {
       listing: { select: { id: true, title: true } },
     },
     orderBy: { createdAt: "asc" },
+    take: inThread ? 500 : 150,
   });
-
   return NextResponse.json(
     messages.map((m) => ({
       ...m,
@@ -69,8 +69,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const body = await request.json();
+  const banCheck = await assertNotBanned(session.user.id);
+  if (!banCheck.ok) {
+    return NextResponse.json({ error: banCheck.error }, { status: 403 });
+  }
+
+  try {    const body = await request.json();
     const { listingId, receiverId, content, imageUrl } = body;
     const text = typeof content === "string" ? content.trim() : "";
     const photo = typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : null;

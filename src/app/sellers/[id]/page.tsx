@@ -46,7 +46,7 @@ export default async function SellerPage({ params }: Params) {
 
   if (!seller || seller.banned) notFound();
 
-  const [followerCount, followRecord] = await Promise.all([
+  const [followerCount, followRecord, chatListing] = await Promise.all([
     prisma.sellerFollow.count({ where: { sellerId: id } }),
     session?.user?.id
       ? prisma.sellerFollow.findUnique({
@@ -55,16 +55,25 @@ export default async function SellerPage({ params }: Params) {
           },
         })
       : null,
+    prisma.listing.findFirst({
+      where: {
+        sellerId: id,
+        status: { in: ["ACTIVE", "SOLD", "PENDING"] },
+      },
+      orderBy: [{ createdAt: "desc" }],
+      select: { id: true },
+    }),
   ]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto overflow-x-visible px-3 py-6 sm:px-4 sm:py-8">
       <SellerProfileView
         seller={seller}
         followerCount={followerCount}
         isLoggedIn={Boolean(session)}
         isFollowing={Boolean(followRecord)}
         isOwner={false}
+        chatListingId={chatListing?.id}
       />
     </div>
   );

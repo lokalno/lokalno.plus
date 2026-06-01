@@ -11,7 +11,7 @@ type FollowSellerButtonProps = {
   initialFollowerCount: number;
   compact?: boolean;
   onDark?: boolean;
-  variant?: "default" | "hero";
+  variant?: "default" | "hero" | "bannerPremium";
   hideFollowerCount?: boolean;
 };
 
@@ -58,7 +58,13 @@ export default function FollowSellerButton({
     : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700 shadow-md";
 
   const buttonClass =
-    variant === "hero"
+    variant === "bannerPremium"
+      ? `inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition disabled:opacity-60 md:rounded-xl md:px-3.5 md:py-2 md:text-sm ${
+          following
+            ? "border border-white/30 bg-white/15 text-white backdrop-blur-md hover:bg-white/25"
+            : "bg-brand-600 text-white shadow-md hover:bg-brand-700"
+        }`
+      : variant === "hero"
       ? `inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${heroClass}`
       : compact
         ? `text-xs px-3 py-1.5 rounded-lg border font-medium ${
@@ -81,9 +87,11 @@ export default function FollowSellerButton({
           }`;
 
   return (
-    <div className={variant === "hero" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
+    <div className={variant === "hero" || variant === "bannerPremium" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
       <button type="button" onClick={toggle} disabled={loading} className={buttonClass}>
-        {onDark ? (
+        {variant === "bannerPremium" ? (
+          <>{following ? "✓ Підписано" : "+ Підписатися"}</>
+        ) : onDark ? (
           <>{following ? "✓ Підписано" : "Підписатися"}</>
         ) : (
           <>{following ? "✓ Підписано" : "📌 Підписатися"}</>

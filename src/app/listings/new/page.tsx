@@ -11,9 +11,8 @@ export default async function NewListingPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Додати оголошення</h1>
-      <ListingForm />
+    <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+      <ListingForm variant="create" />
     </div>
   );
 }

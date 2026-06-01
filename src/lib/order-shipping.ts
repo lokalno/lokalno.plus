@@ -102,3 +102,22 @@ export function formatOrderDelivery(order: {
     `Nova Poshta: ${order.deliveryWarehouse}`,
   ];
 }
+
+export function validateNovaPoshtaTtn(value: unknown): { ok: true; ttn: string } | { ok: false; error: string } {
+  const raw = typeof value === "string" ? value.trim() : "";
+  const digits = raw.replace(/\D/g, "");
+
+  if (digits.length < 10 || digits.length > 14) {
+    return { ok: false, error: "Вкажіть коректний номер ТТН Nova Poshta (10–14 цифр)" };
+  }
+
+  return { ok: true, ttn: digits };
+}
+
+export function getNovaPoshtaTrackingUrl(ttn: string): string {
+  return `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
+}
+
+export function formatNovaPoshtaTtn(ttn: string): string {
+  return ttn.replace(/\D/g, "");
+}

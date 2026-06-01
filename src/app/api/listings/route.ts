@@ -6,6 +6,7 @@ import { assertNotBanned, getInitialListingStatus } from "@/lib/user-check";
 import { checkListingContent } from "@/lib/moderation";
 import { validateListingPhotos } from "@/lib/listing-photos";
 import { validateListingStock } from "@/lib/listing-stock";
+import { validateItemLocation } from "@/lib/listing-location";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,32 +14,36 @@ export async function GET(request: Request) {
   const category = searchParams.get("category");
   const q = searchParams.get("q");
   const sellerId = searchParams.get("sellerId");
-  const status = searchParams.get("status") || "ACTIVE";
+  const statusParam = searchParams.get("status") || "ACTIVE";
+  const allowedStatuses = ["ACTIVE", "SOLD"];
+  const status = allowedStatuses.includes(statusParam) ? statusParam : "ACTIVE";
 
-  const listings = await prisma.listing.findMany({
-    where: {
-      status,
-      ...(city ? { city } : {}),
-      ...(category ? { category } : {}),
-      ...(sellerId ? { sellerId } : {}),
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q } },
-              { description: { contains: q } },
-            ],
-          }
-        : {}),
-    },
-    include: {
-      seller: {
-        select: { id: true, name: true, city: true, avatar: true },
+  try {
+    const listings = await prisma.listing.findMany({
+      where: {
+        status,
+        ...(city ? { city } : {}),
+        ...(category ? { category } : {}),
+        ...(sellerId ? { sellerId } : {}),
+        ...(q
+          ? {
+              OR: [{ title: { contains: q } }, { description: { contains: q } }],
+            }
+          : {}),
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      include: {
+        seller: {
+          select: { id: true, name: true, city: true, avatar: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
 
-  return NextResponse.json(listings);
+    return NextResponse.json(listings);
+  } catch {
+    return NextResponse.json({ error: "Каталог тимчасово недоступний" }, { status: 503 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -55,7 +60,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, condition, city, photos, stock } = body;
+    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers } =
+      body;
 
     if (!title || !description || !price || !category || !condition || !city) {
       return NextResponse.json(
@@ -64,12 +70,30 @@ export async function POST(request: Request) {
       );
     }
 
+    const itemLocationCheck = validateItemLocation(itemLocation);
+    if (!itemLocationCheck.ok) {
+      return NextResponse.json({ error: itemLocationCheck.error }, { status: 400 });
+    }
+
     const forbidden = checkListingContent(title.trim(), description.trim());
     if (forbidden) {
       return NextResponse.json(
         { error: `Заборонене слово в оголошенні: «${forbidden}». Оголошення не опубліковано.` },
         { status: 400 }
       );
+    }
+
+    const normalizedItemLocation = itemLocationCheck.value;
+    if (normalizedItemLocation) {
+      const forbiddenLocation = checkListingContent(normalizedItemLocation, "");
+      if (forbiddenLocation) {
+        return NextResponse.json(
+          {
+            error: `Заборонене слово в розташуванні товару: «${forbiddenLocation}». Оголошення не опубліковано.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const photosCheck = validateListingPhotos(photos);
@@ -90,10 +114,13 @@ export async function POST(request: Request) {
         description: description.trim(),
         price: Number(price),
         category,
+        brand: typeof brand === "string" && brand.trim() ? brand.trim() : null,
         condition,
         city,
+        itemLocation: normalizedItemLocation,
         photos: JSON.stringify(photosCheck.photos),
         stock: stockCheck.stock,
+        allowPriceOffers: Boolean(allowPriceOffers),
         sellerId: session.user.id,
         status: initialStatus,
       },

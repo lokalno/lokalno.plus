@@ -9,6 +9,18 @@ import MarketplaceCard from "@/components/MarketplaceCard";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import Pagination from "@/components/Pagination";
 import { LISTINGS_PER_PAGE, parsePageParam } from "@/lib/catalog";
+import type { ListingWithSoldCount } from "@/lib/listing-sales";
+
+type HomeListing = ListingWithSoldCount & {
+  id: string;
+  title: string;
+  price: number;
+  city: string;
+  photos: string;
+  createdAt: Date;
+  views?: number;
+  seller?: { name: string };
+};
 
 const listingSoldCountInclude = {
   _count: {
@@ -87,15 +99,31 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     ...(Object.keys(priceFilter).length > 0 ? { price: priceFilter } : {}),
   };
 
-  const [
-    total,
-    listings,
-    recommended,
-    popularNearby,
-    latestListings,
-    cityGroups,
-    sellerRows,
-  ] = await Promise.all([
+  let total = 0;
+  let listings: HomeListing[] = [];
+  let recommended: HomeListing[] = [];
+  let popularNearby: HomeListing[] = [];
+  let latestListings: {
+    id: string;
+    title: string;
+    price: number;
+    photos: string;
+    createdAt: Date;
+  }[] = [];
+  let cityGroups: { city: string; _count: { city: number } }[] = [];
+  let sellerRows: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    listings: { id: string }[];
+    reviewsReceived: { rating: number }[];
+    _count: { followers: number };
+  }[] = [];
+  let dbUnavailable = false;
+
+  try {
+    [total, listings, recommended, popularNearby, latestListings, cityGroups, sellerRows] =
+      await Promise.all([
     prisma.listing.count({ where }),
     prisma.listing.findMany({
       where,
@@ -149,6 +177,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       take: 30,
     }),
   ]);
+  } catch {
+    dbUnavailable = true;
+  }
 
   const popularCities = cityGroups.map((g) => ({ city: g.city, count: g._count.city }));
 
@@ -182,6 +213,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
+      {dbUnavailable && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Каталог тимчасово недоступний — база даних оновлюється. Спробуйте оновити сторінку через
+          кілька хвилин.
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left sidebar */}
         <aside className="lg:col-span-2 hidden lg:block">

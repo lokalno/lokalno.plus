@@ -15,7 +15,8 @@
 
    | Name | Value |
    |------|-------|
-   | `DATABASE_URL` | рядок з Neon |
+   | `DATABASE_URL` | рядок з Neon (pooled, для застосунку) |
+   | `DATABASE_URL_UNPOOLED` | direct connection з Neon (для `prisma db push`) |
    | `NEXTAUTH_SECRET` | довгий випадковий рядок (32+ символів) |
    | `NEXTAUTH_URL` | `https://lokalno.plus` |
 
@@ -51,7 +52,11 @@ npx prisma db seed
 
 - Фото зберігаються через `/api/upload` (Vercel Blob або вбудовано в базу).
 - Рекомендовано: Vercel → **Storage → Blob** → Create → Connect to project (додає `BLOB_READ_WRITE_TOKEN`).
-- Після змін у `prisma/schema.prisma` один раз локально: `npx prisma db push` (з `DATABASE_URL` від Neon).
+- Після змін у `prisma/schema.prisma` один раз локально (з `.env` де є обидва `DATABASE_URL` і `DATABASE_URL_UNPOOLED`):
+
+```bash
+npx prisma db push
+```
 
 ## Далі
 

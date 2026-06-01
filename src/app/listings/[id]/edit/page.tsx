@@ -33,16 +33,20 @@ export default async function EditListingPage({ params }: Params) {
         Тут можна змінити ціну, опис, фото та <strong>кількість на складі</strong> в будь-який час.
       </p>
       <ListingForm
+        variant="edit"
         initial={{
           id: listing.id,
           title: listing.title,
           description: listing.description,
           price: listing.price,
           category: listing.category,
+          brand: listing.brand,
           condition: listing.condition,
           city: listing.city,
+          itemLocation: listing.itemLocation,
           stock: listing.stock,
           photos: parsePhotos(listing.photos),
+          allowPriceOffers: listing.allowPriceOffers,
         }}
       />
     </div>

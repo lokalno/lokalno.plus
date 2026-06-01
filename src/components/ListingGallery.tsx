@@ -2,13 +2,28 @@
 
 import { useState } from "react";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import FavoriteButton from "@/components/FavoriteButton";
 
 type ListingGalleryProps = {
   photos: string[];
   title: string;
+  compact?: boolean;
+  favorite?: {
+    listingId: string;
+    isLoggedIn: boolean;
+    initialFavorited: boolean;
+  };
 };
 
-export default function ListingGallery({ photos, title }: ListingGalleryProps) {
+const COMPACT_GALLERY_MAX = "max-w-[calc(260px+6cm)]";
+const COMPACT_GALLERY_HEIGHT = "max-h-[calc(260px+6cm)]";
+
+export default function ListingGallery({
+  photos,
+  title,
+  compact = false,
+  favorite,
+}: ListingGalleryProps) {
   const [active, setActive] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -20,9 +35,23 @@ export default function ListingGallery({ photos, title }: ListingGalleryProps) {
     setLightboxOpen(true);
   }
 
+  function showPrev() {
+    if (photos.length <= 1) return;
+    setActive((index) => (index - 1 + photos.length) % photos.length);
+  }
+
+  function showNext() {
+    if (photos.length <= 1) return;
+    setActive((index) => (index + 1) % photos.length);
+  }
+
   if (photos.length === 0) {
     return (
-      <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center text-6xl">
+      <div
+        className={`flex items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-4xl ${
+          compact ? `aspect-[4/5] w-full ${COMPACT_GALLERY_MAX} ${COMPACT_GALLERY_HEIGHT}` : "aspect-square"
+        }`}
+      >
         📦
       </div>
     );
@@ -30,46 +59,80 @@ export default function ListingGallery({ photos, title }: ListingGalleryProps) {
 
   return (
     <>
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={() => openLightbox(active)}
-          className="relative block w-full rounded-xl border overflow-hidden group cursor-zoom-in"
-          aria-label="Відкрити фото на весь екран"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={main}
-            alt={title}
-            className="w-full aspect-square object-cover group-hover:brightness-95 transition"
-          />
-          <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white">
-            🔍 На весь екран
-          </span>
-        </button>
+      <div className={`space-y-2 ${compact ? `w-full ${COMPACT_GALLERY_MAX}` : ""}`}>
+        <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          {favorite && (
+            <FavoriteButton
+              listingId={favorite.listingId}
+              isLoggedIn={favorite.isLoggedIn}
+              initialFavorited={favorite.initialFavorited}
+              variant="gallery"
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => openLightbox(active)}
+            className="group relative block w-full cursor-zoom-in"
+            aria-label="Відкрити фото на весь екран"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={main}
+              alt={title}
+              className={`w-full object-cover transition group-hover:brightness-[0.98] ${
+                compact ? `aspect-[4/5] ${COMPACT_GALLERY_HEIGHT}` : "aspect-square"
+              }`}
+            />
+          </button>
+
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={showPrev}
+                className={`absolute left-2 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 shadow-md transition hover:bg-white ${
+                  compact ? "h-8 w-8 text-base" : "left-3 h-10 w-10 text-lg"
+                }`}
+                aria-label="Попереднє фото"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={showNext}
+                className={`absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 shadow-md transition hover:bg-white ${
+                  compact ? "h-8 w-8 text-base" : "right-3 h-10 w-10 text-lg"
+                }`}
+                aria-label="Наступне фото"
+              >
+                ›
+              </button>
+            </>
+          )}
+        </div>
 
         {photos.length > 1 && (
-          <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
             {photos.map((photo, i) => (
               <button
                 key={i}
                 type="button"
-                onClick={() => openLightbox(i)}
-                className={`aspect-square rounded-lg overflow-hidden border-2 cursor-zoom-in ${
-                  active === i ? "border-brand-600" : "border-transparent"
+                onClick={() => setActive(i)}
+                className={`shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                  compact ? "h-11 w-11" : "h-16 w-16"
+                } ${
+                  active === i ? "border-brand-600 ring-1 ring-brand-600" : "border-gray-200"
                 }`}
-                aria-label={`Відкрити фото ${i + 1}`}
+                aria-label={`Фото ${i + 1}`}
+                aria-current={active === i ? "true" : undefined}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="" className="w-full h-full object-cover" />
+                <img src={photo} alt="" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
         )}
-
-        <p className="text-xs text-gray-400 text-center">
-          {photos.length} фото · натисніть, щоб відкрити
-        </p>
       </div>
 
       <PhotoLightbox

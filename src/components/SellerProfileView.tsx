@@ -1,20 +1,22 @@
 import Link from "next/link";
-import { formatDate, formatSellerLocation, parsePhotos } from "@/lib/utils";
+import { formatSellerLocation, parsePhotos } from "@/lib/utils";
 import { resolveSellerBannerUrl } from "@/lib/seller-banner";
 import {
-  formatStars,
+  formatMemberSinceFull,
+  formatMemberTenure,
   getFollowerLabel,
+  getPositiveReviewPercent,
   getRatingLabel,
   getSellerLevel,
   isVerifiedSeller,
   SELLER_LEVEL_LABELS,
   SELLER_LEVEL_STYLES,
 } from "@/lib/seller-stats";
-import ListingCard from "./ListingCard";
-import SellerListingCard from "./SellerListingCard";
 import UserAvatar from "./UserAvatar";
 import BannerUpload from "./BannerUpload";
 import SellerProfileActions from "./SellerProfileActions";
+import SellerProfileTabs from "./SellerProfileTabs";
+import type { OrderListItem } from "./OrdersList";
 
 type Review = {
   id: string;
@@ -58,17 +60,39 @@ type SellerProfileViewProps = {
   backHref?: string;
   backLabel?: string;
   profilePath?: string;
+  chatListingId?: string;
+  sellerOrders?: OrderListItem[];
+  currentUserId?: string;
+  initialTab?: "listings" | "orders" | "about" | "reviews" | "followers" | "stats" | "achievements";
 };
 
-function formatMemberSince(date: Date) {
-  return new Intl.DateTimeFormat("uk-UA", { month: "long", year: "numeric" }).format(date);
-}
-
-function GlassStatCard({ label, value }: { label: string; value: string }) {
+function PremiumStatCard({
+  icon,
+  iconClassName,
+  label,
+  value,
+  subtext,
+  subtextClassName = "text-zinc-400",
+}: {
+  icon: string;
+  iconClassName: string;
+  label: string;
+  value: string;
+  subtext: string;
+  subtextClassName?: string;
+}) {
   return (
-    <div className="min-w-[120px] shrink-0 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 backdrop-blur-md">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{label}</p>
-      <p className="mt-1 text-lg font-bold text-white sm:text-xl">{value}</p>
+    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/55 p-2 backdrop-blur-md md:rounded-2xl md:p-2.5">
+      <div
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm backdrop-blur-sm md:h-9 md:w-9 md:text-base ${iconClassName}`}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0 leading-tight">
+        <p className="text-[10px] text-zinc-400 md:text-[11px]">{label}</p>
+        <p className="truncate text-sm font-bold text-white md:text-base">{value}</p>
+        <p className={`truncate text-[10px] md:text-[11px] ${subtextClassName}`}>{subtext}</p>
+      </div>
     </div>
   );
 }
@@ -84,14 +108,20 @@ export default function SellerProfileView({
   backHref = "/",
   backLabel = "← До каталогу",
   profilePath,
+  chatListingId,
+  sellerOrders,
+  currentUserId,
+  initialTab,
 }: SellerProfileViewProps) {
   const reviewCount = seller.reviewsReceived.length;
   const listingCount = seller.listings.length;
+  const activeListingCount = seller.listings.filter((listing) => listing.status === "ACTIVE").length;
   const avgRating =
     reviewCount > 0
-      ? seller.reviewsReceived.reduce((s, r) => s + r.rating, 0) / reviewCount
+      ? seller.reviewsReceived.reduce((sum, review) => sum + review.rating, 0) / reviewCount
       : null;
   const verified = isVerifiedSeller(reviewCount, avgRating);
+  const positiveReviewPercent = getPositiveReviewPercent(seller.reviewsReceived);
   const sellerLevel = getSellerLevel({
     listingCount,
     reviewCount,
@@ -99,13 +129,17 @@ export default function SellerProfileView({
     followerCount,
   });
   const resolvedProfilePath = profilePath ?? (isOwner ? "/profile" : `/sellers/${seller.id}`);
-  const messageListing =
-    seller.listings.find((listing) => listing.status === "ACTIVE") ?? seller.listings[0];
+  const messageListingId =
+    chatListingId ??
+    seller.listings.find((listing) => listing.status === "ACTIVE")?.id ??
+    seller.listings[0]?.id;
   const bannerUrl = resolveSellerBannerUrl(seller.banner);
+  const memberSince = formatMemberSinceFull(seller.createdAt);
+  const memberTenure = formatMemberTenure(seller.createdAt);
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map((star) => ({
     star,
-    count: seller.reviewsReceived.filter((r) => r.rating === star).length,
+    count: seller.reviewsReceived.filter((review) => review.rating === star).length,
   }));
 
   const pendingWithoutPhotos = isOwner
@@ -114,192 +148,189 @@ export default function SellerProfileView({
       )
     : [];
 
+  const pendingNotice =
+    isOwner && pendingWithoutPhotos.length > 0 ? (
+      <div className="mb-4 space-y-2 rounded-2xl border border-red-200 bg-red-50 p-4">
+        <p className="font-medium text-red-900">Потрібно додати фото</p>
+        {pendingWithoutPhotos.map((listing) => (
+          <p key={listing.id} className="text-sm text-red-800">
+            Оголошення «{listing.title}» на модерації без фото.{" "}
+            <Link href={`/listings/${listing.id}/edit`} className="font-semibold underline">
+              Додати фото зараз
+            </Link>
+          </p>
+        ))}
+      </div>
+    ) : null;
+
+  const actions = (
+    <SellerProfileActions
+      sellerId={seller.id}
+      sellerName={seller.name}
+      profilePath={resolvedProfilePath}
+      firstListingId={messageListingId}
+      isLoggedIn={isLoggedIn}
+      isFollowing={isFollowing}
+      followerCount={followerCount}
+      isOwner={isOwner}
+      showAsPublic={showAsPublic}
+      inBanner
+    />
+  );
+
   return (
     <>
-      <section className="relative mb-8">
-        <div className="relative h-[360px] overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={bannerUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+      <section className="relative mb-0 ml-[calc(50%-50vw+1cm)] w-[calc(100vw-2cm)] max-w-none overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/10">
+          <div className="relative h-[260px] bg-zinc-950 md:h-[280px] lg:h-[300px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={bannerUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-black/55" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/95 via-black/60 to-black/20" />
 
-          <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
+            {showOwnerBannerEdit && <BannerUpload initialBanner={seller.banner} compact />}
 
-          {showOwnerBannerEdit && <BannerUpload initialBanner={seller.banner} compact />}
+            <div className="relative z-10 flex h-full flex-col justify-between gap-2.5 p-3 md:gap-3 md:p-4 lg:p-5">
+              <div className="flex items-start justify-between gap-2 md:gap-3">
+                <div className="flex min-w-0 flex-1 items-start gap-2.5 md:gap-3">
+                  <UserAvatar
+                    name={seller.name}
+                    avatar={seller.avatar}
+                    size="banner"
+                    showOnline
+                  />
 
-          <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-8">
-            <div className="flex items-start justify-between gap-3">
-              <span
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold tracking-wide backdrop-blur-md ${SELLER_LEVEL_STYLES[sellerLevel]}`}
-              >
-                {sellerLevel === "TOP" && <span aria-hidden>👑</span>}
-                {sellerLevel === "TRUSTED" && <span aria-hidden>🛡️</span>}
-                {sellerLevel === "NEW" && <span aria-hidden>✨</span>}
-                {SELLER_LEVEL_LABELS[sellerLevel]}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex min-w-0 items-end gap-4">
-                <div className="shrink-0 rounded-full ring-4 ring-white/90 shadow-lg">
-                  <UserAvatar name={seller.name} avatar={seller.avatar} size="2xl" />
-                </div>
-
-                <div className="min-w-0 pb-1 text-white">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-sm sm:text-4xl">
-                      {seller.name}
-                    </h1>
-                    {verified && (
-                      <span
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white shadow-md"
-                        title="Перевірений продавець"
-                      >
-                        ✓
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="mt-1 text-sm text-white/90 sm:text-base">
-                    {formatSellerLocation(seller.city)}
-                  </p>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/85">
-                    {avgRating !== null ? (
-                      <>
-                        <span className="inline-flex items-center gap-1.5 font-medium text-white">
-                          <span className="text-yellow-300">{formatStars(avgRating)}</span>
-                          {avgRating.toFixed(1)}
+                  <div className="min-w-0 flex-1 text-white">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h1 className="truncate text-xl font-bold tracking-tight drop-shadow-sm md:text-2xl">
+                        {seller.name}
+                      </h1>
+                      {verified && (
+                        <span
+                          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white shadow-md md:h-6 md:w-6 md:text-xs"
+                          title="Перевірений продавець"
+                        >
+                          ✓
                         </span>
-                        <span className="text-white/50">•</span>
-                        <span>{getRatingLabel(reviewCount)}</span>
-                      </>
-                    ) : (
-                      <span>Поки немає відгуків</span>
-                    )}
-                    <span className="text-white/50">•</span>
-                    <span>{getFollowerLabel(followerCount)}</span>
+                      )}
+                    </div>
+
+                    <span
+                      className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide backdrop-blur-sm md:mt-1.5 md:px-2.5 md:text-xs ${SELLER_LEVEL_STYLES[sellerLevel]}`}
+                    >
+                      {sellerLevel === "TOP" && <span aria-hidden>👑</span>}
+                      {sellerLevel === "TRUSTED" && <span aria-hidden>🛡️</span>}
+                      {sellerLevel === "NEW" && <span aria-hidden>✨</span>}
+                      {SELLER_LEVEL_LABELS[sellerLevel]}
+                    </span>
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-white/90 md:mt-2 md:gap-x-3 md:text-sm">
+                      <span className="inline-flex max-w-full items-center gap-1 truncate">
+                        <span aria-hidden>📍</span>
+                        {formatSellerLocation(seller.city)}
+                      </span>
+
+                      {avgRating !== null ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span aria-hidden className="text-yellow-300">
+                            ⭐
+                          </span>
+                          {avgRating.toFixed(1)} ({getRatingLabel(reviewCount)})
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <span aria-hidden>⭐</span>
+                          Немає відгуків
+                        </span>
+                      )}
+
+                      <span className="inline-flex items-center gap-1">
+                        <span aria-hidden>👥</span>
+                        {getFollowerLabel(followerCount)}
+                      </span>
+
+                      {verified && (
+                        <span className="hidden items-center gap-1 text-emerald-300 md:inline-flex">
+                          <span aria-hidden>🛡️</span>
+                          Підтверджений продавець
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                <div className="max-w-[40%] shrink-0 self-start sm:max-w-none">{actions}</div>
               </div>
 
-              <div className="hidden shrink-0 sm:block">
-                <SellerProfileActions
-                  sellerId={seller.id}
-                  sellerName={seller.name}
-                  profilePath={resolvedProfilePath}
-                  firstListingId={messageListing?.id}
-                  isLoggedIn={isLoggedIn}
-                  isFollowing={isFollowing}
-                  followerCount={followerCount}
-                  isOwner={isOwner}
-                  showAsPublic={showAsPublic}
-                  inBanner
+              <div className="grid shrink-0 grid-cols-4 gap-2 md:gap-2.5">
+                <PremiumStatCard
+                  icon="📦"
+                  iconClassName="bg-emerald-500/20 text-emerald-300"
+                  label="Оголошення"
+                  value={String(listingCount)}
+                  subtext={`• Активних ${activeListingCount}`}
+                  subtextClassName="text-emerald-400"
+                />
+                <PremiumStatCard
+                  icon="👥"
+                  iconClassName="bg-violet-500/20 text-violet-300"
+                  label="Підписники"
+                  value={String(followerCount)}
+                  subtext={getFollowerLabel(followerCount)}
+                />
+                <PremiumStatCard
+                  icon="⭐"
+                  iconClassName="bg-amber-500/20 text-amber-300"
+                  label="Відгуки"
+                  value={String(reviewCount)}
+                  subtext={
+                    positiveReviewPercent != null
+                      ? `• Позитивні ${positiveReviewPercent}%`
+                      : "Немає відгуків"
+                  }
+                  subtextClassName={
+                    positiveReviewPercent != null ? "text-emerald-400" : "text-zinc-400"
+                  }
+                />
+                <PremiumStatCard
+                  icon="📅"
+                  iconClassName="bg-blue-500/20 text-blue-300"
+                  label="На сайті з"
+                  value={memberSince}
+                  subtext={memberTenure}
                 />
               </div>
             </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
-                <GlassStatCard label="Оголошення" value={String(listingCount)} />
-                <GlassStatCard label="Підписники" value={String(followerCount)} />
-                <GlassStatCard label="Відгуки" value={String(reviewCount)} />
-                <GlassStatCard label="На сайті з" value={formatMemberSince(seller.createdAt)} />
-              </div>
-
-              <div className="sm:hidden">
-                <SellerProfileActions
-                  sellerId={seller.id}
-                  sellerName={seller.name}
-                  profilePath={resolvedProfilePath}
-                  firstListingId={messageListing?.id}
-                  isLoggedIn={isLoggedIn}
-                  isFollowing={isFollowing}
-                  followerCount={followerCount}
-                  isOwner={isOwner}
-                  showAsPublic={showAsPublic}
-                  inBanner
-                />
-              </div>
-            </div>
           </div>
-        </div>
       </section>
 
-      {reviewCount > 0 && (
-        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">Розподіл оцінок</h2>
-          <div className="grid grid-cols-5 gap-2 text-center text-xs">
-            {ratingBreakdown.map(({ star, count }) => (
-              <div key={star} className="rounded-xl bg-gray-50 p-2">
-                <p className="text-yellow-500">{"⭐".repeat(star)}</p>
-                <p className="mt-1 font-medium">{count}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {reviewCount > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold">Відгуки ({reviewCount})</h2>
-          <div className="space-y-3">
-            {seller.reviewsReceived.map((r) => (
-              <div key={r.id} className="rounded-2xl border bg-white p-4 shadow-sm">
-                <p className="text-yellow-500">{"⭐".repeat(r.rating)}</p>
-                {r.comment && <p className="mt-2 text-sm text-gray-700">{r.comment}</p>}
-                <p className="mt-2 text-xs text-gray-400">
-                  {r.reviewer.name} · {formatDate(r.createdAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section>
-        {isOwner && pendingWithoutPhotos.length > 0 && (
-          <div className="mb-4 space-y-2 rounded-2xl border border-red-200 bg-red-50 p-4">
-            <p className="font-medium text-red-900">Потрібно додати фото</p>
-            {pendingWithoutPhotos.map((listing) => (
-              <p key={listing.id} className="text-sm text-red-800">
-                Оголошення «{listing.title}» на модерації без фото.{" "}
-                <Link href={`/listings/${listing.id}/edit`} className="font-semibold underline">
-                  Додати фото зараз
-                </Link>
-              </p>
-            ))}
-          </div>
-        )}
-
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isOwner ? "Мої оголошення" : "Товари продавця"}
-          </h2>
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
-            {listingCount}{" "}
-            {listingCount === 1 ? "товар" : listingCount < 5 ? "товари" : "товарів"}
-          </span>
-        </div>
-
-        {seller.listings.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-            {isOwner ? "У вас поки немає оголошень" : "Немає активних оголошень"}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-            {seller.listings.map((listing) =>
-              isOwner ? (
-                <SellerListingCard key={listing.id} listing={listing} />
-              ) : (
-                <ListingCard key={listing.id} listing={listing} />
-              )
-            )}
-          </div>
-        )}
-      </section>
+      <div className="-mt-px">
+        <SellerProfileTabs
+          isOwner={isOwner}
+          sellerName={seller.name}
+          sellerCity={formatSellerLocation(seller.city)}
+          memberSince={memberSince}
+          memberTenure={memberTenure}
+          sellerLevelLabel={SELLER_LEVEL_LABELS[sellerLevel]}
+          verified={verified}
+          followerCount={followerCount}
+          reviewCount={reviewCount}
+          listingCount={listingCount}
+          activeListingCount={activeListingCount}
+          avgRating={avgRating}
+          positiveReviewPercent={positiveReviewPercent}
+          reviews={seller.reviewsReceived}
+          listings={seller.listings}
+          ratingBreakdown={ratingBreakdown}
+          pendingNotice={pendingNotice}
+          sellerOrders={sellerOrders}
+          currentUserId={currentUserId}
+          initialTab={initialTab}
+        />
+      </div>
 
       <p className="mt-10 text-center">
         <Link href={backHref} className="text-brand-700 hover:underline">

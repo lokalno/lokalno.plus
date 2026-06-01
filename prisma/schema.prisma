@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {
@@ -38,6 +39,7 @@ model User {
   supportTickets  SupportTicket[]
   walletTransactions WalletTransaction[]
   withdrawals        Withdrawal[]
+  priceOffers        PriceOffer[]
 }
 
 model SellerFollow {
@@ -102,8 +104,10 @@ model Listing {
   description String
   price       Float
   category    String
+  brand       String?
   condition   String
   city        String
+  itemLocation String?
   status      String    @default("ACTIVE")
   photos      String
   stock       Int       @default(1)
@@ -115,8 +119,36 @@ model Listing {
   orders      Order[]
   messages    Message[]
   reports     Report[]
-  favorites   Favorite[]
-  reviews     Review[]
+  favorites        Favorite[]
+  reviews          Review[]
+  allowPriceOffers Boolean      @default(false)
+  priceOffers      PriceOffer[]
+
+  @@index([status, createdAt])
+  @@index([status, city])
+  @@index([status, category])
+  @@index([sellerId, status])
+}
+
+model PriceOffer {
+  id          String    @id @default(cuid())
+  listingId   String
+  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId     String
+  buyer       User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  amount      Float
+  comment     String?
+  status      String    @default("PENDING")
+  orderId     String?   @unique
+  order       Order?    @relation(fields: [orderId], references: [id])
+  sellerRead  Boolean   @default(false)
+  buyerStatusRead Boolean @default(true)
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([listingId])
+  @@index([buyerId, listingId])
+  @@index([status])
 }
 
 model Order {
@@ -138,7 +170,19 @@ model Order {
   deliveryWarehouse  String   @default("")
   paymentStatus      String   @default("UNPAID")
   paidAt             DateTime?
+  quantity           Int      @default(1)
+  unitPrice          Float?
+  priceOfferId       String?
+  cancelledById      String?
+  novaPoshtaTtn      String?
+  shippedAt          DateTime?
   createdAt          DateTime @default(now())
+  priceOffer         PriceOffer?
+
+  @@index([buyerId, createdAt])
+  @@index([sellerId, createdAt])
+  @@index([listingId])
+  @@index([status, paymentStatus])
 }
 
 model Message {
@@ -153,6 +197,10 @@ model Message {
   imageUrl   String?
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+  @@index([receiverId, read])
+  @@index([senderId, listingId])
+  @@index([listingId, createdAt])
 }
 
 model SiteSettings {

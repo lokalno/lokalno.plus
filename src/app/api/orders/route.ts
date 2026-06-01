@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertNotBanned } from "@/lib/user-check";
 import { validateOrderShipping } from "@/lib/order-shipping";
+import { parseOrderQuantity } from "@/lib/order-total";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -33,9 +35,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Увійдіть, щоб оформити замовлення" }, { status: 401 });
   }
 
+  const banCheck = await assertNotBanned(session.user.id);
+  if (!banCheck.ok) {
+    return NextResponse.json({ error: banCheck.error }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
-    const { listingId } = body;
+    const { listingId, priceOfferId } = body;
 
     if (!listingId || typeof listingId !== "string") {
       return NextResponse.json({ error: "Невірне оголошення" }, { status: 400 });
@@ -78,7 +85,35 @@ export async function POST(request: Request) {
         throw new Error("OUT_OF_STOCK");
       }
 
-      const newStock = listing.stock - 1;
+      const quantityCheck = parseOrderQuantity(body.quantity ?? 1, listing.stock);
+      if (!quantityCheck.ok) {
+        throw new Error(`QTY:${quantityCheck.error}`);
+      }
+
+      const { quantity } = quantityCheck;
+      const newStock = listing.stock - quantity;
+
+      let unitPrice: number | undefined;
+      let linkedOfferId: string | undefined;
+
+      if (typeof priceOfferId === "string" && priceOfferId.trim()) {
+        const offer = await tx.priceOffer.findUnique({
+          where: { id: priceOfferId.trim() },
+        });
+
+        if (
+          !offer ||
+          offer.listingId !== listingId ||
+          offer.buyerId !== session.user!.id ||
+          offer.status !== "ACCEPTED" ||
+          offer.orderId
+        ) {
+          throw new Error("INVALID_OFFER");
+        }
+
+        unitPrice = offer.amount;
+        linkedOfferId = offer.id;
+      }
 
       await tx.listing.update({
         where: { id: listingId },
@@ -88,14 +123,26 @@ export async function POST(request: Request) {
         },
       });
 
-      return tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           listingId,
           buyerId: session.user!.id,
           sellerId: listing.sellerId,
+          quantity,
+          ...(unitPrice !== undefined ? { unitPrice } : {}),
+          ...(linkedOfferId ? { priceOfferId: linkedOfferId } : {}),
           ...shippingCheck.data,
         },
       });
+
+      if (linkedOfferId) {
+        await tx.priceOffer.update({
+          where: { id: linkedOfferId },
+          data: { orderId: createdOrder.id, status: "USED" },
+        });
+      }
+
+      return createdOrder;
     });
 
     return NextResponse.json(order, { status: 201 });
@@ -109,6 +156,15 @@ export async function POST(request: Request) {
     }
     if (message === "UNAVAILABLE") {
       return NextResponse.json({ error: "Оголошення недоступне для покупки" }, { status: 400 });
+    }
+    if (message.startsWith("QTY:")) {
+      return NextResponse.json({ error: message.slice(4) }, { status: 400 });
+    }
+    if (message === "INVALID_OFFER") {
+      return NextResponse.json(
+        { error: "Погоджена ціна недоступна. Перевірте пропозицію на сторінці товару." },
+        { status: 400 }
+      );
     }
     return NextResponse.json({ error: "Не вдалося створити замовлення" }, { status: 500 });
   }

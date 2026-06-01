@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/utils";
 import { messagePreview } from "@/lib/message-image";
 import MessageBubble from "@/components/MessageBubble";
 import MessageChatInput from "@/components/MessageChatInput";
+import { dispatchNotificationRefresh } from "@/components/HeaderNotifications";
 
 type Message = {
   id: string;
@@ -28,7 +29,7 @@ export type Conversation = {
   lastMessage: Message;
 };
 
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 30_000;
 
 export function buildConversations(messages: Message[], currentUserId: string): Conversation[] {
   const map = new Map<string, Conversation>();
@@ -72,6 +73,8 @@ type MessagesClientProps = {
   currentUserId: string;
   listingId?: string;
   partnerId?: string;
+  threadPartnerName?: string;
+  threadListingTitle?: string;
 };
 
 export default function MessagesClient({
@@ -79,6 +82,8 @@ export default function MessagesClient({
   currentUserId,
   listingId,
   partnerId,
+  threadPartnerName,
+  threadListingTitle,
 }: MessagesClientProps) {
   const [messages, setMessages] = useState(initialMessages);
   const [content, setContent] = useState("");
@@ -95,14 +100,24 @@ export default function MessagesClient({
     if (!res.ok) return;
     const data: Message[] = await res.json();
     setMessages(data);
-  }, [listingId, partnerId]);
+    if (inThread) {
+      if (listingId) {
+        await fetch("/api/price-offers/mark-read", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scope: "buyer", listingId }),
+        }).catch(() => {});
+      }
+      dispatchNotificationRefresh();
+    }
+  }, [listingId, partnerId, inThread]);
 
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
 
   useEffect(() => {
-    if (!inThread && !inList) return;
+    if (!inThread) return;
 
     void fetchMessages();
 
@@ -122,7 +137,7 @@ export default function MessagesClient({
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [fetchMessages, inThread, inList]);
+  }, [fetchMessages, inThread]);
 
   useEffect(() => {
     if (!inThread || messages.length <= prevCountRef.current) {
@@ -142,11 +157,14 @@ export default function MessagesClient({
       : lastMessage?.senderId);
   const activeListingId = listingId || lastMessage?.listingId;
   const partnerName =
-    partnerId && lastMessage
+    (partnerId && lastMessage
       ? lastMessage.senderId === partnerId
         ? lastMessage.sender.name
         : lastMessage.receiver.name
-      : null;
+      : null) ||
+    threadPartnerName ||
+    null;
+  const listingTitle = lastMessage?.listing.title || threadListingTitle || null;
 
   async function handleSend(payload: { content: string; imageUrl: string | null }) {
     if ((!payload.content && !payload.imageUrl) || !replyReceiverId || !activeListingId) {
@@ -219,7 +237,64 @@ export default function MessagesClient({
     );
   }
 
-  if (messages.length === 0) {
+  if (!inList && inThread) {
+    return (
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="px-4 py-3 border-b bg-gray-50 text-sm flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            {partnerName && (
+              <p className="font-medium text-gray-900 truncate">Чат з {partnerName}</p>
+            )}
+            {listingTitle && (
+              <p className="text-gray-600 truncate">
+                Товар: <span className="font-medium">{listingTitle}</span>
+              </p>
+            )}
+          </div>
+          <Link href="/messages" className="text-brand-700 hover:underline shrink-0">
+            ← Усі
+          </Link>
+        </div>
+
+        <div ref={scrollRef} className="p-4 space-y-4 max-h-96 overflow-y-auto min-h-[160px]">
+          {messages.length === 0 ? (
+            <p className="py-10 text-center text-gray-500">
+              Повідомлень поки немає. Напишіть перше повідомлення нижче.
+            </p>
+          ) : (
+            messages.map((msg) => {
+              const isMine = msg.senderId === currentUserId;
+              return (
+                <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                  <MessageBubble
+                    content={msg.content}
+                    imageUrl={msg.imageUrl}
+                    senderName={msg.sender.name}
+                    createdAt={msg.createdAt}
+                    isMine={isMine}
+                  />
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {replyReceiverId && activeListingId && (
+          <div className="p-4 border-t">
+            <MessageChatInput
+              content={content}
+              onContentChange={setContent}
+              onSend={handleSend}
+              loading={loading}
+              error={error}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (messages.length === 0 && !inThread) {
     return (
       <div className="bg-white rounded-xl border p-8 text-center text-gray-500">
         <p>Повідомлень у цьому чаті поки немає.</p>
@@ -231,51 +306,11 @@ export default function MessagesClient({
   }
 
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
-      <div className="px-4 py-3 border-b bg-gray-50 text-sm flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          {partnerName && (
-            <p className="font-medium text-gray-900 truncate">Чат з {partnerName}</p>
-          )}
-          {lastMessage && (
-            <p className="text-gray-600 truncate">
-              Товар: <span className="font-medium">{lastMessage.listing.title}</span>
-            </p>
-          )}
-        </div>
-        <Link href="/messages" className="text-brand-700 hover:underline shrink-0">
-          ← Усі
-        </Link>
-      </div>
-
-      <div ref={scrollRef} className="p-4 space-y-4 max-h-96 overflow-y-auto">
-        {messages.map((msg) => {
-          const isMine = msg.senderId === currentUserId;
-          return (
-            <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <MessageBubble
-                content={msg.content}
-                imageUrl={msg.imageUrl}
-                senderName={msg.sender.name}
-                createdAt={msg.createdAt}
-                isMine={isMine}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      {replyReceiverId && activeListingId && (
-        <div className="p-4 border-t">
-          <MessageChatInput
-            content={content}
-            onContentChange={setContent}
-            onSend={handleSend}
-            loading={loading}
-            error={error}
-          />
-        </div>
-      )}
+    <div className="bg-white rounded-xl border p-8 text-center text-gray-500">
+      <p>Не вдалося відкрити чат. Перевірте посилання або поверніться до списку діалогів.</p>
+      <Link href="/messages" className="inline-block mt-3 text-brand-700 hover:underline">
+        ← Усі діалоги
+      </Link>
     </div>
   );
 }

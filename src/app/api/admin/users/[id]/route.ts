@@ -2,8 +2,45 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteUserAccount } from "@/lib/admin-delete-user";
 
 type Params = { params: Promise<{ id: string }> };
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const session = await getServerSession(authOptions);
+  const { id } = await params;
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const isAdmin = await requireAdmin(session.user.id);
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (id === session.user.id) {
+    return NextResponse.json({ error: "Не можна видалити власний профіль" }, { status: 400 });
+  }
+
+  try {
+    const target = await prisma.user.findUnique({ where: { id } });
+
+    if (!target) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (target.role === "ADMIN") {
+      return NextResponse.json({ error: "Не можна видалити адміністратора" }, { status: 400 });
+    }
+
+    await deleteUserAccount(id);
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
