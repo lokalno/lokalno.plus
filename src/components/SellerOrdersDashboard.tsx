@@ -238,7 +238,7 @@ export default function SellerOrdersDashboard({
                       <div className="min-w-0 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
-                            {formatSellerOrderNumber(order.id)}
+                            {formatSellerOrderNumber(order)}
                           </span>
                           <span className="text-xs text-gray-400">
                             {formatSellerOrderDate(createdAt)} р.

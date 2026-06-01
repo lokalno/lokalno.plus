@@ -153,6 +153,7 @@ model PriceOffer {
 
 model Order {
   id                 String   @id @default(cuid())
+  orderNumber        Int      @unique @default(autoincrement())
   listingId          String
   listing            Listing  @relation(fields: [listingId], references: [id])
   buyerId            String

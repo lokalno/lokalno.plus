@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatOrderNumber } from "@/lib/order-number";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatOrderDelivery } from "@/lib/order-shipping";
@@ -13,6 +14,7 @@ import ReviewForm from "@/components/ReviewForm";
 
 export type OrderListItem = {
   id: string;
+  orderNumber: number;
   status: string;
   paymentStatus: string;
   quantity?: number;
@@ -99,6 +101,7 @@ export default function OrdersList({
             </div>
 
             <div className="min-w-0 flex-1">
+              <p className="mb-1 text-xs font-semibold text-gray-500">{formatOrderNumber(order.orderNumber)}</p>
               <Link
                 href={`/listings/${order.listing.id}`}
                 className="block truncate font-medium hover:text-brand-700"

@@ -3,6 +3,7 @@ import { formatSellerOrderNumber } from "@/lib/seller-orders";
 
 export type OrderLabelSource = {
   id: string;
+  orderNumber: number;
   status: string;
   paymentStatus: string;
   quantity?: number;
@@ -26,7 +27,7 @@ export function buildOrderLabelQrPayload(order: OrderLabelSource): string {
 
   const recipient = `${order.recipientLastName} ${order.recipientFirstName}`.trim();
   const lines = [
-    `LOKALNO.PLUS ${formatSellerOrderNumber(order.id)}`,
+    `LOKALNO.PLUS ${formatSellerOrderNumber(order)}`,
     recipient ? `Отримувач: ${recipient}` : "",
     order.recipientPhone ? `Тел.: ${order.recipientPhone}` : "",
     order.deliveryCity

@@ -120,6 +120,16 @@ export default async function AdminPage() {
         </Link>
 
         <Link
+          href="/admin/orders"
+          className="rounded-xl border border-violet-100 bg-white p-6 transition-shadow hover:shadow-md"
+        >
+          <h2 className="mb-1 text-lg font-semibold">🛒 Замовлення</h2>
+          <p className="text-sm text-gray-500">
+            Список замовлень з номерами ORD-10001 …
+          </p>
+        </Link>
+
+        <Link
           href="/admin/users"
           className="rounded-xl border bg-white p-6 transition-shadow hover:shadow-md"
         >

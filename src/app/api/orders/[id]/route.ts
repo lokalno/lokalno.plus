@@ -74,6 +74,7 @@ export async function PATCH(request: Request, { params }: Params) {
         sellerId: order.sellerId,
         buyerId: order.buyerId,
         listingTitle: order.listing.title,
+        orderNumber: order.orderNumber,
         ttn: ttnResult.ttn,
         trackingUrl,
       });
@@ -104,6 +105,7 @@ export async function PATCH(request: Request, { params }: Params) {
         sellerId: order.sellerId,
         buyerId: order.buyerId,
         listingTitle: order.listing.title,
+        orderNumber: order.orderNumber,
       });
 
       return currentOrder;
@@ -162,6 +164,7 @@ export async function PATCH(request: Request, { params }: Params) {
           sellerId: order.sellerId,
           buyerId: order.buyerId,
           listingTitle: order.listing.title,
+          orderNumber: order.orderNumber,
         });
       }
 

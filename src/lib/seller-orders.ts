@@ -70,9 +70,12 @@ export function filterSellerOrders(orders: OrderListItem[], filter: SellerOrderF
   return orders.filter((order) => getSellerOrderBucket(order) === filter);
 }
 
-export function formatSellerOrderNumber(orderId: string) {
-  return `#${orderId.slice(-4).toUpperCase()}`;
-}
+export {
+  formatOrderNumber,
+  formatSellerOrderNumber,
+  ORDER_NUMBER_START,
+} from "@/lib/order-number";
+export type { OrderNumberSource } from "@/lib/order-number";
 
 export function formatSellerOrderDate(date: Date | string) {
   const value = typeof date === "string" ? new Date(date) : date;

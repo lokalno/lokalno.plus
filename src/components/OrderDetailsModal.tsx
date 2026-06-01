@@ -80,7 +80,7 @@ export default function OrderDetailsModal({
               Деталі замовлення
             </p>
             <h2 id={`order-details-${order.id}`} className="text-lg font-bold text-gray-900">
-              {formatSellerOrderNumber(order.id)}
+              {formatSellerOrderNumber(order)}
             </h2>
           </div>
           <button

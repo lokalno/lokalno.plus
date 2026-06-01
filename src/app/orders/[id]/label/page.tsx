@@ -69,7 +69,7 @@ export default async function OrderLabelPage({ params }: Params) {
               lokalno.plus
             </p>
             <h1 className="mt-1 text-xl font-bold">
-              Етикетка Nova Poshta · {formatSellerOrderNumber(order.id)}
+              Етикетка Nova Poshta · {formatSellerOrderNumber(order)}
             </h1>
             <p className="mt-1 text-sm opacity-90 print:text-gray-600">
               {formatSellerOrderDate(order.createdAt)} р.

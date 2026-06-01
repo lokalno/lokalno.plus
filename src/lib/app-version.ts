@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v100-send-order-label";
+export const APP_VERSION = "v101-order-numbers";

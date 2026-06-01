@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { getOrderTotalFromRecord, getOrderQuantity } from "@/lib/order-total";
+import { formatOrderNumber } from "@/lib/order-number";
 
 export async function creditSellerForPaidOrder(
   tx: Prisma.TransactionClient,
@@ -38,7 +39,7 @@ export async function creditSellerForPaidOrder(
       userId: order.sellerId,
       amount,
       type: "SALE",
-      description: `Оплата за «${order.listing.title}»`,
+      description: `Оплата за ${formatOrderNumber(order.orderNumber)} «${order.listing.title}»`,
       orderId: order.id,
     },
   });
@@ -74,7 +75,7 @@ export async function reversePaidOrder(
       userId: order.sellerId,
       amount: -amount,
       type: "SALE_REFUND",
-      description: `Повернення оплати за «${order.listing.title}»`,
+      description: `Повернення оплати за ${formatOrderNumber(order.orderNumber)} «${order.listing.title}»`,
       orderId: order.id,
     },
   });

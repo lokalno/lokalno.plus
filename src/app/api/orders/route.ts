@@ -6,6 +6,7 @@ import { assertNotBanned } from "@/lib/user-check";
 import { validateOrderShipping } from "@/lib/order-shipping";
 import { ORDER_PAYMENT_NP_COD } from "@/lib/order-payment";
 import { parseOrderQuantity } from "@/lib/order-total";
+import { notifySellerNewOrder } from "@/lib/order-notifications";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -143,6 +144,20 @@ export async function POST(request: Request) {
           data: { orderId: createdOrder.id, status: "USED" },
         });
       }
+
+      const buyer = await tx.user.findUnique({
+        where: { id: session.user!.id },
+        select: { name: true },
+      });
+
+      await notifySellerNewOrder(tx, {
+        listingId,
+        sellerId: listing.sellerId,
+        buyerId: session.user!.id,
+        listingTitle: listing.title,
+        buyerName: buyer?.name ?? "Покупець",
+        orderNumber: createdOrder.orderNumber,
+      });
 
       return createdOrder;
     });
