@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { formatDate } from "@/lib/utils";
 import { messagePreview } from "@/lib/message-image";
 import MessageBubble from "@/components/MessageBubble";
@@ -16,8 +17,8 @@ type Message = {
   senderId: string;
   receiverId: string;
   listingId: string;
-  sender: { id: string; name: string };
-  receiver: { id: string; name: string };
+  sender: { id: string; name: string; storeName?: string | null };
+  receiver: { id: string; name: string; storeName?: string | null };
   listing: { id: string; title: string };
 };
 
@@ -36,7 +37,8 @@ export function buildConversations(messages: Message[], currentUserId: string): 
 
   for (const msg of messages) {
     const partnerId = msg.senderId === currentUserId ? msg.receiverId : msg.senderId;
-    const partnerName = msg.senderId === currentUserId ? msg.receiver.name : msg.sender.name;
+    const partner = msg.senderId === currentUserId ? msg.receiver : msg.sender;
+    const partnerName = getSellerDisplayName(partner);
     const key = `${msg.listingId}:${partnerId}`;
     const existing = map.get(key);
 
@@ -158,9 +160,9 @@ export default function MessagesClient({
   const activeListingId = listingId || lastMessage?.listingId;
   const partnerName =
     (partnerId && lastMessage
-      ? lastMessage.senderId === partnerId
-        ? lastMessage.sender.name
-        : lastMessage.receiver.name
+      ? getSellerDisplayName(
+          lastMessage.senderId === partnerId ? lastMessage.sender : lastMessage.receiver
+        )
       : null) ||
     threadPartnerName ||
     null;
@@ -269,7 +271,7 @@ export default function MessagesClient({
                   <MessageBubble
                     content={msg.content}
                     imageUrl={msg.imageUrl}
-                    senderName={msg.sender.name}
+                    senderName={getSellerDisplayName(msg.sender)}
                     createdAt={msg.createdAt}
                     isMine={isMine}
                   />

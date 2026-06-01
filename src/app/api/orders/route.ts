@@ -22,7 +22,7 @@ export async function GET() {
     include: {
       listing: { select: { id: true, title: true, photos: true, price: true } },
       buyer: { select: { id: true, name: true } },
-      seller: { select: { id: true, name: true } },
+      seller: { select: { id: true, name: true, storeName: true } },
     },
     orderBy: { createdAt: "desc" },
   });

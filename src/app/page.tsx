@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { prisma } from "@/lib/prisma";
 import CategorySidebar from "@/components/CategorySidebar";
 import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
@@ -114,6 +115,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   let sellerRows: {
     id: string;
     name: string;
+    storeName: string | null;
     avatar: string | null;
     listings: { id: string }[];
     reviewsReceived: { rating: number }[];
@@ -128,7 +130,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     prisma.listing.findMany({
       where,
       include: {
-        seller: { select: { name: true } },
+        seller: { select: { name: true, storeName: true } },
         ...listingSoldCountInclude,
       },
       orderBy: getOrderBy(params.sort),
@@ -169,6 +171,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       select: {
         id: true,
         name: true,
+        storeName: true,
         avatar: true,
         listings: { where: { status: "ACTIVE" }, select: { id: true } },
         reviewsReceived: { select: { rating: true } },
@@ -186,7 +189,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const bestSellers = sellerRows
     .map((s) => ({
       id: s.id,
-      name: s.name,
+      name: getSellerDisplayName(s),
       avatar: s.avatar,
       listingCount: s.listings.length,
       avgRating:

@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v102-admin-order-support";
+export const APP_VERSION = "v103-store-name";

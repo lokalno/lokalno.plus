@@ -7,11 +7,13 @@ import SettlementSearch from "./SettlementSearch";
 import BannerUpload from "./BannerUpload";
 import { formatDate } from "@/lib/utils";
 import { formatStars, getRatingLabel, getFollowerLabel } from "@/lib/seller-stats";
+import { STORE_NAME_HINT } from "@/lib/seller-display-name";
 import { uploadPhotoFile } from "@/lib/upload-photo";
 
 type ProfileFormProps = {
   initial: {
     name: string;
+    storeName?: string | null;
     city: string;
     phone: string;
     email: string;
@@ -29,6 +31,7 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
   const router = useRouter();
   const [form, setForm] = useState({
     name: initial.name,
+    storeName: initial.storeName?.trim() || "",
     city: initial.city,
     phone: initial.phone,
     avatar: initial.avatar || "",
@@ -70,6 +73,7 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: form.name,
+        storeName: form.storeName,
         city: form.city,
         phone: form.phone,
         avatar: form.avatar || null,
@@ -124,6 +128,17 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Назва магазину</label>
+        <input
+          value={form.storeName}
+          onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+          placeholder="Наприклад: Vintage Kyiv"
+          maxLength={80}
+        />
+        <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{STORE_NAME_HINT}</p>
       </div>
 
       <SettlementSearch

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { formatOrderNumber } from "@/lib/order-number";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
@@ -33,7 +34,7 @@ export type OrderListItem = {
     itemLocation?: string | null;
   };
   buyer: { name: string };
-  seller: { name: string };
+  seller: { name: string; storeName?: string | null };
   recipientFirstName: string;
   recipientLastName: string;
   recipientPhone: string;
@@ -124,7 +125,7 @@ export default function OrdersList({
                       href={`/sellers/${order.sellerId}`}
                       className="text-brand-700 hover:underline"
                     >
-                      {order.seller.name}
+                      {getSellerDisplayName(order.seller)}
                     </Link>
                   </>
                 ) : (

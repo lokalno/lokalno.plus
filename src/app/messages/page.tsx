@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import MessagesClient from "@/components/MessagesClient";
 
 type SearchParams = Promise<{ listingId?: string; partnerId?: string }>;
@@ -58,8 +59,8 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
         ],
       },
       include: {
-        sender: { select: { id: true, name: true } },
-        receiver: { select: { id: true, name: true } },
+        sender: { select: { id: true, name: true, storeName: true } },
+        receiver: { select: { id: true, name: true, storeName: true } },
         listing: { select: { id: true, title: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -68,14 +69,14 @@ export default async function MessagesPage({ searchParams }: { searchParams: Sea
       ? Promise.all([
           prisma.user.findUnique({
             where: { id: partnerId },
-            select: { name: true },
+            select: { name: true, storeName: true },
           }),
           prisma.listing.findUnique({
             where: { id: listingId },
             select: { title: true },
           }),
         ]).then(([partner, listing]) => ({
-          partnerName: partner?.name ?? "Користувач",
+          partnerName: partner ? getSellerDisplayName(partner) : "Користувач",
           listingTitle: listing?.title ?? "Товар",
         }))
       : Promise.resolve(null),

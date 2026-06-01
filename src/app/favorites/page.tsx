@@ -14,7 +14,7 @@ export default async function FavoritesPage() {
     include: {
       listing: {
         include: {
-          seller: { select: { name: true } },
+          seller: { select: { name: true, storeName: true } },
           _count: {
             select: {
               orders: { where: { paymentStatus: "PAID" } },

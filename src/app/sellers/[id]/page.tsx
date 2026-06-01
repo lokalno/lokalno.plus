@@ -18,8 +18,9 @@ export default async function SellerPage({ params }: Params) {
     where: { id },
     select: {
       id: true,
-      name: true,
-      city: true,
+        name: true,
+        storeName: true,
+        city: true,
       avatar: true,
       banner: true,
       createdAt: true,
@@ -27,7 +28,7 @@ export default async function SellerPage({ params }: Params) {
       listings: {
         where: { status: "ACTIVE" },
         include: {
-          seller: { select: { name: true } },
+          seller: { select: { name: true, storeName: true } },
           _count: {
             select: {
               orders: { where: { paymentStatus: "PAID" } },

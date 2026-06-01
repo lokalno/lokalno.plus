@@ -1,3 +1,4 @@
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import NovaPoshtaMark from "@/components/NovaPoshtaMark";
@@ -14,6 +15,7 @@ type ListingSellerPanelProps = {
   seller: {
     id: string;
     name: string;
+    storeName?: string | null;
     city: string;
     avatar: string | null;
     createdAt: Date;
@@ -46,15 +48,17 @@ export default function ListingSellerPanel({
   sellerLevel,
   otherListingsCount,
 }: ListingSellerPanelProps) {
+  const displayName = getSellerDisplayName(seller);
+
   return (
     <aside className="h-fit w-full rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-24">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Продавець</p>
 
       <Link href={`/sellers/${seller.id}`} className="group flex items-start gap-3">
-        <UserAvatar name={seller.name} avatar={seller.avatar} size="md" />
+        <UserAvatar name={displayName} avatar={seller.avatar} size="md" />
         <div className="min-w-0">
           <p className="truncate font-semibold text-gray-900 group-hover:text-brand-700">
-            {seller.name}
+            {displayName}
           </p>
           {avgRating !== null ? (
             <>

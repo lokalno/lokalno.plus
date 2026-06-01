@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeStoreName } from "@/lib/seller-display-name";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -16,6 +17,7 @@ export async function GET() {
       id: true,
       email: true,
       name: true,
+      storeName: true,
       city: true,
       phone: true,
       avatar: true,
@@ -43,6 +45,7 @@ export async function PATCH(request: Request) {
       where: { id: session.user.id },
       data: {
         ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(body.storeName !== undefined ? { storeName: normalizeStoreName(body.storeName) } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
         ...(body.phone !== undefined ? { phone: body.phone?.trim() || null } : {}),
         ...(body.avatar !== undefined ? { avatar: body.avatar || null } : {}),

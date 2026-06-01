@@ -46,7 +46,7 @@ export default async function ListingPage({ params }: Params) {
       where: { id },
       include: {
         seller: {
-          select: { id: true, name: true, city: true, createdAt: true, phone: true, avatar: true },
+          select: { id: true, name: true, storeName: true, city: true, createdAt: true, phone: true, avatar: true },
         },
         _count: {
           select: {
@@ -89,7 +89,7 @@ export default async function ListingPage({ params }: Params) {
           id: { not: listing.id },
         },
         include: {
-          seller: { select: { name: true } },
+          seller: { select: { name: true, storeName: true } },
           _count: {
             select: {
               orders: { where: { paymentStatus: "PAID" } },

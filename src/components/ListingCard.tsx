@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { CONDITIONS } from "@/lib/constants";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, formatFavoriteCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
@@ -12,7 +13,7 @@ type ListingCardProps = {
     condition: string;
     photos: string;
     views?: number;
-    seller: { name: string };
+    seller: { name: string; storeName?: string | null };
   };
 };
 
@@ -63,7 +64,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
           <span>{listing.city}</span>
           <span>{CONDITIONS[listing.condition] || listing.condition}</span>
         </div>
-        <p className="text-xs text-gray-400 mt-1">{listing.seller.name}</p>
+        <p className="text-xs text-gray-400 mt-1">{getSellerDisplayName(listing.seller)}</p>
       </div>
     </Link>
   );

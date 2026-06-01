@@ -1,3 +1,4 @@
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import Link from "next/link";
 import UserAvatar from "./UserAvatar";
 import FollowSellerButton from "./FollowSellerButton";
@@ -15,6 +16,7 @@ type SellerProfileCardProps = {
   seller: {
     id: string;
     name: string;
+    storeName?: string | null;
     city: string;
     avatar?: string | null;
     createdAt: Date;
@@ -45,14 +47,15 @@ export default function SellerProfileCard({
   isLoggedIn = false,
   currentUserId = null,
 }: SellerProfileCardProps) {
+  const displayName = getSellerDisplayName(seller);
   const isOwner = currentUserId === seller.id;
   return (
     <div className="bg-gray-50 rounded-xl p-4">
       <div className="flex items-start gap-4">
-        <UserAvatar name={seller.name} avatar={seller.avatar} size={compact ? "md" : "lg"} />
+        <UserAvatar name={displayName} avatar={seller.avatar} size={compact ? "md" : "lg"} />
         <div className="flex-1 min-w-0">
           <Link href={`/sellers/${seller.id}`} className="font-semibold text-lg hover:text-brand-700">
-            {seller.name}
+            {displayName}
           </Link>
           <p className="text-sm text-gray-500">{seller.city}</p>
 

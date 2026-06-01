@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import UserAvatar from "@/components/UserAvatar";
 import { getFollowerLabel } from "@/lib/seller-stats";
 
@@ -17,6 +18,7 @@ export default async function SubscriptionsPage() {
         select: {
           id: true,
           name: true,
+          storeName: true,
           city: true,
           avatar: true,
           _count: {
@@ -50,9 +52,9 @@ export default async function SubscriptionsPage() {
               href={`/sellers/${seller.id}`}
               className="flex items-center gap-4 bg-white rounded-xl border p-4 hover:border-brand-300 transition-colors"
             >
-              <UserAvatar name={seller.name} avatar={seller.avatar} size="md" />
+              <UserAvatar name={getSellerDisplayName(seller)} avatar={seller.avatar} size="md" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">{seller.name}</p>
+                <p className="font-semibold">{getSellerDisplayName(seller)}</p>
                 <p className="text-sm text-gray-500">{seller.city}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {getFollowerLabel(seller._count.followers)} · {seller._count.listings} оголошень

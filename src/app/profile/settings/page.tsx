@@ -22,7 +22,7 @@ export default async function ProfileSettingsPage() {
         listings: {
           orderBy: { createdAt: "desc" },
           include: {
-            seller: { select: { name: true } },
+            seller: { select: { name: true, storeName: true } },
             _count: {
               select: {
                 orders: { where: { paymentStatus: "PAID" } },
@@ -61,6 +61,7 @@ export default async function ProfileSettingsPage() {
             initial={{
               userId: user.id,
               name: user.name,
+              storeName: user.storeName,
               city: user.city,
               phone: user.phone || "",
               email: user.email,

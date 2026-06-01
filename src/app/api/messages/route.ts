@@ -46,11 +46,11 @@ export async function GET(request: Request) {
           : []),
       ],
     },
-    include: {
-      sender: { select: { id: true, name: true } },
-      receiver: { select: { id: true, name: true } },
-      listing: { select: { id: true, title: true } },
-    },
+      include: {
+        sender: { select: { id: true, name: true, storeName: true } },
+        receiver: { select: { id: true, name: true, storeName: true } },
+        listing: { select: { id: true, title: true } },
+      },
     orderBy: { createdAt: "asc" },
     take: inThread ? 500 : 150,
   });
@@ -120,8 +120,8 @@ export async function POST(request: Request) {
         imageUrl: photo,
       },
       include: {
-        sender: { select: { id: true, name: true } },
-        receiver: { select: { id: true, name: true } },
+        sender: { select: { id: true, name: true, storeName: true } },
+        receiver: { select: { id: true, name: true, storeName: true } },
       },
     });
 

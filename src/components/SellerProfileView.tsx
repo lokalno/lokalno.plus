@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { formatSellerLocation, parsePhotos } from "@/lib/utils";
 import { resolveSellerBannerUrl } from "@/lib/seller-banner";
 import {
@@ -44,6 +45,7 @@ type SellerProfileViewProps = {
   seller: {
     id: string;
     name: string;
+    storeName?: string | null;
     city: string;
     avatar: string | null;
     banner: string | null;
@@ -136,6 +138,7 @@ export default function SellerProfileView({
   const bannerUrl = resolveSellerBannerUrl(seller.banner);
   const memberSince = formatMemberSinceFull(seller.createdAt);
   const memberTenure = formatMemberTenure(seller.createdAt);
+  const displayName = getSellerDisplayName(seller);
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -166,7 +169,7 @@ export default function SellerProfileView({
   const actions = (
     <SellerProfileActions
       sellerId={seller.id}
-      sellerName={seller.name}
+      sellerName={displayName}
       profilePath={resolvedProfilePath}
       firstListingId={messageListingId}
       isLoggedIn={isLoggedIn}
@@ -197,7 +200,7 @@ export default function SellerProfileView({
               <div className="flex items-start justify-between gap-2 md:gap-3">
                 <div className="flex min-w-0 flex-1 items-start gap-2.5 md:gap-3">
                   <UserAvatar
-                    name={seller.name}
+                    name={displayName}
                     avatar={seller.avatar}
                     size="banner"
                     showOnline
@@ -206,7 +209,7 @@ export default function SellerProfileView({
                   <div className="min-w-0 flex-1 text-white">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <h1 className="truncate text-xl font-bold tracking-tight drop-shadow-sm md:text-2xl">
-                        {seller.name}
+                        {displayName}
                       </h1>
                       {verified && (
                         <span
@@ -310,7 +313,7 @@ export default function SellerProfileView({
       <div className="-mt-px">
         <SellerProfileTabs
           isOwner={isOwner}
-          sellerName={seller.name}
+          sellerName={displayName}
           sellerCity={formatSellerLocation(seller.city)}
           memberSince={memberSince}
           memberTenure={memberTenure}

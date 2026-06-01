@@ -39,7 +39,7 @@ export default async function OrdersPage({
     include: {
       listing: true,
       buyer: { select: { name: true } },
-      seller: { select: { name: true } },
+      seller: { select: { name: true, storeName: true } },
     },
     orderBy: { createdAt: "desc" },
   });

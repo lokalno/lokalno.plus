@@ -30,6 +30,7 @@ export default async function ProfilePage({
       select: {
         id: true,
         name: true,
+        storeName: true,
         city: true,
         avatar: true,
         banner: true,
@@ -37,7 +38,7 @@ export default async function ProfilePage({
         listings: {
           where: { status: { in: ["ACTIVE", "PENDING"] } },
           include: {
-            seller: { select: { name: true } },
+            seller: { select: { name: true, storeName: true } },
             _count: {
               select: {
                 orders: { where: { paymentStatus: "PAID" } },
@@ -59,7 +60,7 @@ export default async function ProfilePage({
       include: {
         listing: true,
         buyer: { select: { name: true } },
-        seller: { select: { name: true } },
+        seller: { select: { name: true, storeName: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
