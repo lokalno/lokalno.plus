@@ -1,6 +1,6 @@
 {
 
-  "buildCommand": "prisma generate && prisma db push && tsx scripts/ensure-order-numbers.ts && next build",
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && tsx scripts/ensure-order-numbers.ts && next build",
 
   "framework": "nextjs"
 
