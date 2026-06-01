@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assertNotBanned } from "@/lib/user-check";
 import { validateOrderShipping } from "@/lib/order-shipping";
+import { ORDER_PAYMENT_NP_COD } from "@/lib/order-payment";
 import { parseOrderQuantity } from "@/lib/order-total";
 
 export async function GET() {
@@ -129,6 +130,7 @@ export async function POST(request: Request) {
           buyerId: session.user!.id,
           sellerId: listing.sellerId,
           quantity,
+          paymentStatus: ORDER_PAYMENT_NP_COD,
           ...(unitPrice !== undefined ? { unitPrice } : {}),
           ...(linkedOfferId ? { priceOfferId: linkedOfferId } : {}),
           ...shippingCheck.data,

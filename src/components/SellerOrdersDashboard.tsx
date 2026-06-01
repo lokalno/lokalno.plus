@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatPrice, parsePhotos } from "@/lib/utils";
+import { SELLER_NP_COD_NOTICE } from "@/lib/order-payment";
 import {
   filterSellerOrders,
   formatSellerOrderDate,
@@ -279,14 +280,11 @@ export default function SellerOrdersDashboard({
                       </span>
                       <span className="truncate">{order.buyer.name}</span>
                       <span className="text-gray-300">·</span>
-                      <span className="truncate text-gray-500">Доставка Nova Poshta — у «Деталі замовлення»</span>
+                      <span className="truncate text-gray-500">Оплата на NP при отриманні</span>
                     </div>
 
-                    {order.paymentStatus === "PAID" && bucket !== "completed" && (
-                      <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800">
-                        <span aria-hidden>✓</span>
-                        Оплачено · {formatPrice(orderTotal)} на вашому балансі
-                      </p>
+                    {bucket === "processing" && order.status === "CONFIRMED" && (
+                      <p className="mt-3 text-xs text-amber-900/90">{SELLER_NP_COD_NOTICE}</p>
                     )}
                   </div>
                 </div>

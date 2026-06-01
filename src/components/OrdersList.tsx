@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { formatPrice, formatDate, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
-import { PAYMENT_STATUSES } from "@/lib/wallet";
 import { formatOrderDelivery } from "@/lib/order-shipping";
 import { getOrderTotalFromRecord, getOrderUnitPrice, getOrderQuantity, formatOrderQuantityLabel } from "@/lib/order-total";
 import { getBuyerOrderStatusBanner } from "@/lib/order-status-ui";
 import OrderActions from "@/components/OrderActions";
 import { OrderTrackingInfo } from "@/components/OrderShipForm";
-import OrderPayButton from "@/components/OrderPayButton";
+import OrderPaymentInfo from "@/components/OrderPaymentInfo";
 import ReviewForm from "@/components/ReviewForm";
 
 export type OrderListItem = {
@@ -141,10 +140,6 @@ export default function OrdersList({
                 <span className="font-medium">
                   {ORDER_STATUSES[order.status] || order.status}
                 </span>
-                {" · "}
-                <span className="font-medium">
-                  {PAYMENT_STATUSES[order.paymentStatus] || order.paymentStatus}
-                </span>
               </p>
 
               {buyerStatusBanner && (
@@ -154,19 +149,13 @@ export default function OrdersList({
                 </div>
               )}
 
-              {isBuyer && order.status !== "CANCELLED" && (
-                <OrderPayButton
-                  orderId={order.id}
-                  price={orderTotal}
-                  paymentStatus={order.paymentStatus}
-                />
-              )}
-
-              {isSeller && order.paymentStatus === "PAID" && (
-                <p className="mt-2 text-sm font-medium text-brand-700">
-                  ✓ Оплачено · {formatPrice(orderTotal)} на вашому балансі
-                </p>
-              )}
+              <OrderPaymentInfo
+                paymentStatus={order.paymentStatus}
+                orderTotal={orderTotal}
+                isBuyer={isBuyer}
+                isSeller={isSeller}
+                orderStatus={order.status}
+              />
 
               {deliveryLines.length > 0 && (
                 <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700">
@@ -187,6 +176,7 @@ export default function OrdersList({
                 isBuyer={isBuyer}
                 isSeller={isSeller}
                 deliveryLines={deliveryLines}
+                codAmount={orderTotal}
               />
 
               {canReview && <ReviewForm orderId={order.id} />}

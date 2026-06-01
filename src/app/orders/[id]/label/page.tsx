@@ -5,7 +5,8 @@ import QRCode from "qrcode";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ORDER_STATUSES } from "@/lib/constants";
-import { PAYMENT_STATUSES } from "@/lib/wallet";
+import { formatOrderPaymentStatus } from "@/lib/order-payment";
+import NovaPoshtaSellerGuide from "@/components/NovaPoshtaSellerGuide";
 import { formatOrderDelivery } from "@/lib/order-shipping";
 import { buildOrderLabelQrPayload } from "@/lib/order-label";
 import {
@@ -106,7 +107,10 @@ export default async function OrderLabelPage({ params }: Params) {
                 </p>
                 <p className="mt-1 text-gray-600">
                   Статус: {ORDER_STATUSES[order.status] || order.status} ·{" "}
-                  {PAYMENT_STATUSES[order.paymentStatus] || order.paymentStatus}
+                  {formatOrderPaymentStatus(order.paymentStatus)}
+                </p>
+                <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1 text-sm font-semibold text-amber-950">
+                  Контроль оплати (NP): {formatPrice(orderTotal)}
                 </p>
               </section>
 
@@ -139,8 +143,8 @@ export default async function OrderLabelPage({ params }: Params) {
             </aside>
           </div>
 
-          <footer className="border-t border-gray-200 bg-gray-50 px-6 py-3 text-xs text-gray-600 print:bg-white">
-            Роздрукуйте етикетку, наклейте на посилку або покажіть QR-код співробітнику Nova Poshta.
+          <footer className="border-t border-gray-200 bg-gray-50 px-6 py-4 text-xs text-gray-600 print:bg-white">
+            <NovaPoshtaSellerGuide codAmount={orderTotal} compact />
           </footer>
         </article>
       </div>

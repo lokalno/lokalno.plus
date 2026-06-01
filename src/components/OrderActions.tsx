@@ -10,6 +10,7 @@ type OrderActionsProps = {
   isBuyer: boolean;
   isSeller: boolean;
   deliveryLines?: string[];
+  codAmount?: number;
   embedded?: boolean;
   showShipForm?: boolean;
 };
@@ -20,6 +21,7 @@ export default function OrderActions({
   isBuyer,
   isSeller,
   deliveryLines = [],
+  codAmount,
   embedded = false,
   showShipForm = true,
 }: OrderActionsProps) {
@@ -62,7 +64,7 @@ export default function OrderActions({
     <div className={embedded ? "" : "mt-3"}>
       {isSeller && status === "PENDING" && (
         <p className="mb-2 text-xs text-gray-500">
-          Підтвердіть замовлення, потім у цьому вікні оформіть відправку Nova Poshta і вкажіть ТТН.
+          Підтвердіть замовлення, оформіть посилку в Nova Poshta з контролем оплати та вкажіть ТТН.
         </p>
       )}
 
@@ -70,6 +72,7 @@ export default function OrderActions({
         <OrderShipForm
           orderId={orderId}
           deliveryLines={deliveryLines}
+          codAmount={codAmount}
           showDeliveryAddress={false}
         />
       )}
@@ -94,7 +97,7 @@ export default function OrderActions({
             disabled={loading}
             className="rounded-lg border border-brand-600 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50 disabled:opacity-50"
           >
-            Завершити
+            {isBuyer ? "Отримав і оплатив на NP" : "Покупець отримав"}
           </button>
         )}
         {status !== "SHIPPED" && (

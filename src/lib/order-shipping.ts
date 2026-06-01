@@ -114,9 +114,7 @@ export function validateNovaPoshtaTtn(value: unknown): { ok: true; ttn: string }
   return { ok: true, ttn: digits };
 }
 
-export function getNovaPoshtaTrackingUrl(ttn: string): string {
-  return `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(ttn)}`;
-}
+export { getNovaPoshtaTrackingUrl } from "@/lib/nova-poshta-links";
 
 export function formatNovaPoshtaTtn(ttn: string): string {
   return ttn.replace(/\D/g, "");

@@ -93,7 +93,6 @@ export default function ProfileCabinetShell({
       active: active === "followers",
     },
     { href: "/profile/analytics", label: "Аналітика", icon: "analytics", active: active === "analytics" },
-    { href: "/profile/wallet", label: "Баланс", icon: "wallet", active: active === "wallet" },
     { href: "/profile/settings", label: "Налаштування", icon: "settings", active: active === "settings" },
   ];
 
@@ -148,7 +147,6 @@ export default function ProfileCabinetShell({
       active: active === "followers",
     },
     { href: "/profile/analytics", label: "Аналітика", icon: "analytics", active: active === "analytics" },
-    { href: "/profile/wallet", label: "Баланс", icon: "wallet", active: active === "wallet" },
     { href: "/profile/settings", label: "Налаштування", icon: "settings", active: active === "settings" },
   ];
 

@@ -1,5 +1,5 @@
 export const BUYER_ORDER_PLACED_MESSAGE =
-  "Замовлення успішно оформлено і знаходиться в обробці. Очікуйте підтвердження від продавця.";
+  "Замовлення оформлено. Оплатіть товар на відділенні Nova Poshta, коли заберете посилку. Очікуйте підтвердження від продавця.";
 
 export type BuyerOrderStatusBanner = {
   className: string;
@@ -30,17 +30,17 @@ export function getBuyerOrderStatusBanner(
       className: "border-emerald-200 bg-emerald-50 text-emerald-950",
       title: "Замовлення прийнято",
       message:
-        "Продавець підтвердив замовлення. Очікуйте відправку Nova Poshta по всій Україні — надішлемо ТТН для відстеження.",
+        "Продавець підтвердив замовлення і готує відправку Nova Poshta. Оплата — лише на відділенні при отриманні.",
     };
   }
 
   if (status === "SHIPPED") {
     return {
       className: "border-violet-200 bg-violet-50 text-violet-950",
-      title: "Замовлення відправлено",
+      title: "Посилка на відділенні Nova Poshta",
       message: context?.novaPoshtaTtn
-        ? `Посилку відправлено Nova Poshta. ТТН: ${context.novaPoshtaTtn}. Відстежуйте доставку за номером накладної.`
-        : "Посилку відправлено Nova Poshta по Україні.",
+        ? `ТТН: ${context.novaPoshtaTtn}. Заберіть посилку та оплатіть на відділенні готівкою або карткою.`
+        : "Заберіть посилку на відділенні Nova Poshta та оплатіть при отриманні.",
     };
   }
 

@@ -32,7 +32,7 @@ type WalletData = {
   }>;
 };
 
-export default function WalletPanel() {
+export default function WalletPanel({ legacyOnly = false }: { legacyOnly?: boolean }) {
   const router = useRouter();
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,13 +116,20 @@ export default function WalletPanel() {
     return <div className="rounded-xl border bg-red-50 p-4 text-red-700">{error || "Помилка"}</div>;
   }
 
+  if (legacyOnly && data.balance <= 0 && data.transactions.length === 0 && data.withdrawals.length === 0) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
+      {legacyOnly && (
+        <p className="text-sm text-gray-500">Нижче — лише старі операції через сайт (якщо були).</p>
+      )}
       <div className="rounded-2xl border bg-gradient-to-br from-brand-600 to-brand-700 text-white p-6">
-        <p className="text-brand-100 text-sm">Ваш баланс</p>
+        <p className="text-brand-100 text-sm">Баланс на сайті (архів)</p>
         <p className="text-4xl font-bold mt-1">{formatPrice(data.balance)}</p>
         <p className="text-brand-100 text-sm mt-2">
-          Кошти надходять після оплати замовлення покупцем
+          Нові продажі оплачуються через Nova Poshta при отриманні посилки
         </p>
       </div>
 

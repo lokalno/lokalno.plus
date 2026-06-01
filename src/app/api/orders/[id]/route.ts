@@ -8,6 +8,7 @@ import {
   notifyBuyerOrderConfirmed,
   notifyBuyerOrderShipped,
 } from "@/lib/order-notifications";
+import { ORDER_PAYMENT_NP_COD_RECEIVED } from "@/lib/order-payment";
 import { getNovaPoshtaTrackingUrl, validateNovaPoshtaTtn } from "@/lib/order-shipping";
 
 type Params = { params: Promise<{ id: string }> };
@@ -121,7 +122,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const updated = await prisma.order.update({
       where: { id },
-      data: { status: "COMPLETED" },
+      data: {
+        status: "COMPLETED",
+        ...(order.paymentStatus !== "PAID" ? { paymentStatus: ORDER_PAYMENT_NP_COD_RECEIVED } : {}),
+      },
     });
 
     return NextResponse.json(updated);

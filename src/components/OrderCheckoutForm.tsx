@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SettlementSearch from "@/components/SettlementSearch";
 import { formatPrice } from "@/lib/utils";
+import { BUYER_NP_COD_NOTICE } from "@/lib/order-payment";
 import { formatListingStock, getOrderQuantityHint, getStockAvailabilityLevel } from "@/lib/listing-stock";
 
 type Settlement = {
@@ -146,6 +147,9 @@ export default function OrderCheckoutForm({
         <h3 className="font-semibold text-brand-900">Доставка Nova Poshta</h3>
         <p className="mt-1 text-xs text-gray-600">
           Заповніть дані отримувача. Продавець побачить їх у розділі «Замовлення».
+        </p>
+        <p className="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-950">
+          💳 {BUYER_NP_COD_NOTICE}
         </p>
       </div>
 
@@ -290,7 +294,7 @@ export default function OrderCheckoutForm({
           disabled={loading}
           className="flex-1 rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
         >
-          {loading ? "Оформлення..." : `Підтвердити · ${formatPrice(totalPrice)}`}
+          {loading ? "Оформлення..." : `Замовити · ${formatPrice(totalPrice)}`}
         </button>
         <button
           type="button"

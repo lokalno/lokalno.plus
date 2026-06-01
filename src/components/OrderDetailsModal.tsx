@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/constants";
-import { PAYMENT_STATUSES } from "@/lib/wallet";
+import { formatOrderPaymentStatus } from "@/lib/order-payment";
+import OrderPaymentInfo from "@/components/OrderPaymentInfo";
 import { formatOrderDelivery } from "@/lib/order-shipping";
 import {
   formatSellerOrderDate,
@@ -131,8 +132,8 @@ export default function OrderDetailsModal({
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-500">Оплата</dt>
-              <dd className="font-medium text-gray-900">
-                {PAYMENT_STATUSES[order.paymentStatus] || order.paymentStatus}
+              <dd className="font-medium text-gray-900 text-right">
+                {formatOrderPaymentStatus(order.paymentStatus)}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
@@ -141,12 +142,12 @@ export default function OrderDetailsModal({
             </div>
           </dl>
 
-          {isSeller && order.paymentStatus === "PAID" && bucket !== "completed" && (
-            <p className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-800">
-              <span aria-hidden>✓</span>
-              Оплачено · {formatPrice(orderTotal)} на вашому балансі
-            </p>
-          )}
+          <OrderPaymentInfo
+            paymentStatus={order.paymentStatus}
+            orderTotal={orderTotal}
+            isSeller={isSeller}
+            orderStatus={order.status}
+          />
 
           {deliveryLines.length > 0 && (
             <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm">
@@ -172,6 +173,7 @@ export default function OrderDetailsModal({
                 isBuyer={false}
                 isSeller
                 deliveryLines={deliveryLines}
+                codAmount={orderTotal}
                 embedded
               />
             </div>

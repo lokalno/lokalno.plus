@@ -6,12 +6,13 @@ export default function ListingSafeDealBanner() {
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-base"
           aria-hidden
         >
-          🛡️
+          📦
         </span>
         <div>
-          <p className="text-xs font-semibold text-gray-900">Безпечна угода від Lokalno</p>
+          <p className="text-xs font-semibold text-gray-900">Оплата на Nova Poshta</p>
           <p className="mt-0.5 text-xs leading-relaxed text-gray-600">
-            Оформлюйте замовлення через сайт — ви контролюєте покупку в особистому кабінеті.
+            Замовлення через сайт, оплата — лише при отриманні на відділенні. Гроші на сайт не
+            переказуються.
           </p>
         </div>
       </div>

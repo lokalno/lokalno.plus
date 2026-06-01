@@ -4,7 +4,9 @@ export const listingSoldCountInclude = {
   _count: {
     select: {
       orders: {
-        where: { paymentStatus: "PAID" },
+        where: {
+          OR: [{ status: "COMPLETED" }, { paymentStatus: "PAID" }],
+        },
       },
       favorites: true,
     },
