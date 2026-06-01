@@ -32,6 +32,25 @@ function NavBellIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
+function NavPriceOffersIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg
+      className={`${className} text-gray-600`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 18.75a60.07 60.07 0 0115.797 2.729c.399.093.794.186 1.184.278M2.25 18.75l-.893 4.512A59.768 59.768 0 0121.75 18.75M2.25 18.75V15m18 3.75V15M2.25 15h18M10.5 2.25V4.5m3-2.25V4.5M4.5 6.75h15M4.5 6.75v10.875c0 .621.504 1.125 1.125 1.125h13.125c.621 0 1.125-.504 1.125-1.125V6.75"
+      />
+    </svg>
+  );
+}
+
 type HeaderNavProps = {
   session: Session | null;
   unreadCount?: number;
@@ -87,7 +106,7 @@ export default function HeaderNav({
       </Link>
       <Link href="/profile/price-offers" className="relative flex items-center gap-2 py-2 text-gray-700" onClick={() => setOpen(false)}>
         <span className="relative inline-flex">
-          💰
+          <NavPriceOffersIcon className="h-5 w-5" />
           <NotificationDot count={livePriceOffers} className="-right-0.5 -top-0.5" />
         </span>
         Пропозиції цін{livePriceOffers > 0 ? ` (${livePriceOffers})` : ""}
@@ -150,7 +169,7 @@ export default function HeaderNav({
           className="relative hidden p-2.5 rounded-xl hover:bg-gray-100 text-gray-600 md:flex"
           title="Пропозиції цін"
         >
-          <span className="text-xl">💰</span>
+          <NavPriceOffersIcon className="h-5 w-5" />
           <NotificationCountBadge count={livePriceOffers} />
         </Link>
         <OrdersNavLink href={ordersHref} className="relative p-2.5 rounded-xl hover:bg-gray-100 text-gray-600" title="Мої замовлення">
