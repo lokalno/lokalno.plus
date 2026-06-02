@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v105-nav-price-icon";
+export const APP_VERSION = "v106-privacy-policy";

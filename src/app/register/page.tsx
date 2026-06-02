@@ -131,6 +131,10 @@ export default function RegisterPage() {
         Реєструючись, ви погоджуєтесь з{" "}
         <Link href="/rules" className="text-brand-700 hover:underline">
           правилами
+        </Link>{" "}
+        та{" "}
+        <Link href="/privacy" className="text-brand-700 hover:underline">
+          політикою конфіденційності
         </Link>
         . Вже є акаунт?{" "}
         <Link href="/login" className="text-brand-700 hover:underline">

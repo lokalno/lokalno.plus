@@ -53,8 +53,4 @@ export const DEFAULT_RULES = `Правила користування марке
 5. Контакти
 • Питання: support@lokalno.ua`;
 
-export const DEFAULT_PRIVACY = `Політика конфіденційності
-
-Ми зберігаємо ваш email, ім'я та місто для роботи сервісу.
-Дані не передаються третім особам без вашої згоди.
-Ви можете запросити видалення акаунту через email підтримки.`;
+export { DEFAULT_PRIVACY, LEGACY_PRIVACY_SNIPPET, resolvePrivacyContent } from "@/lib/privacy-policy";
