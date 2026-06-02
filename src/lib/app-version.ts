@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v106-privacy-policy";
+export const APP_VERSION = "v107-company-operator";

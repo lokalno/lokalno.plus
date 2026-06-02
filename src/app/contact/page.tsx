@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { formatSiteOperatorAddress, formatSiteOperatorLabel } from "@/lib/site-operator";
 import { getSiteSettings } from "@/lib/site-settings";
 import SupportForm from "@/components/SupportForm";
 
@@ -42,14 +43,19 @@ export default async function ContactPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-gray-50 rounded-xl border p-4 text-sm text-gray-600">
+      <div className="mt-6 bg-gray-50 rounded-xl border p-4 text-sm text-gray-600 space-y-3">
+        <div>
+          <p className="font-medium text-gray-800">Оператор платформи</p>
+          <p className="mt-1">{formatSiteOperatorLabel()}</p>
+          <p className="mt-1 text-gray-500">{formatSiteOperatorAddress()}</p>
+        </div>
         <p>
-          <span className="font-medium">Email:</span>{" "}
+          <span className="font-medium">Email (підтримка та питання про дані):</span>{" "}
           <a href={`mailto:${settings.supportEmail}`} className="text-brand-700 hover:underline">
             {settings.supportEmail}
           </a>
         </p>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="text-xs text-gray-500">
           Для скарг на оголошення використовуйте кнопку «Поскаржитися» на сторінці товару.
         </p>
       </div>

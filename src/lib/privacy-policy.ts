@@ -1,20 +1,27 @@
+import { formatSiteOperatorAddress, formatSiteOperatorLabel, SITE_OPERATOR } from "@/lib/site-operator";
+
 /** Короткий текст, який був у попередній версії сайту — замінюємо на повну політику. */
 export const LEGACY_PRIVACY_SNIPPET =
   "Ми зберігаємо ваш email, ім'я та місто для роботи сервісу.";
 
 export const DEFAULT_PRIVACY = `Політика конфіденційності lokalno.plus
 
-Останнє оновлення: 2026 рік
+Останнє оновлення: червень 2026
 
 1. Загальні положення
 Ця політика пояснює, які персональні дані ми збираємо на маркетплейсі lokalno.plus, навіщо їх використовуємо та які права має користувач.
 
 Користуючись сайтом, реєструючись або оформлюючи замовлення, ви погоджуєтесь з цією політикою.
 
-2. Хто обробляє дані
-Адміністратор сервісу — власник платформи lokalno.plus.
-З питань конфіденційності звертайтесь через розділ «Контакти» на сайті або на email підтримки, вказаний у футері та налаштуваннях.
+2. Хто обробляє дані (контролер)
+Оператор платформи lokalno.plus і контролер персональних даних:
 
+${formatSiteOperatorLabel()}
+Зареєстрована адреса: ${formatSiteOperatorAddress()}, ${SITE_OPERATOR.country}
+
+Сервіс орієнтований на користувачів в Україні. Дані можуть оброблятися та зберігатися за межами України (зокрема у Великобританії, США та ЄС) — на серверах хостингу та бази даних, необхідних для роботи сайту.
+
+З питань конфіденційності та ваших прав щодо даних звертайтесь через розділ «Контакти» на сайті або на email підтримки, вказаний на сторінці /contact.
 3. Які дані ми збираємо
 • Реєстрація: ім'я, email, місто, телефон (за бажанням), пароль (у зашифрованому вигляді).
 • Профіль продавця: фото, банер, назва магазину, оголошення, відгуки.
@@ -67,12 +74,20 @@ export const DEFAULT_PRIVACY = `Політика конфіденційност�
 Ми можемо оновлювати цю політику. Актуальна версія завжди на сторінці /privacy на сайті.
 
 13. Контакти
-Питання щодо конфіденційності: розділ «Контакти» на lokalno.plus або email підтримки з футера сайту.`;
+Питання щодо конфіденційності та персональних даних:
+• ${formatSiteOperatorLabel()}
+• Email: через розділ «Контакти» на lokalno.plus (email підтримки на сторінці /contact).`;
 
 export function resolvePrivacyContent(storedContent: string | null | undefined): string {
   const trimmed = storedContent?.trim();
   if (!trimmed) return DEFAULT_PRIVACY;
   if (trimmed.includes(LEGACY_PRIVACY_SNIPPET) && trimmed.length < 600) {
+    return DEFAULT_PRIVACY;
+  }
+  if (
+    trimmed.includes("власник платформи lokalno.plus") &&
+    !trimmed.includes(SITE_OPERATOR.legalName)
+  ) {
     return DEFAULT_PRIVACY;
   }
   return trimmed;
