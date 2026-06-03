@@ -167,20 +167,6 @@ export default function CategorySidebar() {
               </button>
               {isActive && subcategories.length > 0 && (
                 <ul className="ml-2 mt-1 space-y-0.5 border-l border-gray-200 pl-2">
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => selectSubcategory("")}
-                      className={cn(
-                        "w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-                        !activeSubcategory
-                          ? "bg-brand-50 font-medium text-brand-700"
-                          : "text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      Усі в категорії
-                    </button>
-                  </li>
                   {subcategories.map((sub) => {
                     const detailOptions = listCategoryDetails(category, sub);
                     const isSubActive = activeSubcategory === sub;
@@ -203,20 +189,6 @@ export default function CategorySidebar() {
                         </button>
                         {isSubActive && detailOptions.length > 0 && (
                           <ul className="ml-2 mt-0.5 space-y-0.5 border-l border-gray-100 pl-2">
-                            <li>
-                              <button
-                                type="button"
-                                onClick={() => selectDetail(sub, "")}
-                                className={cn(
-                                  "w-full rounded-md px-2 py-1 text-left text-[11px] transition-colors",
-                                  !activeDetail
-                                    ? "bg-brand-50 font-medium text-brand-700"
-                                    : "text-gray-500 hover:bg-gray-50"
-                                )}
-                              >
-                                Усі в «{sub}»
-                              </button>
-                            </li>
                             {detailOptions.map((detail) => {
                               const itemOptions = listCategoryDetailItems(category, sub, detail);
                               const isDetailActive = activeDetail === detail;
@@ -239,20 +211,6 @@ export default function CategorySidebar() {
                                   </button>
                                   {isDetailActive && itemOptions.length > 0 && (
                                     <ul className="ml-2 mt-0.5 space-y-0.5 border-l border-gray-100 pl-2">
-                                      <li>
-                                        <button
-                                          type="button"
-                                          onClick={() => selectItem(sub, detail, "")}
-                                          className={cn(
-                                            "w-full rounded-md px-2 py-1 text-left text-[10px] transition-colors",
-                                            !activeItem
-                                              ? "bg-brand-50 font-medium text-brand-700"
-                                              : "text-gray-500 hover:bg-gray-50"
-                                          )}
-                                        >
-                                          Усі в «{detail}»
-                                        </button>
-                                      </li>
                                       {itemOptions.map((item) => (
                                         <li key={item}>
                                           <button
