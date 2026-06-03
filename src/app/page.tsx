@@ -1,7 +1,5 @@
 import { Suspense } from "react";
-import { getSellerDisplayName } from "@/lib/seller-display-name";
-import { prisma } from "@/lib/prisma";
-import CategorySidebar from "@/components/CategorySidebar";
+import { prisma } from "@/lib/prisma";import CategorySidebar from "@/components/CategorySidebar";
 import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
 import SearchFilters from "@/components/SearchFilters";
 import HeroSection from "@/components/HeroSection";
@@ -112,21 +110,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     createdAt: Date;
   }[] = [];
   let cityGroups: { city: string; _count: { city: number } }[] = [];
-  let sellerRows: {
-    id: string;
-    name: string;
-    storeName: string | null;
-    avatar: string | null;
-    listings: { id: string }[];
-    reviewsReceived: { rating: number }[];
-    _count: { followers: number };
-  }[] = [];
   let dbUnavailable = false;
 
   try {
-    [total, listings, recommended, popularNearby, latestListings, cityGroups, sellerRows] =
-      await Promise.all([
-    prisma.listing.count({ where }),
+    [total, listings, recommended, popularNearby, latestListings, cityGroups] = await Promise.all([    prisma.listing.count({ where }),
     prisma.listing.findMany({
       where,
       include: {
@@ -166,47 +153,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       orderBy: { _count: { city: "desc" } },
       take: 8,
     }),
-    prisma.user.findMany({
-      where: { banned: false, listings: { some: { status: "ACTIVE" } } },
-      select: {
-        id: true,
-        name: true,
-        storeName: true,
-        avatar: true,
-        listings: { where: { status: "ACTIVE" }, select: { id: true } },
-        reviewsReceived: { select: { rating: true } },
-        _count: { select: { followers: true } },
-      },
-      take: 30,
-    }),
-  ]);
-  } catch {
+  ]);  } catch {
     dbUnavailable = true;
   }
 
   const popularCities = cityGroups.map((g) => ({ city: g.city, count: g._count.city }));
 
-  const bestSellers = sellerRows
-    .map((s) => ({
-      id: s.id,
-      name: getSellerDisplayName(s),
-      avatar: s.avatar,
-      listingCount: s.listings.length,
-      avgRating:
-        s.reviewsReceived.length > 0
-          ? s.reviewsReceived.reduce((a, r) => a + r.rating, 0) / s.reviewsReceived.length
-          : null,
-      followers: s._count.followers,
-    }))
-    .sort((a, b) => {
-      const scoreA = (a.avgRating ?? 0) * 10 + a.listingCount + a.followers;
-      const scoreB = (b.avgRating ?? 0) * 10 + b.listingCount + b.followers;
-      return scoreB - scoreA;
-    })
-    .slice(0, 5);
-
-  const totalPages = Math.max(1, Math.ceil(total / LISTINGS_PER_PAGE));
-  const baseParams: Record<string, string> = {};
+  const totalPages = Math.max(1, Math.ceil(total / LISTINGS_PER_PAGE));  const baseParams: Record<string, string> = {};
   if (params.city) baseParams.city = params.city;
   if (params.category) baseParams.category = params.category;
   if (params.q) baseParams.q = params.q;
@@ -332,7 +285,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                 <SearchFilters />
               </Suspense>
             )}
-            <HomeRightSidebar bestSellers={bestSellers} latestListings={latestListings} />
+            <HomeRightSidebar latestListings={latestListings} />
           </div>
         </aside>
       </div>

@@ -2,17 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import UserAvatar from "./UserAvatar";
 import { formatPrice, parsePhotos, formatTimeAgo } from "@/lib/utils";
-import { formatStars } from "@/lib/seller-stats";
-
-type Seller = {
-  id: string;
-  name: string;
-  avatar: string | null;
-  listingCount: number;
-  avgRating: number | null;
-};
 
 type LatestListing = {
   id: string;
@@ -23,40 +13,15 @@ type LatestListing = {
 };
 
 type HomeRightSidebarProps = {
-  bestSellers: Seller[];
   latestListings: LatestListing[];
 };
 
-export default function HomeRightSidebar({ bestSellers, latestListings }: HomeRightSidebarProps) {
+export default function HomeRightSidebar({ latestListings }: HomeRightSidebarProps) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
   return (
     <aside className="space-y-4">
-      {bestSellers.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="text-sm font-bold text-gray-900 mb-3">Кращі продавці</h2>
-          <ul className="space-y-3">
-            {bestSellers.map((s) => (
-              <li key={s.id}>
-                <Link href={`/sellers/${s.id}`} className="flex items-center gap-3 group">
-                  <UserAvatar name={s.name} avatar={s.avatar} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-brand-700">
-                      {s.name}
-                    </p>
-                    <p className="text-xs text-yellow-500">
-                      {s.avgRating != null ? formatStars(s.avgRating) : "—"}
-                    </p>
-                    <p className="text-xs text-gray-400">{s.listingCount} оголошень</p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {latestListings.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <h2 className="text-sm font-bold text-gray-900 mb-3">Останні оголошення</h2>
