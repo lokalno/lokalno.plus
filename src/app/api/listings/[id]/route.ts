@@ -8,6 +8,8 @@ import { validateItemLocation } from "@/lib/listing-location";
 import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
+import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
+import { parseListingCategory } from "@/lib/constants";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -159,6 +161,44 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: vehicleCheck.error }, { status: 400 });
     }
 
+    const { main, sub } = parseListingCategory(nextCategory);
+    const isParts = isPartsListingCategory(main, sub);
+    const partsTouched =
+      body.category !== undefined ||
+      body.partForVehicle !== undefined ||
+      body.partType !== undefined ||
+      body.partPopular !== undefined ||
+      body.brand !== undefined;
+    let partsFields: {
+      partForVehicle: string | null;
+      partType: string | null;
+      partPopular: string | null;
+    } | null = null;
+    let partsBrand: string | null | undefined;
+    if (partsTouched) {
+      if (isParts) {
+        const partsCheck = parsePartsListingPayload({
+          partForVehicle:
+            body.partForVehicle !== undefined ? body.partForVehicle : listing.partForVehicle,
+          partType: body.partType !== undefined ? body.partType : listing.partType,
+          partPopular: body.partPopular !== undefined ? body.partPopular : listing.partPopular,
+          brand: body.brand !== undefined ? body.brand : listing.brand,
+        });
+        if (!partsCheck.ok) {
+          return NextResponse.json({ error: partsCheck.error }, { status: 400 });
+        }
+        partsFields = {
+          partForVehicle: partsCheck.data.partForVehicle,
+          partType: partsCheck.data.partType,
+          partPopular: partsCheck.data.partPopular,
+        };
+        partsBrand = partsCheck.data.brand;
+      } else {
+        partsFields = { partForVehicle: null, partType: null, partPopular: null };
+        partsBrand = null;
+      }
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {
@@ -166,9 +206,10 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.description !== undefined ? { description: body.description.trim() } : {}),
         ...(body.price !== undefined ? { price: Number(body.price) } : {}),
         ...(body.category !== undefined ? { category: body.category } : {}),
-        ...(body.brand !== undefined
+        ...(body.brand !== undefined && !isParts
           ? { brand: typeof body.brand === "string" && body.brand.trim() ? body.brand.trim() : null }
           : {}),
+        ...(partsBrand !== undefined ? { brand: partsBrand } : {}),
         ...(body.condition !== undefined ? { condition: body.condition } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
         ...(body.itemLocation !== undefined ? { itemLocation: body.itemLocation } : {}),
@@ -190,6 +231,7 @@ export async function PATCH(request: Request, { params }: Params) {
         body.vehicleLoadCapacity !== undefined
           ? vehicleCheck.data
           : {}),
+        ...(partsFields ? partsFields : {}),
       },
     });
 

@@ -5,6 +5,7 @@ import SearchFilters from "@/components/SearchFilters";
 import CarSearchFilters from "@/components/CarSearchFilters";
 import MotoSearchFilters from "@/components/MotoSearchFilters";
 import TruckSearchFilters from "@/components/TruckSearchFilters";
+import PartsSearchFilters from "@/components/PartsSearchFilters";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
@@ -16,6 +17,7 @@ import {
   isMotoCatalogContext,
   isTruckCatalogContext,
 } from "@/lib/vehicle";
+import { hasPartsSearchFilters, isPartsCatalogContext } from "@/lib/parts";
 
 type SearchParams = Promise<{
   city?: string;
@@ -47,6 +49,11 @@ type SearchParams = Promise<{
   motoCondition?: string;
   truckCondition?: string;
   approxPrice?: string;
+  partFor?: string;
+  partType?: string;
+  partPopular?: string;
+  partBrand?: string;
+  partsCondition?: string;
 }>;
 
 function hasActiveFilters(params: Record<string, string | undefined>) {
@@ -60,11 +67,15 @@ function hasActiveFilters(params: Record<string, string | undefined>) {
       params.minPrice ||
       params.maxPrice ||
       hasTransportSearchFilters(params) ||
+      hasPartsSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
 }
 
 function transportFilters(params: { category?: string; subcategory?: string }) {
+  if (isPartsCatalogContext(params.category, params.subcategory)) {
+    return <PartsSearchFilters />;
+  }
   if (isTruckCatalogContext(params.category, params.subcategory)) {
     return <TruckSearchFilters />;
   }

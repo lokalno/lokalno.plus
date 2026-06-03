@@ -16,6 +16,7 @@ import {
   isMotoCatalogContext,
   isTruckCatalogContext,
 } from "@/lib/vehicle";
+import { buildPartsWhere, hasPartsSearchFilters, isPartsCatalogContext } from "@/lib/parts";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
 type HomeListing = ListingWithSoldCount & {
@@ -68,6 +69,11 @@ export type HomeCatalogParams = {
   loadCapacityMax?: string;
   truckCondition?: string;
   approxPrice?: string;
+  partFor?: string;
+  partType?: string;
+  partPopular?: string;
+  partBrand?: string;
+  partsCondition?: string;
 };
 
 function getOrderBy(sort?: string) {
@@ -99,6 +105,7 @@ function hasActiveFilters(params: HomeCatalogParams) {
       params.minPrice ||
       params.maxPrice ||
       hasTransportSearchFilters(params) ||
+      hasPartsSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
 }
@@ -113,6 +120,7 @@ function buildWhere(params: HomeCatalogParams) {
   const carContext = isCarCatalogContext(params.category, params.subcategory);
   const motoContext = isMotoCatalogContext(params.category, params.subcategory);
   const truckContext = isTruckCatalogContext(params.category, params.subcategory);
+  const partsContext = isPartsCatalogContext(params.category, params.subcategory);
   const categorySub = carContext
     ? effectiveCarSubcategory(params.subcategory)
     : params.subcategory;
@@ -126,6 +134,16 @@ function buildWhere(params: HomeCatalogParams) {
       params.detail,
       params.item
     ),
+    ...(partsContext
+      ? buildPartsWhere({
+          partFor: params.partFor,
+          partType: params.partType,
+          partPopular: params.partPopular,
+          partBrand: params.partBrand,
+          partsCondition: params.partsCondition,
+          approxPrice: params.approxPrice,
+        })
+      : {}),
     ...(truckContext
       ? buildTruckWhere({
           truckBrand: params.truckBrand,
@@ -252,6 +270,11 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.loadCapacityMax) baseParams.loadCapacityMax = params.loadCapacityMax;
   if (params.truckCondition) baseParams.truckCondition = params.truckCondition;
   if (params.approxPrice) baseParams.approxPrice = params.approxPrice;
+  if (params.partFor) baseParams.partFor = params.partFor;
+  if (params.partType) baseParams.partType = params.partType;
+  if (params.partPopular) baseParams.partPopular = params.partPopular;
+  if (params.partBrand) baseParams.partBrand = params.partBrand;
+  if (params.partsCondition) baseParams.partsCondition = params.partsCondition;
 
   if (dbUnavailable) {
     return (
@@ -317,6 +340,10 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
               {params.motoType ? ` · ${params.motoType}` : ""}
               {params.truckBrand ? ` · ${params.truckBrand}` : ""}
               {params.truckType ? ` · ${params.truckType}` : ""}
+              {params.partFor ? ` · ${params.partFor}` : ""}
+              {params.partType ? ` · ${params.partType}` : ""}
+              {params.partPopular ? ` · ${params.partPopular}` : ""}
+              {params.partBrand ? ` · ${params.partBrand}` : ""}
               {params.subcategory ? ` · ${params.subcategory}` : ""}
               {params.detail ? ` · ${params.detail}` : ""}
               {params.item ? ` · ${params.item}` : ""}
@@ -388,5 +415,10 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.loadCapacityMax ?? "",
     params.truckCondition ?? "",
     params.approxPrice ?? "",
+    params.partFor ?? "",
+    params.partType ?? "",
+    params.partPopular ?? "",
+    params.partBrand ?? "",
+    params.partsCondition ?? "",
   ].join("|");
 }

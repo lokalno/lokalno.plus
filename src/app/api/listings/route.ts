@@ -8,6 +8,8 @@ import { validateListingPhotos } from "@/lib/listing-photos";
 import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
+import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
+import { parseListingCategory } from "@/lib/constants";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume, vehicleLoadCapacity } =
+    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume, vehicleLoadCapacity, partForVehicle, partType, partPopular } =
       body;
 
     if (!title || !description || !price || !category || !condition || !city) {
@@ -126,13 +128,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: vehicleCheck.error }, { status: 400 });
     }
 
+    const { main, sub } = parseListingCategory(category);
+    const isParts = isPartsListingCategory(main, sub);
+    const emptyParts: {
+      partForVehicle: string | null;
+      partType: string | null;
+      partPopular: string | null;
+    } = { partForVehicle: null, partType: null, partPopular: null };
+    let partsFields = emptyParts;
+    let listingBrand = typeof brand === "string" && brand.trim() ? brand.trim() : null;
+    if (isParts) {
+      const partsCheck = parsePartsListingPayload({
+        partForVehicle,
+        partType,
+        partPopular,
+        brand,
+      });
+      if (!partsCheck.ok) {
+        return NextResponse.json({ error: partsCheck.error }, { status: 400 });
+      }
+      listingBrand = partsCheck.data.brand;
+      partsFields = {
+        partForVehicle: partsCheck.data.partForVehicle,
+        partType: partsCheck.data.partType,
+        partPopular: partsCheck.data.partPopular,
+      };
+    }
+
     const listing = await prisma.listing.create({
       data: {
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
         category,
-        brand: typeof brand === "string" && brand.trim() ? brand.trim() : null,
+        brand: listingBrand,
         condition,
         city,
         itemLocation: normalizedItemLocation,
@@ -142,6 +171,7 @@ export async function POST(request: Request) {
         sellerId: session.user.id,
         status: initialStatus,
         ...vehicleCheck.data,
+        ...partsFields,
       },
     });
 

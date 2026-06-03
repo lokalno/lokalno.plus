@@ -32,6 +32,13 @@ import {
   isTruckListingCategory,
   tonsToKg,
 } from "@/lib/vehicle";
+import {
+  PART_FOR_VEHICLES,
+  PART_POPULAR,
+  PART_TYPES,
+  PART_BRANDS,
+  isPartsListingCategory,
+} from "@/lib/parts";
 import { getListingPhotosPayloadSize, validateListingPhotos } from "@/lib/listing-photos";
 import { uploadPhotoFile } from "@/lib/upload-photo";
 import SettlementSearch from "@/components/SettlementSearch";
@@ -63,6 +70,9 @@ type ListingFormProps = {
     vehicleType?: string | null;
     vehicleEngineVolume?: number | null;
     vehicleLoadCapacity?: number | null;
+    partForVehicle?: string | null;
+    partType?: string | null;
+    partPopular?: string | null;
   };
 };
 
@@ -145,6 +155,9 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [vehicleLoadCapacityTons, setVehicleLoadCapacityTons] = useState(
     initial?.vehicleLoadCapacity ? String(initial.vehicleLoadCapacity / 1000) : ""
   );
+  const [partForVehicle, setPartForVehicle] = useState(initial?.partForVehicle || "");
+  const [partType, setPartType] = useState(initial?.partType || "");
+  const [partPopular, setPartPopular] = useState(initial?.partPopular || "");
   const [photos, setPhotos] = useState<string[]>(initial?.photos || []);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -194,6 +207,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const isCarListing = isCarListingCategory(category, subcategory);
   const isMotoListing = isMotoListingCategory(category, subcategory);
   const isTruckListing = isTruckListingCategory(category, subcategory);
+  const isPartsListing = isPartsListingCategory(category, subcategory);
   const brandOptions = isTruckListing
     ? TRUCK_BRANDS
     : isMotoListing
@@ -391,6 +405,13 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               vehicleTransmission,
               vehicleType,
               vehicleLoadCapacity: tonsToKg(Number(vehicleLoadCapacityTons)),
+            }
+          : {}),
+        ...(isPartsListing
+          ? {
+              partForVehicle,
+              partType,
+              partPopular: partPopular || null,
             }
           : {}),
       };
@@ -667,6 +688,61 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
           required
           placeholder="350000"
         />
+      </div>
+    </div>
+  ) : isPartsListing ? (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <FieldLabel>
+          Для якого транспорту <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select
+          value={partForVehicle}
+          onChange={(e) => setPartForVehicle(e.target.value)}
+          required
+        >
+          <option value="">Оберіть</option>
+          {PART_FOR_VEHICLES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2">
+        <FieldLabel>
+          Тип деталі <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select value={partType} onChange={(e) => setPartType(e.target.value)} required>
+          <option value="">Оберіть</option>
+          {PART_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2">
+        <FieldLabel>Марка машини</FieldLabel>
+        <select value={brand} onChange={(e) => setBrand(e.target.value)}>
+          <option value="">Будь-яка / не вказано</option>
+          {PART_BRANDS.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2 rounded-xl border border-gray-100 bg-gray-50/80 p-4">
+        <FieldLabel>Популярне</FieldLabel>
+        <select value={partPopular} onChange={(e) => setPartPopular(e.target.value)}>
+          <option value="">Не обрано</option>
+          {PART_POPULAR.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   ) : null;

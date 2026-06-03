@@ -203,6 +203,11 @@ export default async function ListingPage({ params }: Params) {
     ...(listing.vehicleEngineVolume
       ? [{ label: "Об'єм двигуна", value: formatEngineVolume(listing.vehicleEngineVolume) }]
       : []),
+    ...(listing.partForVehicle
+      ? [{ label: "Для транспорту", value: listing.partForVehicle }]
+      : []),
+    ...(listing.partType ? [{ label: "Тип деталі", value: listing.partType }] : []),
+    ...(listing.partPopular ? [{ label: "Популярне", value: listing.partPopular }] : []),
     { label: "Категорія", value: listing.category },
     { label: "Місто", value: listing.city },
     {
