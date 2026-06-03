@@ -3,13 +3,49 @@ import { TRANSPORT_CATEGORY } from "@/lib/vehicle";
 
 export const PARTS_SUBCATEGORY = "Запчастини";
 
+export const PART_FOR_AGRICULTURAL = "Сільгосптехніка";
+/** Old value with Latin "gosp" in DB — do not show in UI */
+export const PART_FOR_AGRICULTURAL_LEGACY = "Сільgospтехніка";
+
 export const PART_FOR_VEHICLES = [
   "Легкові авто",
   "Вантажівки",
   "Мотоцикли",
   "Спецтехніка",
-  "Сільгospтехніка",
+  PART_FOR_AGRICULTURAL,
 ] as const;
+
+function matchesPartForVehicle(
+  value: string,
+  option: (typeof PART_FOR_VEHICLES)[number]
+): boolean {
+  if (option === PART_FOR_AGRICULTURAL) {
+    return value === PART_FOR_AGRICULTURAL || value === PART_FOR_AGRICULTURAL_LEGACY;
+  }
+  return value === option;
+}
+
+function partForVehicleFilterValue(
+  partFor: string
+): string | { in: string[] } | undefined {
+  if (matchesPartForVehicle(partFor, PART_FOR_AGRICULTURAL)) {
+    return { in: [PART_FOR_AGRICULTURAL, PART_FOR_AGRICULTURAL_LEGACY] };
+  }
+  if (PART_FOR_VEHICLES.includes(partFor as (typeof PART_FOR_VEHICLES)[number])) {
+    return partFor;
+  }
+  return undefined;
+}
+
+function normalizePartForVehicle(value: string): string | null {
+  if (value === PART_FOR_AGRICULTURAL || value === PART_FOR_AGRICULTURAL_LEGACY) {
+    return PART_FOR_AGRICULTURAL;
+  }
+  if (PART_FOR_VEHICLES.includes(value as (typeof PART_FOR_VEHICLES)[number])) {
+    return value;
+  }
+  return null;
+}
 
 export const PART_TYPES = [
   "Двигун",

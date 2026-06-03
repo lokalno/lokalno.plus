@@ -90,7 +90,7 @@ export default function PartsSearchFilters() {
         {isPending && <span className="text-xs text-gray-400">завантаження…</span>}
       </div>
       <p className="text-xs text-gray-500">
-        Запчастини для авто, вантажівок, мото, спец- та сільгospтехніки — тип деталі, ціна ±15%,
+        Запчастини для авто, вантажівок, мото, спец- та сільгосптехної техніки — тип деталі, ціна ±15%,
         стан.
       </p>
 
