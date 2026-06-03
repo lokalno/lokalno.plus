@@ -36,21 +36,6 @@ export const CATEGORIES = [
   "Інше",
 ] as const;
 
-export const CATEGORY_ICONS: Record<(typeof CATEGORIES)[number], string> = {
-  Транспорт: "🚗",
-  Нерухомість: "🏢",
-  Електроніка: "📱",
-  "Дім і сад": "🌿",
-  "Одяг і взуття": "👕",
-  "Для дітей": "🧸",
-  "Спорт і відпочинок": "⚽",
-  "Краса і здоров'я": "💄",
-  Послуги: "🛠️",
-  Тварини: "🐾",
-  "Хобі та розваги": "🎮",
-  Інше: "📦",
-};
-
 export const MAX_LISTING_PHOTOS = 10;
 
 /** Target size per listing photo after client compression (~180 KB). */

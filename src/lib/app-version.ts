@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v108-privacy-operator-only";
+export const APP_VERSION = "v109-no-category-emojis";
