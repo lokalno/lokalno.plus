@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v112-catalog-scroll";
+export const APP_VERSION = "v113-remove-krasa-category";
