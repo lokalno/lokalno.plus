@@ -149,6 +149,10 @@ export async function PATCH(request: Request, { params }: Params) {
         body.vehicleEngineVolume !== undefined
           ? body.vehicleEngineVolume
           : listing.vehicleEngineVolume,
+      vehicleLoadCapacity:
+        body.vehicleLoadCapacity !== undefined
+          ? body.vehicleLoadCapacity
+          : listing.vehicleLoadCapacity,
     };
     const vehicleCheck = parseTransportVehiclePayload(vehicleInput, nextCategory);
     if (!vehicleCheck.ok) {
@@ -182,7 +186,8 @@ export async function PATCH(request: Request, { params }: Params) {
         body.vehicleBody !== undefined ||
         body.vehicleMileage !== undefined ||
         body.vehicleType !== undefined ||
-        body.vehicleEngineVolume !== undefined
+        body.vehicleEngineVolume !== undefined ||
+        body.vehicleLoadCapacity !== undefined
           ? vehicleCheck.data
           : {}),
       },

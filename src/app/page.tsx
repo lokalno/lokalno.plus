@@ -4,6 +4,7 @@ import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
 import SearchFilters from "@/components/SearchFilters";
 import CarSearchFilters from "@/components/CarSearchFilters";
 import MotoSearchFilters from "@/components/MotoSearchFilters";
+import TruckSearchFilters from "@/components/TruckSearchFilters";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
@@ -13,6 +14,7 @@ import {
   hasTransportSearchFilters,
   isCarCatalogContext,
   isMotoCatalogContext,
+  isTruckCatalogContext,
 } from "@/lib/vehicle";
 
 type SearchParams = Promise<{
@@ -29,44 +31,25 @@ type SearchParams = Promise<{
   carBrand?: string;
   motoBrand?: string;
   motoType?: string;
+  truckBrand?: string;
+  truckType?: string;
   yearFrom?: string;
   yearTo?: string;
   engineVolumeFrom?: string;
   engineVolumeTo?: string;
+  loadCapacityMin?: string;
+  loadCapacityMax?: string;
   fuel?: string;
   transmission?: string;
   body?: string;
   mileageMax?: string;
   carCondition?: string;
   motoCondition?: string;
+  truckCondition?: string;
   approxPrice?: string;
 }>;
 
-function hasActiveFilters(params: {
-  city?: string;
-  category?: string;
-  subcategory?: string;
-  detail?: string;
-  item?: string;
-  q?: string;
-  minPrice?: string;
-  maxPrice?: string;
-  sort?: string;
-  carBrand?: string;
-  motoBrand?: string;
-  motoType?: string;
-  yearFrom?: string;
-  yearTo?: string;
-  engineVolumeFrom?: string;
-  engineVolumeTo?: string;
-  fuel?: string;
-  transmission?: string;
-  body?: string;
-  mileageMax?: string;
-  carCondition?: string;
-  motoCondition?: string;
-  approxPrice?: string;
-}) {
+function hasActiveFilters(params: Record<string, string | undefined>) {
   return Boolean(
     params.city ||
       params.category ||
@@ -81,10 +64,10 @@ function hasActiveFilters(params: {
   );
 }
 
-function transportFilters(params: {
-  category?: string;
-  subcategory?: string;
-}) {
+function transportFilters(params: { category?: string; subcategory?: string }) {
+  if (isTruckCatalogContext(params.category, params.subcategory)) {
+    return <TruckSearchFilters />;
+  }
   if (isMotoCatalogContext(params.category, params.subcategory)) {
     return <MotoSearchFilters />;
   }

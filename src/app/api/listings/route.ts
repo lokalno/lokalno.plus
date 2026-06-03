@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume } =
+    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume, vehicleLoadCapacity } =
       body;
 
     if (!title || !description || !price || !category || !condition || !city) {
@@ -118,6 +118,7 @@ export async function POST(request: Request) {
         vehicleMileage,
         vehicleType,
         vehicleEngineVolume,
+        vehicleLoadCapacity,
       },
       category
     );

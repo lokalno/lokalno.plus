@@ -7,7 +7,7 @@ import { formatPrice, formatDate, parsePhotos, formatViews, getTypicalResponseLa
 import { formatListingStock, getListingStockBadgeText, getStockAvailabilityLevel } from "@/lib/listing-stock";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCount } from "@/lib/listing-sales";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
-import { formatEngineVolume, formatVehicleMileage } from "@/lib/vehicle";
+import { formatEngineVolume, formatLoadCapacity, formatVehicleMileage } from "@/lib/vehicle";
 import { getSellerLevel } from "@/lib/seller-stats";
 import { markBuyerPriceOfferStatusRead } from "@/lib/notifications";
 import { getBuyerOfferUiState } from "@/lib/price-offers";
@@ -194,6 +194,9 @@ export default async function ListingPage({ params }: Params) {
     ...(listing.vehicleFuel ? [{ label: "Паливо", value: listing.vehicleFuel }] : []),
     ...(listing.vehicleTransmission
       ? [{ label: "Коробка передач", value: listing.vehicleTransmission }]
+      : []),
+    ...(listing.vehicleLoadCapacity
+      ? [{ label: "Вантажопідйомність", value: formatLoadCapacity(listing.vehicleLoadCapacity) }]
       : []),
     ...(listing.vehicleBody ? [{ label: "Тип кузова", value: listing.vehicleBody }] : []),
     ...(listing.vehicleType ? [{ label: "Тип транспорту", value: listing.vehicleType }] : []),

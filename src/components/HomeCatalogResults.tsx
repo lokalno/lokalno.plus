@@ -8,11 +8,13 @@ import { LISTINGS_PER_PAGE } from "@/lib/catalog";
 import { buildListingCategoryFilter } from "@/lib/constants";
 import {
   buildMotoWhere,
+  buildTruckWhere,
   buildVehicleWhere,
   effectiveCarSubcategory,
   hasTransportSearchFilters,
   isCarCatalogContext,
   isMotoCatalogContext,
+  isTruckCatalogContext,
 } from "@/lib/vehicle";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
@@ -60,6 +62,11 @@ export type HomeCatalogParams = {
   mileageMax?: string;
   carCondition?: string;
   motoCondition?: string;
+  truckBrand?: string;
+  truckType?: string;
+  loadCapacityMin?: string;
+  loadCapacityMax?: string;
+  truckCondition?: string;
   approxPrice?: string;
 };
 
@@ -105,6 +112,7 @@ function buildWhere(params: HomeCatalogParams) {
 
   const carContext = isCarCatalogContext(params.category, params.subcategory);
   const motoContext = isMotoCatalogContext(params.category, params.subcategory);
+  const truckContext = isTruckCatalogContext(params.category, params.subcategory);
   const categorySub = carContext
     ? effectiveCarSubcategory(params.subcategory)
     : params.subcategory;
@@ -118,6 +126,21 @@ function buildWhere(params: HomeCatalogParams) {
       params.detail,
       params.item
     ),
+    ...(truckContext
+      ? buildTruckWhere({
+          truckBrand: params.truckBrand,
+          truckType: params.truckType,
+          yearFrom: params.yearFrom,
+          yearTo: params.yearTo,
+          fuel: params.fuel,
+          transmission: params.transmission,
+          mileageMax: params.mileageMax,
+          loadCapacityMin: params.loadCapacityMin,
+          loadCapacityMax: params.loadCapacityMax,
+          truckCondition: params.truckCondition,
+          approxPrice: params.approxPrice,
+        })
+      : {}),
     ...(motoContext
       ? buildMotoWhere({
           motoBrand: params.motoBrand,
@@ -223,6 +246,11 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.mileageMax) baseParams.mileageMax = params.mileageMax;
   if (params.carCondition) baseParams.carCondition = params.carCondition;
   if (params.motoCondition) baseParams.motoCondition = params.motoCondition;
+  if (params.truckBrand) baseParams.truckBrand = params.truckBrand;
+  if (params.truckType) baseParams.truckType = params.truckType;
+  if (params.loadCapacityMin) baseParams.loadCapacityMin = params.loadCapacityMin;
+  if (params.loadCapacityMax) baseParams.loadCapacityMax = params.loadCapacityMax;
+  if (params.truckCondition) baseParams.truckCondition = params.truckCondition;
   if (params.approxPrice) baseParams.approxPrice = params.approxPrice;
 
   if (dbUnavailable) {
@@ -287,6 +315,8 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
               {params.carBrand ? ` · ${params.carBrand}` : ""}
               {params.motoBrand ? ` · ${params.motoBrand}` : ""}
               {params.motoType ? ` · ${params.motoType}` : ""}
+              {params.truckBrand ? ` · ${params.truckBrand}` : ""}
+              {params.truckType ? ` · ${params.truckType}` : ""}
               {params.subcategory ? ` · ${params.subcategory}` : ""}
               {params.detail ? ` · ${params.detail}` : ""}
               {params.item ? ` · ${params.item}` : ""}
@@ -352,6 +382,11 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.mileageMax ?? "",
     params.carCondition ?? "",
     params.motoCondition ?? "",
+    params.truckBrand ?? "",
+    params.truckType ?? "",
+    params.loadCapacityMin ?? "",
+    params.loadCapacityMax ?? "",
+    params.truckCondition ?? "",
     params.approxPrice ?? "",
   ].join("|");
 }

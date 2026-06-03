@@ -116,6 +116,7 @@ model Listing {
   vehicleMileage Int?
   vehicleType String?
   vehicleEngineVolume Int?
+  vehicleLoadCapacity Int?
   status      String    @default("ACTIVE")
   photos      String
   stock       Int       @default(1)

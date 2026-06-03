@@ -3,6 +3,7 @@ import { CONDITIONS } from "@/lib/constants";
 export const TRANSPORT_CATEGORY = "Транспорт";
 export const CAR_SUBCATEGORY = "Легкові авто";
 export const MOTO_SUBCATEGORY = "Мото";
+export const TRUCK_SUBCATEGORY = "Вантажівки";
 
 export const CAR_FUEL_TYPES = [
   "Бензин",
@@ -13,6 +14,8 @@ export const CAR_FUEL_TYPES = [
 ] as const;
 
 export const MOTO_FUEL_TYPES = ["Бензин", "Електро"] as const;
+
+export const TRUCK_FUEL_TYPES = ["Бензин", "Дизель", "Газ (LPG)", "Електро"] as const;
 
 export const CAR_TRANSMISSIONS = [
   "Механічна",
@@ -96,6 +99,35 @@ export const MOTO_BRANDS = [
   "Інші",
 ] as const;
 
+export const TRUCK_TYPES = [
+  "Вантажівка",
+  "Тягач",
+  "Самоскид",
+  "Фургон",
+  "Рефрижератор",
+  "Бортова вантажівка",
+  "Зерновоз",
+  "Лісовоз",
+  "Евакуатор",
+  "Цистерна",
+  "Контейнеровоз",
+] as const;
+
+export const TRUCK_BRANDS = [
+  "DAF",
+  "MAN",
+  "Scania",
+  "Volvo",
+  "Mercedes-Benz",
+  "Renault Trucks",
+  "Iveco",
+  "Ford Trucks",
+  "Isuzu",
+  "KAMAZ",
+  "MAZ",
+  "Інші",
+] as const;
+
 export type CarSearchParams = {
   carBrand?: string;
   yearFrom?: string;
@@ -121,7 +153,21 @@ export type MotoSearchParams = {
   approxPrice?: string;
 };
 
-export type TransportSearchParams = CarSearchParams & MotoSearchParams;
+export type TruckSearchParams = {
+  truckBrand?: string;
+  truckType?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  fuel?: string;
+  transmission?: string;
+  mileageMax?: string;
+  loadCapacityMin?: string;
+  loadCapacityMax?: string;
+  truckCondition?: string;
+  approxPrice?: string;
+};
+
+export type TransportSearchParams = CarSearchParams & MotoSearchParams & TruckSearchParams;
 
 export function isCarCatalogContext(category?: string, subcategory?: string): boolean {
   if (category !== TRANSPORT_CATEGORY) return false;
@@ -131,6 +177,10 @@ export function isCarCatalogContext(category?: string, subcategory?: string): bo
 
 export function isMotoCatalogContext(category?: string, subcategory?: string): boolean {
   return category === TRANSPORT_CATEGORY && subcategory === MOTO_SUBCATEGORY;
+}
+
+export function isTruckCatalogContext(category?: string, subcategory?: string): boolean {
+  return category === TRANSPORT_CATEGORY && subcategory === TRUCK_SUBCATEGORY;
 }
 
 export function effectiveCarSubcategory(subcategory?: string): string {
@@ -143,6 +193,20 @@ export function isCarListingCategory(main: string, sub: string): boolean {
 
 export function isMotoListingCategory(main: string, sub: string): boolean {
   return main === TRANSPORT_CATEGORY && sub === MOTO_SUBCATEGORY;
+}
+
+export function isTruckListingCategory(main: string, sub: string): boolean {
+  return main === TRANSPORT_CATEGORY && sub === TRUCK_SUBCATEGORY;
+}
+
+export function tonsToKg(tons: number): number {
+  return Math.round(tons * 1000);
+}
+
+export function parseTonsParam(value?: string): number | undefined {
+  if (!value) return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
 export function parsePositiveInt(value?: string): number | undefined {
@@ -263,6 +327,46 @@ export function buildMotoWhere(params: MotoSearchParams & { motoCondition?: stri
   return where;
 }
 
+export function buildTruckWhere(params: TruckSearchParams & { truckCondition?: string }) {
+  const where: Record<string, unknown> = {
+    ...buildSharedTransportWhere({
+      yearFrom: params.yearFrom,
+      yearTo: params.yearTo,
+      fuel: params.fuel,
+      mileageMax: params.mileageMax,
+      condition: params.truckCondition,
+      allowedFuels: TRUCK_FUEL_TYPES,
+    }),
+  };
+
+  const brandQuery = params.truckBrand?.trim();
+  if (brandQuery && brandQuery !== "Інші") {
+    where.brand = { contains: brandQuery, mode: "insensitive" };
+  }
+
+  if (params.truckType && TRUCK_TYPES.includes(params.truckType as (typeof TRUCK_TYPES)[number])) {
+    where.vehicleType = params.truckType;
+  }
+
+  if (
+    params.transmission &&
+    CAR_TRANSMISSIONS.includes(params.transmission as (typeof CAR_TRANSMISSIONS)[number])
+  ) {
+    where.vehicleTransmission = params.transmission;
+  }
+
+  const loadMinTons = parseTonsParam(params.loadCapacityMin);
+  const loadMaxTons = parseTonsParam(params.loadCapacityMax);
+  if (loadMinTons || loadMaxTons) {
+    where.vehicleLoadCapacity = {
+      ...(loadMinTons ? { gte: tonsToKg(loadMinTons) } : {}),
+      ...(loadMaxTons ? { lte: tonsToKg(loadMaxTons) } : {}),
+    };
+  }
+
+  return where;
+}
+
 export type TransportVehiclePayload = {
   vehicleYear: number | null;
   vehicleFuel: string | null;
@@ -271,6 +375,7 @@ export type TransportVehiclePayload = {
   vehicleMileage: number | null;
   vehicleType: string | null;
   vehicleEngineVolume: number | null;
+  vehicleLoadCapacity: number | null;
 };
 
 const emptyTransportPayload: TransportVehiclePayload = {
@@ -281,6 +386,7 @@ const emptyTransportPayload: TransportVehiclePayload = {
   vehicleMileage: null,
   vehicleType: null,
   vehicleEngineVolume: null,
+  vehicleLoadCapacity: null,
 };
 
 export function parseTransportVehiclePayload(
@@ -296,6 +402,9 @@ export function parseTransportVehiclePayload(
   }
   if (isMotoListingCategory(main, sub)) {
     return parseMotoPayload(body);
+  }
+  if (isTruckListingCategory(main, sub)) {
+    return parseTruckPayload(body);
   }
   return { ok: true, data: emptyTransportPayload };
 }
@@ -339,6 +448,7 @@ function parseCarPayload(
       vehicleMileage: mileage,
       vehicleType: null,
       vehicleEngineVolume: null,
+      vehicleLoadCapacity: null,
     },
   };
 }
@@ -378,6 +488,59 @@ function parseMotoPayload(
       vehicleMileage: mileage,
       vehicleType,
       vehicleEngineVolume: engineVolume,
+      vehicleLoadCapacity: null,
+    },
+  };
+}
+
+function parseTruckPayload(
+  body: Record<string, unknown>
+): { ok: true; data: TransportVehiclePayload } | { ok: false; error: string } {
+  const year = parsePositiveInt(String(body.vehicleYear ?? ""));
+  const mileage = parseNonNegativeInt(body.vehicleMileage as string | number | undefined);
+  const fuel = typeof body.vehicleFuel === "string" ? body.vehicleFuel.trim() : "";
+  const transmission =
+    typeof body.vehicleTransmission === "string" ? body.vehicleTransmission.trim() : "";
+  const vehicleType = typeof body.vehicleType === "string" ? body.vehicleType.trim() : "";
+  const loadCapacityRaw = body.vehicleLoadCapacity;
+  const loadCapacityKg =
+    typeof loadCapacityRaw === "number"
+      ? loadCapacityRaw
+      : parsePositiveInt(String(loadCapacityRaw ?? ""));
+
+  if (!year || year < 1950 || year > new Date().getFullYear() + 1) {
+    return { ok: false, error: "Вкажіть коректний рік випуску" };
+  }
+  if (mileage === undefined || mileage > 3_000_000) {
+    return { ok: false, error: "Вкажіть коректний пробіг (км)" };
+  }
+  if (!fuel || !TRUCK_FUEL_TYPES.includes(fuel as (typeof TRUCK_FUEL_TYPES)[number])) {
+    return { ok: false, error: "Оберіть тип палива" };
+  }
+  if (
+    !transmission ||
+    !CAR_TRANSMISSIONS.includes(transmission as (typeof CAR_TRANSMISSIONS)[number])
+  ) {
+    return { ok: false, error: "Оберіть коробку передач" };
+  }
+  if (!vehicleType || !TRUCK_TYPES.includes(vehicleType as (typeof TRUCK_TYPES)[number])) {
+    return { ok: false, error: "Оберіть тип вантажівки" };
+  }
+  if (!loadCapacityKg || loadCapacityKg > 200_000) {
+    return { ok: false, error: "Вкажіть вантажопідйомність (кг)" };
+  }
+
+  return {
+    ok: true,
+    data: {
+      vehicleYear: year,
+      vehicleFuel: fuel,
+      vehicleTransmission: transmission,
+      vehicleBody: null,
+      vehicleMileage: mileage,
+      vehicleType,
+      vehicleEngineVolume: null,
+      vehicleLoadCapacity: loadCapacityKg,
     },
   };
 }
@@ -398,6 +561,13 @@ export function formatVehicleMileage(km: number): string {
 
 export function formatEngineVolume(cc: number): string {
   return `${cc.toLocaleString("uk-UA")} см³`;
+}
+
+export function formatLoadCapacity(kg: number): string {
+  if (kg >= 1000 && kg % 1000 === 0) {
+    return `${kg / 1000} т`;
+  }
+  return `${kg.toLocaleString("uk-UA")} кг`;
 }
 
 export function hasCarSearchFilters(params: CarSearchParams): boolean {
@@ -430,5 +600,21 @@ export function hasMotoSearchFilters(params: MotoSearchParams): boolean {
 }
 
 export function hasTransportSearchFilters(params: TransportSearchParams): boolean {
-  return hasCarSearchFilters(params) || hasMotoSearchFilters(params);
+  return hasCarSearchFilters(params) || hasMotoSearchFilters(params) || hasTruckSearchFilters(params);
+}
+
+export function hasTruckSearchFilters(params: TruckSearchParams): boolean {
+  return Boolean(
+    params.truckBrand ||
+      params.truckType ||
+      params.yearFrom ||
+      params.yearTo ||
+      params.fuel ||
+      params.transmission ||
+      params.mileageMax ||
+      params.loadCapacityMin ||
+      params.loadCapacityMax ||
+      params.truckCondition ||
+      params.approxPrice
+  );
 }

@@ -24,8 +24,13 @@ import {
   MOTO_BRANDS,
   MOTO_FUEL_TYPES,
   MOTO_TYPES,
+  TRUCK_BRANDS,
+  TRUCK_FUEL_TYPES,
+  TRUCK_TYPES,
   isCarListingCategory,
   isMotoListingCategory,
+  isTruckListingCategory,
+  tonsToKg,
 } from "@/lib/vehicle";
 import { getListingPhotosPayloadSize, validateListingPhotos } from "@/lib/listing-photos";
 import { uploadPhotoFile } from "@/lib/upload-photo";
@@ -57,6 +62,7 @@ type ListingFormProps = {
     vehicleMileage?: number | null;
     vehicleType?: string | null;
     vehicleEngineVolume?: number | null;
+    vehicleLoadCapacity?: number | null;
   };
 };
 
@@ -136,6 +142,9 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [vehicleEngineVolume, setVehicleEngineVolume] = useState(
     initial?.vehicleEngineVolume?.toString() || ""
   );
+  const [vehicleLoadCapacityTons, setVehicleLoadCapacityTons] = useState(
+    initial?.vehicleLoadCapacity ? String(initial.vehicleLoadCapacity / 1000) : ""
+  );
   const [photos, setPhotos] = useState<string[]>(initial?.photos || []);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -184,7 +193,13 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
 
   const isCarListing = isCarListingCategory(category, subcategory);
   const isMotoListing = isMotoListingCategory(category, subcategory);
-  const brandOptions = isMotoListing ? MOTO_BRANDS : CAR_BRANDS;
+  const isTruckListing = isTruckListingCategory(category, subcategory);
+  const brandOptions = isTruckListing
+    ? TRUCK_BRANDS
+    : isMotoListing
+      ? MOTO_BRANDS
+      : CAR_BRANDS;
+  const isBrandSelect = isCarListing || isMotoListing || isTruckListing;
 
   useEffect(() => {
     setCategoryDetail("");
@@ -366,6 +381,16 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               vehicleFuel,
               vehicleType,
               vehicleEngineVolume: Number(vehicleEngineVolume),
+            }
+          : {}),
+        ...(isTruckListing
+          ? {
+              vehicleYear: Number(vehicleYear),
+              vehicleMileage: Number(vehicleMileage),
+              vehicleFuel,
+              vehicleTransmission,
+              vehicleType,
+              vehicleLoadCapacity: tonsToKg(Number(vehicleLoadCapacityTons)),
             }
           : {}),
       };
@@ -556,6 +581,94 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         />
       </div>
     </div>
+  ) : isTruckListing ? (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <FieldLabel>
+          Тип транспорту <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} required>
+          <option value="">Оберіть</option>
+          {TRUCK_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <FieldLabel>
+          Рік випуску <span className="text-red-500">*</span>
+        </FieldLabel>
+        <input
+          type="number"
+          min="1950"
+          max={new Date().getFullYear() + 1}
+          value={vehicleYear}
+          onChange={(e) => setVehicleYear(e.target.value)}
+          required
+          placeholder="2018"
+        />
+      </div>
+      <div>
+        <FieldLabel>
+          Вантажопідйомність (т) <span className="text-red-500">*</span>
+        </FieldLabel>
+        <input
+          type="number"
+          min="0.5"
+          step="0.5"
+          value={vehicleLoadCapacityTons}
+          onChange={(e) => setVehicleLoadCapacityTons(e.target.value)}
+          required
+          placeholder="20"
+        />
+      </div>
+      <div>
+        <FieldLabel>
+          Паливо <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select value={vehicleFuel} onChange={(e) => setVehicleFuel(e.target.value)} required>
+          <option value="">Оберіть</option>
+          {TRUCK_FUEL_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <FieldLabel>
+          Коробка передач <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select
+          value={vehicleTransmission}
+          onChange={(e) => setVehicleTransmission(e.target.value)}
+          required
+        >
+          <option value="">Оберіть</option>
+          {CAR_TRANSMISSIONS.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <FieldLabel>
+          Пробіг (км) <span className="text-red-500">*</span>
+        </FieldLabel>
+        <input
+          type="number"
+          min="0"
+          step="1000"
+          value={vehicleMileage}
+          onChange={(e) => setVehicleMileage(e.target.value)}
+          required
+          placeholder="350000"
+        />
+      </div>
+    </div>
   ) : null;
 
   const simpleForm = (
@@ -674,8 +787,8 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
           </div>
         )}
         <div>
-          <FieldLabel>{isCarListing || isMotoListing ? "Марка *" : "Бренд"}</FieldLabel>
-          {isCarListing || isMotoListing ? (
+          <FieldLabel>{isBrandSelect ? "Марка *" : "Бренд"}</FieldLabel>
+          {isBrandSelect ? (
             <select value={brand} onChange={(e) => setBrand(e.target.value)} required>
               <option value="">Оберіть марку</option>
               {brandOptions.map((item) => (
@@ -960,8 +1073,8 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <FieldLabel>{isCarListing || isMotoListing ? "Марка *" : "Бренд"}</FieldLabel>
-                  {isCarListing || isMotoListing ? (
+                  <FieldLabel>{isBrandSelect ? "Марка *" : "Бренд"}</FieldLabel>
+                  {isBrandSelect ? (
                     <select value={brand} onChange={(e) => setBrand(e.target.value)} required>
                       <option value="">Оберіть марку</option>
                       {brandOptions.map((item) => (

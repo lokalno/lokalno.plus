@@ -4,11 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SettlementSearch from "@/components/SettlementSearch";
 import {
-  CAR_BODY_TYPES,
-  CAR_BRANDS,
-  CAR_FUEL_TYPES,
-  CAR_SUBCATEGORY,
   CAR_TRANSMISSIONS,
+  TRUCK_BRANDS,
+  TRUCK_FUEL_TYPES,
+  TRUCK_SUBCATEGORY,
+  TRUCK_TYPES,
   TRANSPORT_CATEGORY,
   approxPriceRange,
 } from "@/lib/vehicle";
@@ -16,7 +16,7 @@ import { CONDITIONS } from "@/lib/constants";
 
 const currentYear = new Date().getFullYear();
 
-export default function CarSearchFilters() {
+export default function TruckSearchFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -26,41 +26,29 @@ export default function CarSearchFilters() {
     setCity(searchParams.get("city") || "");
   }, [searchParams]);
 
-  const carBrand = searchParams.get("carBrand") || "";
+  const truckBrand = searchParams.get("truckBrand") || "";
+  const truckType = searchParams.get("truckType") || "";
   const approxPrice = searchParams.get("approxPrice") || "";
   const yearFrom = searchParams.get("yearFrom") || "";
   const yearTo = searchParams.get("yearTo") || "";
   const fuel = searchParams.get("fuel") || "";
   const transmission = searchParams.get("transmission") || "";
-  const body = searchParams.get("body") || "";
   const mileageMax = searchParams.get("mileageMax") || "";
-  const carCondition = searchParams.get("carCondition") || "";
+  const loadCapacityMin = searchParams.get("loadCapacityMin") || "";
+  const loadCapacityMax = searchParams.get("loadCapacityMax") || "";
+  const truckCondition = searchParams.get("truckCondition") || "";
   const sort = searchParams.get("sort") || "new";
 
   function applySearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
 
     params.set("category", TRANSPORT_CATEGORY);
-    params.set("subcategory", CAR_SUBCATEGORY);
-    params.delete("detail");
-    params.delete("item");
-    params.delete("page");
-    params.delete("motoBrand");
-    params.delete("motoType");
-    params.delete("engineVolumeFrom");
-    params.delete("engineVolumeTo");
-    params.delete("motoCondition");
-    params.delete("truckBrand");
-    params.delete("truckType");
-    params.delete("loadCapacityMin");
-    params.delete("loadCapacityMax");
-    params.delete("truckCondition");
+    params.set("subcategory", TRUCK_SUBCATEGORY);
 
     if (city.trim()) params.set("city", city.trim());
-    else params.delete("city");
 
     const nextApprox = String(data.get("approxPrice") || "").trim();
     if (nextApprox) {
@@ -71,25 +59,22 @@ export default function CarSearchFilters() {
         params.set("minPrice", String(range.min));
         params.set("maxPrice", String(range.max));
       }
-    } else {
-      params.delete("approxPrice");
-      params.delete("minPrice");
-      params.delete("maxPrice");
     }
 
     const setOrDelete = (key: string, value: string) => {
       if (value) params.set(key, value);
-      else params.delete(key);
     };
 
-    setOrDelete("carBrand", String(data.get("carBrand") || "").trim());
+    setOrDelete("truckBrand", String(data.get("truckBrand") || "").trim());
+    setOrDelete("truckType", String(data.get("truckType") || "").trim());
     setOrDelete("yearFrom", String(data.get("yearFrom") || "").trim());
     setOrDelete("yearTo", String(data.get("yearTo") || "").trim());
     setOrDelete("fuel", String(data.get("fuel") || "").trim());
     setOrDelete("transmission", String(data.get("transmission") || "").trim());
-    setOrDelete("body", String(data.get("body") || "").trim());
     setOrDelete("mileageMax", String(data.get("mileageMax") || "").trim());
-    setOrDelete("carCondition", String(data.get("carCondition") || "").trim());
+    setOrDelete("loadCapacityMin", String(data.get("loadCapacityMin") || "").trim());
+    setOrDelete("loadCapacityMax", String(data.get("loadCapacityMax") || "").trim());
+    setOrDelete("truckCondition", String(data.get("truckCondition") || "").trim());
     setOrDelete("sort", String(data.get("sort") || "").trim() || "new");
 
     startTransition(() => {
@@ -101,7 +86,7 @@ export default function CarSearchFilters() {
     setCity("");
     startTransition(() => {
       router.replace(
-        `/?category=${encodeURIComponent(TRANSPORT_CATEGORY)}&subcategory=${encodeURIComponent(CAR_SUBCATEGORY)}`,
+        `/?category=${encodeURIComponent(TRANSPORT_CATEGORY)}&subcategory=${encodeURIComponent(TRUCK_SUBCATEGORY)}`,
         { scroll: false }
       );
     });
@@ -114,11 +99,12 @@ export default function CarSearchFilters() {
       aria-busy={isPending}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-gray-900">Пошук авто</h3>
+        <h3 className="text-sm font-bold text-gray-900">Пошук вантажівок</h3>
         {isPending && <span className="text-xs text-gray-400">завантаження…</span>}
       </div>
       <p className="text-xs text-gray-500">
-        Легкові авто по всій Україні — марка, ціна ±15%, рік, паливо, КПП, кузов, стан, пробіг.
+        Вантажівки, тягачі, фури по Україні — тип, марка, ціна ±15%, рік, паливо, КПП, пробіг,
+        вантажопідйомність, стан.
       </p>
 
       <SettlementSearch
@@ -138,10 +124,22 @@ export default function CarSearchFilters() {
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Марка авто</label>
-        <select name="carBrand" defaultValue={carBrand} key={`brand-${carBrand}`}>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Тип транспорту</label>
+        <select name="truckType" defaultValue={truckType} key={`type-${truckType}`}>
+          <option value="">Будь-який</option>
+          {TRUCK_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Марка</label>
+        <select name="truckBrand" defaultValue={truckBrand} key={`brand-${truckBrand}`}>
           <option value="">Будь-яка</option>
-          {CAR_BRANDS.map((item) => (
+          {TRUCK_BRANDS.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -155,8 +153,8 @@ export default function CarSearchFilters() {
           name="approxPrice"
           type="number"
           min="1"
-          step="1000"
-          placeholder="Наприклад, 350000"
+          step="10000"
+          placeholder="Наприклад, 850000"
           defaultValue={approxPrice}
           key={`approx-${approxPrice}`}
         />
@@ -194,7 +192,7 @@ export default function CarSearchFilters() {
         <label className="mb-1 block text-sm font-medium text-gray-700">Паливо</label>
         <select name="fuel" defaultValue={fuel} key={`fuel-${fuel}`}>
           <option value="">Будь-яке</option>
-          {CAR_FUEL_TYPES.map((item) => (
+          {TRUCK_FUEL_TYPES.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -214,21 +212,36 @@ export default function CarSearchFilters() {
         </select>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Тип кузова</label>
-        <select name="body" defaultValue={body} key={`body-${body}`}>
-          <option value="">Будь-який</option>
-          {CAR_BODY_TYPES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Вантажопідйомність від (т)</label>
+          <input
+            name="loadCapacityMin"
+            type="number"
+            min="0.5"
+            step="0.5"
+            placeholder="5"
+            defaultValue={loadCapacityMin}
+            key={`loadMin-${loadCapacityMin}`}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Вантажопідйомність до (т)</label>
+          <input
+            name="loadCapacityMax"
+            type="number"
+            min="0.5"
+            step="0.5"
+            placeholder="20"
+            defaultValue={loadCapacityMax}
+            key={`loadMax-${loadCapacityMax}`}
+          />
+        </div>
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">Стан</label>
-        <select name="carCondition" defaultValue={carCondition} key={`cond-${carCondition}`}>
+        <select name="truckCondition" defaultValue={truckCondition} key={`cond-${truckCondition}`}>
           <option value="">Будь-який</option>
           {Object.entries(CONDITIONS).map(([key, label]) => (
             <option key={key} value={key}>
@@ -244,8 +257,8 @@ export default function CarSearchFilters() {
           name="mileageMax"
           type="number"
           min="0"
-          step="1000"
-          placeholder="150000"
+          step="10000"
+          placeholder="500000"
           defaultValue={mileageMax}
           key={`mileage-${mileageMax}`}
         />
@@ -267,7 +280,7 @@ export default function CarSearchFilters() {
           disabled={isPending}
           className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          Знайти авто
+          Знайти вантажівку
         </button>
         <button
           type="button"
