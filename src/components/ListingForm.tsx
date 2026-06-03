@@ -33,6 +33,11 @@ import {
   tonsToKg,
 } from "@/lib/vehicle";
 import {
+  AGRI_BRANDS,
+  AGRI_TYPES,
+  isAgriListingCategory,
+} from "@/lib/agri";
+import {
   PART_FOR_VEHICLES,
   PART_POPULAR,
   PART_TYPES,
@@ -208,6 +213,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const isMotoListing = isMotoListingCategory(category, subcategory);
   const isTruckListing = isTruckListingCategory(category, subcategory);
   const isPartsListing = isPartsListingCategory(category, subcategory);
+  const isAgriListing = isAgriListingCategory(category, subcategory);
   const brandOptions = isTruckListing
     ? TRUCK_BRANDS
     : isMotoListing
@@ -412,6 +418,13 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               partForVehicle,
               partType,
               partPopular: partPopular || null,
+            }
+          : {}),
+        ...(isAgriListing
+          ? {
+              brand,
+              vehicleType,
+              vehicleYear: Number(vehicleYear),
             }
           : {}),
       };
@@ -743,6 +756,49 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
             </option>
           ))}
         </select>
+      </div>
+    </div>
+  ) : isAgriListing ? (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <FieldLabel>
+          Марка <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select value={brand} onChange={(e) => setBrand(e.target.value)} required>
+          <option value="">Оберіть</option>
+          {AGRI_BRANDS.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <FieldLabel>
+          Тип техніки <span className="text-red-500">*</span>
+        </FieldLabel>
+        <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} required>
+          <option value="">Оберіть</option>
+          {AGRI_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2">
+        <FieldLabel>
+          Рік випуску <span className="text-red-500">*</span>
+        </FieldLabel>
+        <input
+          type="number"
+          min="1950"
+          max={new Date().getFullYear() + 1}
+          value={vehicleYear}
+          onChange={(e) => setVehicleYear(e.target.value)}
+          required
+          placeholder="2015"
+        />
       </div>
     </div>
   ) : null;

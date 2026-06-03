@@ -9,6 +9,7 @@ import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
 import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
+import { isAgriListingCategory, parseAgriListingPayload } from "@/lib/agri";
 import { parseListingCategory } from "@/lib/constants";
 
 export async function GET(request: Request) {
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
 
     const { main, sub } = parseListingCategory(category);
     const isParts = isPartsListingCategory(main, sub);
+    const isAgri = isAgriListingCategory(main, sub);
     const emptyParts: {
       partForVehicle: string | null;
       partType: string | null;
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
     } = { partForVehicle: null, partType: null, partPopular: null };
     let partsFields = emptyParts;
     let listingBrand = typeof brand === "string" && brand.trim() ? brand.trim() : null;
+    let vehicleData = vehicleCheck.data;
     if (isParts) {
       const partsCheck = parsePartsListingPayload({
         partForVehicle,
@@ -153,6 +156,18 @@ export async function POST(request: Request) {
         partType: partsCheck.data.partType,
         partPopular: partsCheck.data.partPopular,
       };
+    } else if (isAgri) {
+      const agriCheck = parseAgriListingPayload({
+        brand,
+        vehicleType,
+        vehicleYear,
+      });
+      if (!agriCheck.ok) {
+        return NextResponse.json({ error: agriCheck.error }, { status: 400 });
+      }
+      listingBrand = agriCheck.data.brand;
+      const { brand: _agriBrand, ...agriVehicleFields } = agriCheck.data;
+      vehicleData = agriVehicleFields;
     }
 
     const listing = await prisma.listing.create({
@@ -170,7 +185,7 @@ export async function POST(request: Request) {
         allowPriceOffers: Boolean(allowPriceOffers),
         sellerId: session.user.id,
         status: initialStatus,
-        ...vehicleCheck.data,
+        ...vehicleData,
         ...partsFields,
       },
     });

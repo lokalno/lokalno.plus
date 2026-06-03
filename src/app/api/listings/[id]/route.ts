@@ -9,6 +9,7 @@ import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
 import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
+import { isAgriListingCategory, parseAgriListingPayload } from "@/lib/agri";
 import { parseListingCategory } from "@/lib/constants";
 
 type Params = { params: Promise<{ id: string }> };
@@ -163,6 +164,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const { main, sub } = parseListingCategory(nextCategory);
     const isParts = isPartsListingCategory(main, sub);
+    const isAgri = isAgriListingCategory(main, sub);
     const partsTouched =
       body.category !== undefined ||
       body.partForVehicle !== undefined ||
@@ -175,6 +177,8 @@ export async function PATCH(request: Request, { params }: Params) {
       partPopular: string | null;
     } | null = null;
     let partsBrand: string | null | undefined;
+    let agriVehicleData: typeof vehicleCheck.data | null = null;
+    let agriBrand: string | null | undefined;
     if (partsTouched) {
       if (isParts) {
         const partsCheck = parsePartsListingPayload({
@@ -199,6 +203,39 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    const agriTouched =
+      body.category !== undefined ||
+      body.brand !== undefined ||
+      body.vehicleType !== undefined ||
+      body.vehicleYear !== undefined;
+    if (agriTouched) {
+      if (isAgri) {
+        const agriCheck = parseAgriListingPayload({
+          brand: body.brand !== undefined ? body.brand : listing.brand,
+          vehicleType: body.vehicleType !== undefined ? body.vehicleType : listing.vehicleType,
+          vehicleYear: body.vehicleYear !== undefined ? body.vehicleYear : listing.vehicleYear,
+        });
+        if (!agriCheck.ok) {
+          return NextResponse.json({ error: agriCheck.error }, { status: 400 });
+        }
+        const { brand: parsedAgriBrand, ...agriVehicleFields } = agriCheck.data;
+        agriBrand = parsedAgriBrand;
+        agriVehicleData = agriVehicleFields;
+      } else {
+        agriBrand = null;
+        agriVehicleData = {
+          vehicleYear: null,
+          vehicleFuel: null,
+          vehicleTransmission: null,
+          vehicleBody: null,
+          vehicleMileage: null,
+          vehicleType: null,
+          vehicleEngineVolume: null,
+          vehicleLoadCapacity: null,
+        };
+      }
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {
@@ -206,10 +243,11 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.description !== undefined ? { description: body.description.trim() } : {}),
         ...(body.price !== undefined ? { price: Number(body.price) } : {}),
         ...(body.category !== undefined ? { category: body.category } : {}),
-        ...(body.brand !== undefined && !isParts
+        ...(body.brand !== undefined && !isParts && !isAgri
           ? { brand: typeof body.brand === "string" && body.brand.trim() ? body.brand.trim() : null }
           : {}),
         ...(partsBrand !== undefined ? { brand: partsBrand } : {}),
+        ...(agriBrand !== undefined ? { brand: agriBrand } : {}),
         ...(body.condition !== undefined ? { condition: body.condition } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
         ...(body.itemLocation !== undefined ? { itemLocation: body.itemLocation } : {}),
@@ -231,6 +269,7 @@ export async function PATCH(request: Request, { params }: Params) {
         body.vehicleLoadCapacity !== undefined
           ? vehicleCheck.data
           : {}),
+        ...(agriVehicleData ? agriVehicleData : {}),
         ...(partsFields ? partsFields : {}),
       },
     });

@@ -17,6 +17,7 @@ import {
   isTruckCatalogContext,
 } from "@/lib/vehicle";
 import { buildPartsWhere, hasPartsSearchFilters, isPartsCatalogContext } from "@/lib/parts";
+import { buildAgriWhere, buildAgriListingCategoryFilter, hasAgriSearchFilters, isAgriCatalogContext } from "@/lib/agri";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
 type HomeListing = ListingWithSoldCount & {
@@ -74,6 +75,9 @@ export type HomeCatalogParams = {
   partPopular?: string;
   partBrand?: string;
   partsCondition?: string;
+  agriBrand?: string;
+  agriType?: string;
+  agriCondition?: string;
 };
 
 function getOrderBy(sort?: string) {
@@ -106,6 +110,7 @@ function hasActiveFilters(params: HomeCatalogParams) {
       params.maxPrice ||
       hasTransportSearchFilters(params) ||
       hasPartsSearchFilters(params) ||
+      hasAgriSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
 }
@@ -121,6 +126,7 @@ function buildWhere(params: HomeCatalogParams) {
   const motoContext = isMotoCatalogContext(params.category, params.subcategory);
   const truckContext = isTruckCatalogContext(params.category, params.subcategory);
   const partsContext = isPartsCatalogContext(params.category, params.subcategory);
+  const agriContext = isAgriCatalogContext(params.category, params.subcategory);
   const categorySub = carContext
     ? effectiveCarSubcategory(params.subcategory)
     : params.subcategory;
@@ -128,12 +134,24 @@ function buildWhere(params: HomeCatalogParams) {
   return {
     status: "ACTIVE" as const,
     ...(params.city ? { city: params.city } : {}),
-    ...buildListingCategoryFilter(
-      params.category,
-      categorySub,
-      params.detail,
-      params.item
-    ),
+    ...(agriContext
+      ? buildAgriListingCategoryFilter()
+      : buildListingCategoryFilter(
+          params.category,
+          categorySub,
+          params.detail,
+          params.item
+        )),
+    ...(agriContext
+      ? buildAgriWhere({
+          agriBrand: params.agriBrand,
+          agriType: params.agriType,
+          yearFrom: params.yearFrom,
+          yearTo: params.yearTo,
+          agriCondition: params.agriCondition,
+          approxPrice: params.approxPrice,
+        })
+      : {}),
     ...(partsContext
       ? buildPartsWhere({
           partFor: params.partFor,
@@ -275,6 +293,9 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.partPopular) baseParams.partPopular = params.partPopular;
   if (params.partBrand) baseParams.partBrand = params.partBrand;
   if (params.partsCondition) baseParams.partsCondition = params.partsCondition;
+  if (params.agriBrand) baseParams.agriBrand = params.agriBrand;
+  if (params.agriType) baseParams.agriType = params.agriType;
+  if (params.agriCondition) baseParams.agriCondition = params.agriCondition;
 
   if (dbUnavailable) {
     return (
@@ -344,6 +365,8 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
               {params.partType ? ` · ${params.partType}` : ""}
               {params.partPopular ? ` · ${params.partPopular}` : ""}
               {params.partBrand ? ` · ${params.partBrand}` : ""}
+              {params.agriBrand ? ` · ${params.agriBrand}` : ""}
+              {params.agriType ? ` · ${params.agriType}` : ""}
               {params.subcategory ? ` · ${params.subcategory}` : ""}
               {params.detail ? ` · ${params.detail}` : ""}
               {params.item ? ` · ${params.item}` : ""}
@@ -420,5 +443,8 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.partPopular ?? "",
     params.partBrand ?? "",
     params.partsCondition ?? "",
+    params.agriBrand ?? "",
+    params.agriType ?? "",
+    params.agriCondition ?? "",
   ].join("|");
 }
