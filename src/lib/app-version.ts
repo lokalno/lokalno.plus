@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v127-agri-spelling";
+export const APP_VERSION = "v128-pet-goods";
