@@ -7,10 +7,12 @@ import { prisma } from "@/lib/prisma";
 import { LISTINGS_PER_PAGE } from "@/lib/catalog";
 import { buildListingCategoryFilter } from "@/lib/constants";
 import {
+  buildMotoWhere,
   buildVehicleWhere,
   effectiveCarSubcategory,
-  hasCarSearchFilters,
+  hasTransportSearchFilters,
   isCarCatalogContext,
+  isMotoCatalogContext,
 } from "@/lib/vehicle";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
@@ -46,13 +48,18 @@ export type HomeCatalogParams = {
   minPrice?: string;
   maxPrice?: string;
   carBrand?: string;
+  motoBrand?: string;
+  motoType?: string;
   yearFrom?: string;
   yearTo?: string;
+  engineVolumeFrom?: string;
+  engineVolumeTo?: string;
   fuel?: string;
   transmission?: string;
   body?: string;
   mileageMax?: string;
   carCondition?: string;
+  motoCondition?: string;
   approxPrice?: string;
 };
 
@@ -84,15 +91,7 @@ function hasActiveFilters(params: HomeCatalogParams) {
       params.q ||
       params.minPrice ||
       params.maxPrice ||
-      params.carBrand ||
-      params.yearFrom ||
-      params.yearTo ||
-      params.fuel ||
-      params.transmission ||
-      params.body ||
-      params.mileageMax ||
-      params.carCondition ||
-      params.approxPrice ||
+      hasTransportSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
 }
@@ -105,19 +104,35 @@ function buildWhere(params: HomeCatalogParams) {
   if (maxPrice !== undefined && !Number.isNaN(maxPrice)) priceFilter.lte = maxPrice;
 
   const carContext = isCarCatalogContext(params.category, params.subcategory);
-  const categoryMain = carContext ? params.category : params.category;
-  const categorySub = carContext ? effectiveCarSubcategory(params.subcategory) : params.subcategory;
+  const motoContext = isMotoCatalogContext(params.category, params.subcategory);
+  const categorySub = carContext
+    ? effectiveCarSubcategory(params.subcategory)
+    : params.subcategory;
 
   return {
     status: "ACTIVE" as const,
     ...(params.city ? { city: params.city } : {}),
     ...buildListingCategoryFilter(
-      categoryMain,
+      params.category,
       categorySub,
       params.detail,
       params.item
     ),
-    ...(carContext || hasCarSearchFilters(params)
+    ...(motoContext
+      ? buildMotoWhere({
+          motoBrand: params.motoBrand,
+          motoType: params.motoType,
+          yearFrom: params.yearFrom,
+          yearTo: params.yearTo,
+          engineVolumeFrom: params.engineVolumeFrom,
+          engineVolumeTo: params.engineVolumeTo,
+          fuel: params.fuel,
+          mileageMax: params.mileageMax,
+          motoCondition: params.motoCondition,
+          approxPrice: params.approxPrice,
+        })
+      : {}),
+    ...(carContext
       ? buildVehicleWhere({
           carBrand: params.carBrand,
           yearFrom: params.yearFrom,
@@ -196,13 +211,18 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.minPrice) baseParams.minPrice = params.minPrice;
   if (params.maxPrice) baseParams.maxPrice = params.maxPrice;
   if (params.carBrand) baseParams.carBrand = params.carBrand;
+  if (params.motoBrand) baseParams.motoBrand = params.motoBrand;
+  if (params.motoType) baseParams.motoType = params.motoType;
   if (params.yearFrom) baseParams.yearFrom = params.yearFrom;
   if (params.yearTo) baseParams.yearTo = params.yearTo;
+  if (params.engineVolumeFrom) baseParams.engineVolumeFrom = params.engineVolumeFrom;
+  if (params.engineVolumeTo) baseParams.engineVolumeTo = params.engineVolumeTo;
   if (params.fuel) baseParams.fuel = params.fuel;
   if (params.transmission) baseParams.transmission = params.transmission;
   if (params.body) baseParams.body = params.body;
   if (params.mileageMax) baseParams.mileageMax = params.mileageMax;
   if (params.carCondition) baseParams.carCondition = params.carCondition;
+  if (params.motoCondition) baseParams.motoCondition = params.motoCondition;
   if (params.approxPrice) baseParams.approxPrice = params.approxPrice;
 
   if (dbUnavailable) {
@@ -265,6 +285,8 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
               {params.city ? ` · ${params.city.split(",")[0]}` : ""}
               {params.category ? ` · ${params.category}` : ""}
               {params.carBrand ? ` · ${params.carBrand}` : ""}
+              {params.motoBrand ? ` · ${params.motoBrand}` : ""}
+              {params.motoType ? ` · ${params.motoType}` : ""}
               {params.subcategory ? ` · ${params.subcategory}` : ""}
               {params.detail ? ` · ${params.detail}` : ""}
               {params.item ? ` · ${params.item}` : ""}
@@ -318,13 +340,18 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.minPrice ?? "",
     params.maxPrice ?? "",
     params.carBrand ?? "",
+    params.motoBrand ?? "",
+    params.motoType ?? "",
     params.yearFrom ?? "",
     params.yearTo ?? "",
+    params.engineVolumeFrom ?? "",
+    params.engineVolumeTo ?? "",
     params.fuel ?? "",
     params.transmission ?? "",
     params.body ?? "",
     params.mileageMax ?? "",
     params.carCondition ?? "",
+    params.motoCondition ?? "",
     params.approxPrice ?? "",
   ].join("|");
 }

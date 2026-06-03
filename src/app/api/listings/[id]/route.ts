@@ -7,7 +7,7 @@ import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
 import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
-import { parseVehiclePayload } from "@/lib/vehicle";
+import { parseTransportVehiclePayload } from "@/lib/vehicle";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -144,8 +144,13 @@ export async function PATCH(request: Request, { params }: Params) {
       vehicleBody: body.vehicleBody !== undefined ? body.vehicleBody : listing.vehicleBody,
       vehicleMileage:
         body.vehicleMileage !== undefined ? body.vehicleMileage : listing.vehicleMileage,
+      vehicleType: body.vehicleType !== undefined ? body.vehicleType : listing.vehicleType,
+      vehicleEngineVolume:
+        body.vehicleEngineVolume !== undefined
+          ? body.vehicleEngineVolume
+          : listing.vehicleEngineVolume,
     };
-    const vehicleCheck = parseVehiclePayload(vehicleInput, nextCategory);
+    const vehicleCheck = parseTransportVehiclePayload(vehicleInput, nextCategory);
     if (!vehicleCheck.ok) {
       return NextResponse.json({ error: vehicleCheck.error }, { status: 400 });
     }
@@ -175,7 +180,9 @@ export async function PATCH(request: Request, { params }: Params) {
         body.vehicleFuel !== undefined ||
         body.vehicleTransmission !== undefined ||
         body.vehicleBody !== undefined ||
-        body.vehicleMileage !== undefined
+        body.vehicleMileage !== undefined ||
+        body.vehicleType !== undefined ||
+        body.vehicleEngineVolume !== undefined
           ? vehicleCheck.data
           : {}),
       },

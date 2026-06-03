@@ -7,7 +7,7 @@ import { checkListingContent } from "@/lib/moderation";
 import { validateListingPhotos } from "@/lib/listing-photos";
 import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
-import { parseVehiclePayload } from "@/lib/vehicle";
+import { parseTransportVehiclePayload } from "@/lib/vehicle";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage } =
+    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume } =
       body;
 
     if (!title || !description || !price || !category || !condition || !city) {
@@ -109,8 +109,16 @@ export async function POST(request: Request) {
 
     const initialStatus = await getInitialListingStatus();
 
-    const vehicleCheck = parseVehiclePayload(
-      { vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage },
+    const vehicleCheck = parseTransportVehiclePayload(
+      {
+        vehicleYear,
+        vehicleFuel,
+        vehicleTransmission,
+        vehicleBody,
+        vehicleMileage,
+        vehicleType,
+        vehicleEngineVolume,
+      },
       category
     );
     if (!vehicleCheck.ok) {

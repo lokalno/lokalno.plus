@@ -4,11 +4,10 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SettlementSearch from "@/components/SettlementSearch";
 import {
-  CAR_BODY_TYPES,
-  CAR_BRANDS,
-  CAR_FUEL_TYPES,
-  CAR_SUBCATEGORY,
-  CAR_TRANSMISSIONS,
+  MOTO_BRANDS,
+  MOTO_FUEL_TYPES,
+  MOTO_SUBCATEGORY,
+  MOTO_TYPES,
   TRANSPORT_CATEGORY,
   approxPriceRange,
 } from "@/lib/vehicle";
@@ -16,7 +15,7 @@ import { CONDITIONS } from "@/lib/constants";
 
 const currentYear = new Date().getFullYear();
 
-export default function CarSearchFilters() {
+export default function MotoSearchFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -26,36 +25,28 @@ export default function CarSearchFilters() {
     setCity(searchParams.get("city") || "");
   }, [searchParams]);
 
-  const carBrand = searchParams.get("carBrand") || "";
+  const motoBrand = searchParams.get("motoBrand") || "";
+  const motoType = searchParams.get("motoType") || "";
   const approxPrice = searchParams.get("approxPrice") || "";
   const yearFrom = searchParams.get("yearFrom") || "";
   const yearTo = searchParams.get("yearTo") || "";
+  const engineVolumeFrom = searchParams.get("engineVolumeFrom") || "";
+  const engineVolumeTo = searchParams.get("engineVolumeTo") || "";
   const fuel = searchParams.get("fuel") || "";
-  const transmission = searchParams.get("transmission") || "";
-  const body = searchParams.get("body") || "";
   const mileageMax = searchParams.get("mileageMax") || "";
-  const carCondition = searchParams.get("carCondition") || "";
+  const motoCondition = searchParams.get("motoCondition") || "";
   const sort = searchParams.get("sort") || "new";
 
   function applySearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
 
     params.set("category", TRANSPORT_CATEGORY);
-    params.set("subcategory", CAR_SUBCATEGORY);
-    params.delete("detail");
-    params.delete("item");
-    params.delete("page");
-    params.delete("motoBrand");
-    params.delete("motoType");
-    params.delete("engineVolumeFrom");
-    params.delete("engineVolumeTo");
-    params.delete("motoCondition");
+    params.set("subcategory", MOTO_SUBCATEGORY);
 
     if (city.trim()) params.set("city", city.trim());
-    else params.delete("city");
 
     const nextApprox = String(data.get("approxPrice") || "").trim();
     if (nextApprox) {
@@ -66,25 +57,21 @@ export default function CarSearchFilters() {
         params.set("minPrice", String(range.min));
         params.set("maxPrice", String(range.max));
       }
-    } else {
-      params.delete("approxPrice");
-      params.delete("minPrice");
-      params.delete("maxPrice");
     }
 
     const setOrDelete = (key: string, value: string) => {
       if (value) params.set(key, value);
-      else params.delete(key);
     };
 
-    setOrDelete("carBrand", String(data.get("carBrand") || "").trim());
+    setOrDelete("motoBrand", String(data.get("motoBrand") || "").trim());
+    setOrDelete("motoType", String(data.get("motoType") || "").trim());
     setOrDelete("yearFrom", String(data.get("yearFrom") || "").trim());
     setOrDelete("yearTo", String(data.get("yearTo") || "").trim());
+    setOrDelete("engineVolumeFrom", String(data.get("engineVolumeFrom") || "").trim());
+    setOrDelete("engineVolumeTo", String(data.get("engineVolumeTo") || "").trim());
     setOrDelete("fuel", String(data.get("fuel") || "").trim());
-    setOrDelete("transmission", String(data.get("transmission") || "").trim());
-    setOrDelete("body", String(data.get("body") || "").trim());
     setOrDelete("mileageMax", String(data.get("mileageMax") || "").trim());
-    setOrDelete("carCondition", String(data.get("carCondition") || "").trim());
+    setOrDelete("motoCondition", String(data.get("motoCondition") || "").trim());
     setOrDelete("sort", String(data.get("sort") || "").trim() || "new");
 
     startTransition(() => {
@@ -96,7 +83,7 @@ export default function CarSearchFilters() {
     setCity("");
     startTransition(() => {
       router.replace(
-        `/?category=${encodeURIComponent(TRANSPORT_CATEGORY)}&subcategory=${encodeURIComponent(CAR_SUBCATEGORY)}`,
+        `/?category=${encodeURIComponent(TRANSPORT_CATEGORY)}&subcategory=${encodeURIComponent(MOTO_SUBCATEGORY)}`,
         { scroll: false }
       );
     });
@@ -109,11 +96,12 @@ export default function CarSearchFilters() {
       aria-busy={isPending}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-gray-900">Пошук авто</h3>
+        <h3 className="text-sm font-bold text-gray-900">Пошук мото</h3>
         {isPending && <span className="text-xs text-gray-400">завантаження…</span>}
       </div>
       <p className="text-xs text-gray-500">
-        Легкові авто по всій Україні — марка, ціна ±15%, рік, паливо, КПП, кузов, стан, пробіг.
+        Мотоцикли, скутери, квадроцикли по Україні — тип, марка, ціна ±15%, рік, об&apos;єм, паливо,
+        пробіг, стан.
       </p>
 
       <SettlementSearch
@@ -133,10 +121,22 @@ export default function CarSearchFilters() {
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Марка авто</label>
-        <select name="carBrand" defaultValue={carBrand} key={`brand-${carBrand}`}>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Тип транспорту</label>
+        <select name="motoType" defaultValue={motoType} key={`type-${motoType}`}>
+          <option value="">Будь-який</option>
+          {MOTO_TYPES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Марка</label>
+        <select name="motoBrand" defaultValue={motoBrand} key={`brand-${motoBrand}`}>
           <option value="">Будь-яка</option>
-          {CAR_BRANDS.map((item) => (
+          {MOTO_BRANDS.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -150,8 +150,8 @@ export default function CarSearchFilters() {
           name="approxPrice"
           type="number"
           min="1"
-          step="1000"
-          placeholder="Наприклад, 350000"
+          step="500"
+          placeholder="Наприклад, 85000"
           defaultValue={approxPrice}
           key={`approx-${approxPrice}`}
         />
@@ -185,35 +185,38 @@ export default function CarSearchFilters() {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Об&apos;єм від (см³)</label>
+          <input
+            name="engineVolumeFrom"
+            type="number"
+            min="50"
+            step="50"
+            placeholder="125"
+            defaultValue={engineVolumeFrom}
+            key={`volFrom-${engineVolumeFrom}`}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Об&apos;єм до (см³)</label>
+          <input
+            name="engineVolumeTo"
+            type="number"
+            min="50"
+            step="50"
+            placeholder="600"
+            defaultValue={engineVolumeTo}
+            key={`volTo-${engineVolumeTo}`}
+          />
+        </div>
+      </div>
+
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">Паливо</label>
         <select name="fuel" defaultValue={fuel} key={`fuel-${fuel}`}>
           <option value="">Будь-яке</option>
-          {CAR_FUEL_TYPES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Коробка передач</label>
-        <select name="transmission" defaultValue={transmission} key={`trans-${transmission}`}>
-          <option value="">Будь-яка</option>
-          {CAR_TRANSMISSIONS.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Тип кузова</label>
-        <select name="body" defaultValue={body} key={`body-${body}`}>
-          <option value="">Будь-який</option>
-          {CAR_BODY_TYPES.map((item) => (
+          {MOTO_FUEL_TYPES.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -223,7 +226,7 @@ export default function CarSearchFilters() {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">Стан</label>
-        <select name="carCondition" defaultValue={carCondition} key={`cond-${carCondition}`}>
+        <select name="motoCondition" defaultValue={motoCondition} key={`cond-${motoCondition}`}>
           <option value="">Будь-який</option>
           {Object.entries(CONDITIONS).map(([key, label]) => (
             <option key={key} value={key}>
@@ -240,7 +243,7 @@ export default function CarSearchFilters() {
           type="number"
           min="0"
           step="1000"
-          placeholder="150000"
+          placeholder="30000"
           defaultValue={mileageMax}
           key={`mileage-${mileageMax}`}
         />
@@ -262,7 +265,7 @@ export default function CarSearchFilters() {
           disabled={isPending}
           className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          Знайти авто
+          Знайти мото
         </button>
         <button
           type="button"

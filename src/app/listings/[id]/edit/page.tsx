@@ -52,6 +52,8 @@ export default async function EditListingPage({ params }: Params) {
           vehicleTransmission: listing.vehicleTransmission,
           vehicleBody: listing.vehicleBody,
           vehicleMileage: listing.vehicleMileage,
+          vehicleType: listing.vehicleType,
+          vehicleEngineVolume: listing.vehicleEngineVolume,
         }}
       />
     </div>

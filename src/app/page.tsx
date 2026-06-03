@@ -3,12 +3,17 @@ import CategorySidebar from "@/components/CategorySidebar";
 import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
 import SearchFilters from "@/components/SearchFilters";
 import CarSearchFilters from "@/components/CarSearchFilters";
+import MotoSearchFilters from "@/components/MotoSearchFilters";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
 import { getPopularCities, getLatestSidebarListings } from "@/lib/home-sidebar-cache";
 import { parsePageParam } from "@/lib/catalog";
-import { hasCarSearchFilters, isCarCatalogContext } from "@/lib/vehicle";
+import {
+  hasTransportSearchFilters,
+  isCarCatalogContext,
+  isMotoCatalogContext,
+} from "@/lib/vehicle";
 
 type SearchParams = Promise<{
   city?: string;
@@ -21,13 +26,19 @@ type SearchParams = Promise<{
   page?: string;
   minPrice?: string;
   maxPrice?: string;
+  carBrand?: string;
+  motoBrand?: string;
+  motoType?: string;
   yearFrom?: string;
   yearTo?: string;
+  engineVolumeFrom?: string;
+  engineVolumeTo?: string;
   fuel?: string;
   transmission?: string;
   body?: string;
   mileageMax?: string;
   carCondition?: string;
+  motoCondition?: string;
   approxPrice?: string;
 }>;
 
@@ -41,13 +52,19 @@ function hasActiveFilters(params: {
   minPrice?: string;
   maxPrice?: string;
   sort?: string;
+  carBrand?: string;
+  motoBrand?: string;
+  motoType?: string;
   yearFrom?: string;
   yearTo?: string;
+  engineVolumeFrom?: string;
+  engineVolumeTo?: string;
   fuel?: string;
   transmission?: string;
   body?: string;
   mileageMax?: string;
   carCondition?: string;
+  motoCondition?: string;
   approxPrice?: string;
 }) {
   return Boolean(
@@ -59,16 +76,28 @@ function hasActiveFilters(params: {
       params.q ||
       params.minPrice ||
       params.maxPrice ||
-      hasCarSearchFilters(params) ||
+      hasTransportSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
+}
+
+function transportFilters(params: {
+  category?: string;
+  subcategory?: string;
+}) {
+  if (isMotoCatalogContext(params.category, params.subcategory)) {
+    return <MotoSearchFilters />;
+  }
+  if (isCarCatalogContext(params.category, params.subcategory)) {
+    return <CarSearchFilters />;
+  }
+  return <SearchFilters />;
 }
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const page = parsePageParam(params.page);
   const showLanding = !hasActiveFilters(params) && page === 1;
-  const carContext = isCarCatalogContext(params.category, params.subcategory);
 
   const [popularCities, latestListings] = await Promise.all([
     getPopularCities(),
@@ -90,9 +119,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <div className="lg:col-span-7">
           {!showLanding && (
             <Suspense fallback={null}>
-              <div className="mb-4 lg:hidden">
-                {carContext ? <CarSearchFilters /> : <SearchFilters />}
-              </div>
+              <div className="mb-4 lg:hidden">{transportFilters(params)}</div>
             </Suspense>
           )}
 
@@ -103,11 +130,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
         <aside className="lg:col-span-3 hidden lg:block">
           <div className="sticky top-20 space-y-4">
-            {!showLanding && (
-              <Suspense fallback={null}>
-                {carContext ? <CarSearchFilters /> : <SearchFilters />}
-              </Suspense>
-            )}
+            {!showLanding && <Suspense fallback={null}>{transportFilters(params)}</Suspense>}
             <HomeRightSidebar latestListings={latestListings} />
           </div>
         </aside>
