@@ -122,7 +122,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <div className="lg:col-span-7">
           {!showLanding && (
             <Suspense fallback={null}>
-              <div className="mb-4 lg:hidden">{transportFilters(params)}</div>
+              <div className="mb-4 space-y-4 lg:hidden">
+                <CategorySidebar />
+                {transportFilters(params)}
+              </div>
             </Suspense>
           )}
 
