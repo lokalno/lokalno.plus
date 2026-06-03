@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v116-electronics-subcategories";
+export const APP_VERSION = "v117-phone-subcategories";

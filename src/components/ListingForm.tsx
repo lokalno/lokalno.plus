@@ -10,7 +10,9 @@ import {
   LISTING_PHOTO_MAX_BYTES,
   LISTING_PHOTO_MAX_WIDTH,
   formatListingCategory,
-  getCategoryDetailOptions,
+  getCategoryDetailConfig,
+  listCategoryDetailItems,
+  listCategoryDetails,
   parseListingCategory,
 } from "@/lib/constants";
 import { getListingFormProgress, getRecommendedPriceRange } from "@/lib/listing-form-progress";
@@ -100,6 +102,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [category, setCategory] = useState(parsedCategory.main);
   const [subcategory, setSubcategory] = useState(parsedCategory.sub);
   const [categoryDetail, setCategoryDetail] = useState(parsedCategory.detail);
+  const [categoryItem, setCategoryItem] = useState(parsedCategory.item);
   const [brand, setBrand] = useState(initial?.brand || "");
   const [condition, setCondition] = useState(initial?.condition || "LIKE_NEW");
   const [city, setCity] = useState(initial?.city || "Київ");
@@ -137,13 +140,29 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   );
 
   const categoryDetailOptions = useMemo(
-    () => getCategoryDetailOptions(category, subcategory),
+    () => listCategoryDetails(category, subcategory),
     [category, subcategory]
   );
 
+  const categoryItemOptions = useMemo(
+    () =>
+      categoryDetail ? listCategoryDetailItems(category, subcategory, categoryDetail) : [],
+    [category, subcategory, categoryDetail]
+  );
+
+  const isGroupedDetailConfig = useMemo(() => {
+    const config = getCategoryDetailConfig(category, subcategory);
+    return config !== null && !Array.isArray(config);
+  }, [category, subcategory]);
+
   useEffect(() => {
     setCategoryDetail("");
+    setCategoryItem("");
   }, [subcategory]);
+
+  useEffect(() => {
+    setCategoryItem("");
+  }, [categoryDetail]);
 
   useEffect(() => {
     if (!subcategoryOptions.includes(subcategory)) {
@@ -156,6 +175,12 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
       setCategoryDetail("");
     }
   }, [subcategory, categoryDetail, categoryDetailOptions]);
+
+  useEffect(() => {
+    if (categoryItem && !categoryItemOptions.includes(categoryItem)) {
+      setCategoryItem("");
+    }
+  }, [categoryDetail, categoryItem, categoryItemOptions]);
 
   useEffect(() => {
     if (!isCreate) return;
@@ -281,7 +306,12 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         title,
         description,
         price: Number(price),
-        category: formatListingCategory(category, subcategory, categoryDetail || undefined),
+        category: formatListingCategory(
+          category,
+          subcategory,
+          categoryDetail || undefined,
+          categoryItem || undefined
+        ),
         brand: brand.trim() || null,
         condition,
         city,
@@ -419,7 +449,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         </div>
         {categoryDetailOptions.length > 0 && (
           <div>
-            <FieldLabel>Уточнення</FieldLabel>
+            <FieldLabel>{isGroupedDetailConfig ? "Розділ" : "Уточнення"}</FieldLabel>
             <select
               value={categoryDetail}
               onChange={(e) => setCategoryDetail(e.target.value)}
@@ -428,6 +458,19 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               {categoryDetailOptions.map((detail) => (
                 <option key={detail} value={detail}>
                   {detail}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {categoryItemOptions.length > 0 && (
+          <div>
+            <FieldLabel>Уточнення</FieldLabel>
+            <select value={categoryItem} onChange={(e) => setCategoryItem(e.target.value)}>
+              <option value="">Усі в розділі</option>
+              {categoryItemOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
                 </option>
               ))}
             </select>
@@ -665,7 +708,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                 </div>
                 {categoryDetailOptions.length > 0 && (
                   <div>
-                    <FieldLabel>Уточнення</FieldLabel>
+                    <FieldLabel>{isGroupedDetailConfig ? "Розділ" : "Уточнення"}</FieldLabel>
                     <select
                       value={categoryDetail}
                       onChange={(e) => setCategoryDetail(e.target.value)}
@@ -674,6 +717,19 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                       {categoryDetailOptions.map((detail) => (
                         <option key={detail} value={detail}>
                           {detail}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {categoryItemOptions.length > 0 && (
+                  <div>
+                    <FieldLabel>Уточнення</FieldLabel>
+                    <select value={categoryItem} onChange={(e) => setCategoryItem(e.target.value)}>
+                      <option value="">Усі в розділі</option>
+                      {categoryItemOptions.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
                         </option>
                       ))}
                     </select>
@@ -825,7 +881,8 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               categoryLabel={formatListingCategory(
                 category,
                 subcategory,
-                categoryDetail || undefined
+                categoryDetail || undefined,
+                categoryItem || undefined
               )}
               condition={condition}
               photos={photos}

@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   CATEGORIES,
   CATEGORY_SUBCATEGORIES,
-  getCategoryDetailOptions,
+  listCategoryDetailItems,
+  listCategoryDetails,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -14,26 +15,30 @@ export default function CategorySidebar() {
   const activeCategory = searchParams.get("category") || "";
   const activeSubcategory = searchParams.get("subcategory") || "";
   const activeDetail = searchParams.get("detail") || "";
+  const activeItem = searchParams.get("item") || "";
 
   function pushParams(params: URLSearchParams) {
     params.delete("page");
     router.push(`/?${params.toString()}`);
   }
 
+  function clearNestedFilters(params: URLSearchParams) {
+    params.delete("subcategory");
+    params.delete("detail");
+    params.delete("item");
+  }
+
   function selectCategory(category: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (category && activeCategory === category) {
       params.delete("category");
-      params.delete("subcategory");
-      params.delete("detail");
+      clearNestedFilters(params);
     } else if (category) {
       params.set("category", category);
-      params.delete("subcategory");
-      params.delete("detail");
+      clearNestedFilters(params);
     } else {
       params.delete("category");
-      params.delete("subcategory");
-      params.delete("detail");
+      clearNestedFilters(params);
     }
     pushParams(params);
   }
@@ -43,6 +48,7 @@ export default function CategorySidebar() {
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", activeCategory);
     params.delete("detail");
+    params.delete("item");
     if (subcategory && activeSubcategory === subcategory) {
       params.delete("subcategory");
     } else if (subcategory) {
@@ -58,12 +64,29 @@ export default function CategorySidebar() {
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", activeCategory);
     params.set("subcategory", subcategory);
+    params.delete("item");
     if (detail && activeDetail === detail) {
       params.delete("detail");
     } else if (detail) {
       params.set("detail", detail);
     } else {
       params.delete("detail");
+    }
+    pushParams(params);
+  }
+
+  function selectItem(subcategory: string, detail: string, item: string) {
+    if (!activeCategory) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("category", activeCategory);
+    params.set("subcategory", subcategory);
+    params.set("detail", detail);
+    if (item && activeItem === item) {
+      params.delete("item");
+    } else if (item) {
+      params.set("item", item);
+    } else {
+      params.delete("item");
     }
     pushParams(params);
   }
@@ -141,7 +164,7 @@ export default function CategorySidebar() {
                     </button>
                   </li>
                   {subcategories.map((sub) => {
-                    const detailOptions = getCategoryDetailOptions(category, sub);
+                    const detailOptions = listCategoryDetails(category, sub);
                     const isSubActive = activeSubcategory === sub;
 
                     return (
@@ -176,22 +199,63 @@ export default function CategorySidebar() {
                                 Усі в «{sub}»
                               </button>
                             </li>
-                            {detailOptions.map((detail) => (
-                              <li key={detail}>
-                                <button
-                                  type="button"
-                                  onClick={() => selectDetail(sub, detail)}
-                                  className={cn(
-                                    "w-full rounded-md px-2 py-1 text-left text-[11px] transition-colors",
-                                    activeDetail === detail
-                                      ? "bg-brand-50 font-medium text-brand-700"
-                                      : "text-gray-500 hover:bg-gray-50"
+                            {detailOptions.map((detail) => {
+                              const itemOptions = listCategoryDetailItems(category, sub, detail);
+                              const isDetailActive = activeDetail === detail;
+
+                              return (
+                                <li key={detail}>
+                                  <button
+                                    type="button"
+                                    onClick={() => selectDetail(sub, detail)}
+                                    className={cn(
+                                      "w-full rounded-md px-2 py-1 text-left text-[11px] transition-colors",
+                                      isDetailActive && !activeItem
+                                        ? "bg-brand-50 font-medium text-brand-700"
+                                        : isDetailActive
+                                          ? "font-medium text-brand-700"
+                                          : "text-gray-500 hover:bg-gray-50"
+                                    )}
+                                  >
+                                    {detail}
+                                  </button>
+                                  {isDetailActive && itemOptions.length > 0 && (
+                                    <ul className="ml-2 mt-0.5 space-y-0.5 border-l border-gray-100 pl-2">
+                                      <li>
+                                        <button
+                                          type="button"
+                                          onClick={() => selectItem(sub, detail, "")}
+                                          className={cn(
+                                            "w-full rounded-md px-2 py-1 text-left text-[10px] transition-colors",
+                                            !activeItem
+                                              ? "bg-brand-50 font-medium text-brand-700"
+                                              : "text-gray-500 hover:bg-gray-50"
+                                          )}
+                                        >
+                                          Усі в «{detail}»
+                                        </button>
+                                      </li>
+                                      {itemOptions.map((item) => (
+                                        <li key={item}>
+                                          <button
+                                            type="button"
+                                            onClick={() => selectItem(sub, detail, item)}
+                                            className={cn(
+                                              "w-full rounded-md px-2 py-1 text-left text-[10px] transition-colors",
+                                              activeItem === item
+                                                ? "bg-brand-50 font-medium text-brand-700"
+                                                : "text-gray-500 hover:bg-gray-50"
+                                            )}
+                                          >
+                                            {item}
+                                          </button>
+                                        </li>
+                                      ))}
+                                    </ul>
                                   )}
-                                >
-                                  {detail}
-                                </button>
-                              </li>
-                            ))}
+                                </li>
+                              );
+                            })}
                           </ul>
                         )}
                       </li>

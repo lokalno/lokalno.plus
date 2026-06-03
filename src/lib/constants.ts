@@ -133,11 +133,35 @@ export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[
   Інше: ["Інше"],
 };
 
-/** Третій рівень каталогу для окремих підкатегорій (наприклад, «Електроніка → Фото та відео»). */
+/** Третій і четвертий рівні каталогу (плоский список або групи з вкладеними пунктами). */
+export type CategoryDetailConfig = string[] | Record<string, string[]>;
+
 export const CATEGORY_DETAIL_SUBCATEGORIES: Partial<
-  Record<(typeof CATEGORIES)[number], Partial<Record<string, string[]>>>
+  Record<(typeof CATEGORIES)[number], Partial<Record<string, CategoryDetailConfig>>>
 > = {
   Електроніка: {
+    "Телефони та аксесуари": {
+      Телефони: [
+        "iPhone",
+        "Samsung",
+        "Xiaomi",
+        "Huawei",
+        "Google Pixel",
+        "Motorola",
+        "Nokia",
+        "Інші смартфони",
+      ],
+      Аксесуари: [
+        "Чохли",
+        "Захисне скло",
+        "Плівки",
+        "Кабелі",
+        "Селфі-палиця",
+        "Тримачі для авто",
+      ],
+      "Запчастини та ремонт": [],
+      "Карта пам'яті": [],
+    },
     "Фото та відео": ["Фотоапарати", "Відеокамери", "Об'єктиви", "Дрони", "Інше"],
     Комплектуючі: ["Відеокарти", "Процесори", "Материнські плати", "SSD", "Оперативна пам'ять", "Інше"],
     "Мережеве обладнання": [
@@ -151,24 +175,62 @@ export const CATEGORY_DETAIL_SUBCATEGORIES: Partial<
   },
 };
 
+export function getCategoryDetailConfig(
+  main: string,
+  sub: string
+): CategoryDetailConfig | null {
+  return CATEGORY_DETAIL_SUBCATEGORIES[main as (typeof CATEGORIES)[number]]?.[sub] ?? null;
+}
+
+/** Пункти 3-го рівня: або прямий список, або ключі груп (наприклад «Телефони», «Аксесуари»). */
+export function listCategoryDetails(main: string, sub: string): string[] {
+  const config = getCategoryDetailConfig(main, sub);
+  if (!config) return [];
+  if (Array.isArray(config)) return config;
+  return Object.keys(config);
+}
+
+/** Пункти 4-го рівня всередині групи 3-го рівня. */
+export function listCategoryDetailItems(main: string, sub: string, detail: string): string[] {
+  const config = getCategoryDetailConfig(main, sub);
+  if (!config || Array.isArray(config)) return [];
+  return config[detail] ?? [];
+}
+
+/** @deprecated Use listCategoryDetails */
 export function getCategoryDetailOptions(main: string, sub: string): string[] {
-  const byMain = CATEGORY_DETAIL_SUBCATEGORIES[main as (typeof CATEGORIES)[number]];
-  return byMain?.[sub] ?? [];
+  return listCategoryDetails(main, sub);
 }
 
-export function formatListingCategory(main: string, sub?: string, detail?: string): string {
-  if (detail && detail !== "Інше" && sub) {
-    return `${main} > ${sub} > ${detail}`;
-  }
-  if (sub && sub !== "Інше") return `${main} > ${sub}`;
-  return main;
+export function formatListingCategory(
+  main: string,
+  sub?: string,
+  detail?: string,
+  item?: string
+): string {
+  const parts = [main];
+  if (sub && sub !== "Інше") parts.push(sub);
+  if (detail && detail !== "Інше") parts.push(detail);
+  if (item && item !== "Інше") parts.push(item);
+  return parts.length === 1 ? main : parts.join(" > ");
 }
 
-/** Filter listings by main category and optional subcategory from catalog URLs. */
-export function buildListingCategoryFilter(main?: string, sub?: string, detail?: string) {
+/** Filter listings by catalog URL params (category, subcategory, detail, item). */
+export function buildListingCategoryFilter(
+  main?: string,
+  sub?: string,
+  detail?: string,
+  item?: string
+) {
   if (!main) return {};
+  if (item && detail && sub) {
+    return { category: formatListingCategory(main, sub, detail, item) };
+  }
   if (detail && sub) {
-    return { category: formatListingCategory(main, sub, detail) };
+    const prefix = formatListingCategory(main, sub, detail);
+    return {
+      OR: [{ category: prefix }, { category: { startsWith: `${prefix} >` } }],
+    };
   }
   if (sub) {
     const prefix = formatListingCategory(main, sub);
@@ -181,19 +243,32 @@ export function buildListingCategoryFilter(main?: string, sub?: string, detail?:
   };
 }
 
-export function parseListingCategory(value: string): { main: string; sub: string; detail: string } {
+export function parseListingCategory(value: string): {
+  main: string;
+  sub: string;
+  detail: string;
+  item: string;
+} {
   const parts = value.split(" > ").map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 3) {
-    return { main: parts[0], sub: parts[1], detail: parts.slice(2).join(" > ") };
+  if (parts.length >= 4) {
+    return {
+      main: parts[0],
+      sub: parts[1],
+      detail: parts[2],
+      item: parts.slice(3).join(" > "),
+    };
   }
-  if (parts.length >= 2) {
-    return { main: parts[0], sub: parts[1], detail: "" };
+  if (parts.length === 3) {
+    return { main: parts[0], sub: parts[1], detail: parts[2], item: "" };
+  }
+  if (parts.length === 2) {
+    return { main: parts[0], sub: parts[1], detail: "", item: "" };
   }
   const main = CATEGORIES.includes(parts[0] as (typeof CATEGORIES)[number])
     ? parts[0]
     : CATEGORIES[0];
   const subs = CATEGORY_SUBCATEGORIES[main as (typeof CATEGORIES)[number]] ?? ["Інше"];
-  return { main, sub: subs[0] ?? "Інше", detail: "" };
+  return { main, sub: subs[0] ?? "Інше", detail: "", item: "" };
 }
 
 export const LISTING_STATUSES: Record<string, string> = {
