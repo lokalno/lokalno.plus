@@ -4,10 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
+  CATEGORY_SUBCATEGORIES,
   CONDITIONS,
   MAX_LISTING_PHOTOS,
   LISTING_PHOTO_MAX_BYTES,
   LISTING_PHOTO_MAX_WIDTH,
+  formatListingCategory,
   parseListingCategory,
 } from "@/lib/constants";
 import { getListingFormProgress, getRecommendedPriceRange } from "@/lib/listing-form-progress";
@@ -95,6 +97,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [description, setDescription] = useState(initial?.description || "");
   const [price, setPrice] = useState(initial?.price?.toString() || "");
   const [category, setCategory] = useState(parsedCategory.main);
+  const [subcategory, setSubcategory] = useState(parsedCategory.sub);
   const [brand, setBrand] = useState(initial?.brand || "");
   const [condition, setCondition] = useState(initial?.condition || "LIKE_NEW");
   const [city, setCity] = useState(initial?.city || "Київ");
@@ -125,6 +128,17 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
     const numeric = Number(price);
     return numeric > 0 ? getRecommendedPriceRange(numeric) : null;
   }, [price]);
+
+  const subcategoryOptions = useMemo(
+    () => CATEGORY_SUBCATEGORIES[category as keyof typeof CATEGORY_SUBCATEGORIES] ?? ["Інше"],
+    [category]
+  );
+
+  useEffect(() => {
+    if (!subcategoryOptions.includes(subcategory)) {
+      setSubcategory(subcategoryOptions[0] ?? "Інше");
+    }
+  }, [category, subcategory, subcategoryOptions]);
 
   useEffect(() => {
     if (!isCreate) return;
@@ -250,7 +264,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         title,
         description,
         price: Number(price),
-        category,
+        category: formatListingCategory(category, subcategory),
         brand: brand.trim() || null,
         condition,
         city,
@@ -372,6 +386,16 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <FieldLabel>Підкатегорія *</FieldLabel>
+          <select value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
+            {subcategoryOptions.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
               </option>
             ))}
           </select>
@@ -596,6 +620,18 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                 </div>
                 <div>
                   <FieldLabel>
+                    Підкатегорія <span className="text-red-500">*</span>
+                  </FieldLabel>
+                  <select value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
+                    {subcategoryOptions.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel>
                     Стан <span className="text-red-500">*</span>
                   </FieldLabel>
                   <select value={condition} onChange={(e) => setCondition(e.target.value)}>
@@ -737,7 +773,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               itemLocation={itemLocation}
               stock={stock}
               brand={brand}
-              categoryLabel={category}
+              categoryLabel={formatListingCategory(category, subcategory)}
               condition={condition}
               photos={photos}
             />

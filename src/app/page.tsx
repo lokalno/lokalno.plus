@@ -8,6 +8,7 @@ import MarketplaceCard from "@/components/MarketplaceCard";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import Pagination from "@/components/Pagination";
 import { LISTINGS_PER_PAGE, parsePageParam } from "@/lib/catalog";
+import { buildListingCategoryFilter } from "@/lib/constants";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
 type HomeListing = ListingWithSoldCount & {
@@ -33,6 +34,7 @@ const listingSoldCountInclude = {
 type SearchParams = Promise<{
   city?: string;
   category?: string;
+  subcategory?: string;
   q?: string;
   sort?: string;
   page?: string;
@@ -56,6 +58,7 @@ function getOrderBy(sort?: string) {
 function hasActiveFilters(params: {
   city?: string;
   category?: string;
+  subcategory?: string;
   q?: string;
   minPrice?: string;
   maxPrice?: string;
@@ -64,6 +67,7 @@ function hasActiveFilters(params: {
   return Boolean(
     params.city ||
       params.category ||
+      params.subcategory ||
       params.q ||
       params.minPrice ||
       params.maxPrice ||
@@ -86,7 +90,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const where = {
     status: "ACTIVE" as const,
     ...(params.city ? { city: params.city } : {}),
-    ...(params.category ? { category: params.category } : {}),
+    ...buildListingCategoryFilter(params.category, params.subcategory),
     ...(params.q
       ? {
           OR: [
@@ -162,6 +166,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const totalPages = Math.max(1, Math.ceil(total / LISTINGS_PER_PAGE));  const baseParams: Record<string, string> = {};
   if (params.city) baseParams.city = params.city;
   if (params.category) baseParams.category = params.category;
+  if (params.subcategory) baseParams.subcategory = params.subcategory;
   if (params.q) baseParams.q = params.q;
   if (params.sort && params.sort !== "new") baseParams.sort = params.sort;
   if (params.minPrice) baseParams.minPrice = params.minPrice;
@@ -242,6 +247,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                   {total} {total === 1 ? "оголошення" : "оголошень"}
                   {params.city ? ` · ${params.city.split(",")[0]}` : ""}
                   {params.category ? ` · ${params.category}` : ""}
+                  {params.subcategory ? ` · ${params.subcategory}` : ""}
                 </h2>
               </div>
 

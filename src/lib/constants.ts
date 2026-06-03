@@ -66,7 +66,36 @@ export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[
   "Одяг і взуття": ["Чоловіче", "Жіноче", "Дитяче", "Взуття", "Аксесуари"],
   "Для дітей": ["Іграшки", "Коляски", "Одяг", "Меблі", "Інше"],
   "Спорт і відпочинок": ["Велосипеди", "Тренажери", "Туризм", "Ігри", "Інше"],
-  "Краса і здоров'я": ["Косметика", "Парфумерія", "Догляд", "Медтехніка"],
+  "Краса і здоров'я": [
+    "Аксесуари",
+    "Догляд за волоссям",
+    "Для загару",
+    "Корейська косметика",
+    "Макіяж",
+    "Набори косметики",
+    "Нігті",
+    "Парфумерія",
+    "Подарункові набори",
+    "Для дітей",
+    "Засоби особистої гігієни",
+    "Манікюр та педикюр",
+    "Догляд за тілом",
+    "Догляд за обличчям",
+    "Косметика",
+    "Окуляри та лінзи",
+    "Масажери",
+    "Обладнання для салонів",
+    "Перукарські інструменти",
+    "Лампи для манікюру",
+    "Косметологічне обладнання",
+    "Шампуні",
+    "Бальзами",
+    "Фени",
+    "Плойки",
+    "Бритви",
+    "Електричні зубні щітки",
+    "Інше",
+  ],
   Послуги: ["Ремонт", "Навчання", "Краса", "Транспорт", "Інше"],
   Тварини: ["Собаки", "Коти", "Птахи", "Акваріум", "Товари"],
   "Хобі та розваги": ["Книги", "Музика", "Колекції", "Рукоділля", "Інше"],
@@ -85,6 +114,17 @@ export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[
 export function formatListingCategory(main: string, sub?: string): string {
   if (sub && sub !== "Інше") return `${main} > ${sub}`;
   return main;
+}
+
+/** Filter listings by main category and optional subcategory from catalog URLs. */
+export function buildListingCategoryFilter(main?: string, sub?: string) {
+  if (!main) return {};
+  if (sub) {
+    return { category: formatListingCategory(main, sub) };
+  }
+  return {
+    OR: [{ category: main }, { category: { startsWith: `${main} >` } }],
+  };
 }
 
 export function parseListingCategory(value: string): { main: string; sub: string } {
