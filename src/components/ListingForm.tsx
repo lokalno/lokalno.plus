@@ -10,6 +10,7 @@ import {
   LISTING_PHOTO_MAX_BYTES,
   LISTING_PHOTO_MAX_WIDTH,
   formatListingCategory,
+  getCategoryDetailOptions,
   parseListingCategory,
 } from "@/lib/constants";
 import { getListingFormProgress, getRecommendedPriceRange } from "@/lib/listing-form-progress";
@@ -98,6 +99,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [price, setPrice] = useState(initial?.price?.toString() || "");
   const [category, setCategory] = useState(parsedCategory.main);
   const [subcategory, setSubcategory] = useState(parsedCategory.sub);
+  const [categoryDetail, setCategoryDetail] = useState(parsedCategory.detail);
   const [brand, setBrand] = useState(initial?.brand || "");
   const [condition, setCondition] = useState(initial?.condition || "LIKE_NEW");
   const [city, setCity] = useState(initial?.city || "Київ");
@@ -134,11 +136,26 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
     [category]
   );
 
+  const categoryDetailOptions = useMemo(
+    () => getCategoryDetailOptions(category, subcategory),
+    [category, subcategory]
+  );
+
+  useEffect(() => {
+    setCategoryDetail("");
+  }, [subcategory]);
+
   useEffect(() => {
     if (!subcategoryOptions.includes(subcategory)) {
       setSubcategory(subcategoryOptions[0] ?? "Інше");
     }
   }, [category, subcategory, subcategoryOptions]);
+
+  useEffect(() => {
+    if (categoryDetail && !categoryDetailOptions.includes(categoryDetail)) {
+      setCategoryDetail("");
+    }
+  }, [subcategory, categoryDetail, categoryDetailOptions]);
 
   useEffect(() => {
     if (!isCreate) return;
@@ -264,7 +281,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         title,
         description,
         price: Number(price),
-        category: formatListingCategory(category, subcategory),
+        category: formatListingCategory(category, subcategory, categoryDetail || undefined),
         brand: brand.trim() || null,
         condition,
         city,
@@ -400,6 +417,22 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
             ))}
           </select>
         </div>
+        {categoryDetailOptions.length > 0 && (
+          <div>
+            <FieldLabel>Уточнення</FieldLabel>
+            <select
+              value={categoryDetail}
+              onChange={(e) => setCategoryDetail(e.target.value)}
+            >
+              <option value="">Усі в підкатегорії</option>
+              {categoryDetailOptions.map((detail) => (
+                <option key={detail} value={detail}>
+                  {detail}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <FieldLabel>Бренд</FieldLabel>
           <input
@@ -630,6 +663,22 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                     ))}
                   </select>
                 </div>
+                {categoryDetailOptions.length > 0 && (
+                  <div>
+                    <FieldLabel>Уточнення</FieldLabel>
+                    <select
+                      value={categoryDetail}
+                      onChange={(e) => setCategoryDetail(e.target.value)}
+                    >
+                      <option value="">Усі в підкатегорії</option>
+                      {categoryDetailOptions.map((detail) => (
+                        <option key={detail} value={detail}>
+                          {detail}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <FieldLabel>
                     Стан <span className="text-red-500">*</span>
@@ -773,7 +822,11 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               itemLocation={itemLocation}
               stock={stock}
               brand={brand}
-              categoryLabel={formatListingCategory(category, subcategory)}
+              categoryLabel={formatListingCategory(
+                category,
+                subcategory,
+                categoryDetail || undefined
+              )}
               condition={condition}
               photos={photos}
             />

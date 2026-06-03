@@ -35,6 +35,7 @@ type SearchParams = Promise<{
   city?: string;
   category?: string;
   subcategory?: string;
+  detail?: string;
   q?: string;
   sort?: string;
   page?: string;
@@ -59,6 +60,7 @@ function hasActiveFilters(params: {
   city?: string;
   category?: string;
   subcategory?: string;
+  detail?: string;
   q?: string;
   minPrice?: string;
   maxPrice?: string;
@@ -68,6 +70,7 @@ function hasActiveFilters(params: {
     params.city ||
       params.category ||
       params.subcategory ||
+      params.detail ||
       params.q ||
       params.minPrice ||
       params.maxPrice ||
@@ -90,7 +93,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const where = {
     status: "ACTIVE" as const,
     ...(params.city ? { city: params.city } : {}),
-    ...buildListingCategoryFilter(params.category, params.subcategory),
+    ...buildListingCategoryFilter(params.category, params.subcategory, params.detail),
     ...(params.q
       ? {
           OR: [
@@ -167,6 +170,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (params.city) baseParams.city = params.city;
   if (params.category) baseParams.category = params.category;
   if (params.subcategory) baseParams.subcategory = params.subcategory;
+  if (params.detail) baseParams.detail = params.detail;
   if (params.q) baseParams.q = params.q;
   if (params.sort && params.sort !== "new") baseParams.sort = params.sort;
   if (params.minPrice) baseParams.minPrice = params.minPrice;
@@ -248,6 +252,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                   {params.city ? ` · ${params.city.split(",")[0]}` : ""}
                   {params.category ? ` · ${params.category}` : ""}
                   {params.subcategory ? ` · ${params.subcategory}` : ""}
+                  {params.detail ? ` · ${params.detail}` : ""}
                 </h2>
               </div>
 

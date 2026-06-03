@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { CATEGORIES, CATEGORY_SUBCATEGORIES } from "@/lib/constants";
+import {
+  CATEGORIES,
+  CATEGORY_SUBCATEGORIES,
+  getCategoryDetailOptions,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export default function CategorySidebar() {
@@ -9,6 +13,7 @@ export default function CategorySidebar() {
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category") || "";
   const activeSubcategory = searchParams.get("subcategory") || "";
+  const activeDetail = searchParams.get("detail") || "";
 
   function pushParams(params: URLSearchParams) {
     params.delete("page");
@@ -20,12 +25,15 @@ export default function CategorySidebar() {
     if (category && activeCategory === category) {
       params.delete("category");
       params.delete("subcategory");
+      params.delete("detail");
     } else if (category) {
       params.set("category", category);
       params.delete("subcategory");
+      params.delete("detail");
     } else {
       params.delete("category");
       params.delete("subcategory");
+      params.delete("detail");
     }
     pushParams(params);
   }
@@ -34,12 +42,28 @@ export default function CategorySidebar() {
     if (!activeCategory) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", activeCategory);
+    params.delete("detail");
     if (subcategory && activeSubcategory === subcategory) {
       params.delete("subcategory");
     } else if (subcategory) {
       params.set("subcategory", subcategory);
     } else {
       params.delete("subcategory");
+    }
+    pushParams(params);
+  }
+
+  function selectDetail(subcategory: string, detail: string) {
+    if (!activeCategory) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("category", activeCategory);
+    params.set("subcategory", subcategory);
+    if (detail && activeDetail === detail) {
+      params.delete("detail");
+    } else if (detail) {
+      params.set("detail", detail);
+    } else {
+      params.delete("detail");
     }
     pushParams(params);
   }
@@ -57,11 +81,6 @@ export default function CategorySidebar() {
       e.stopPropagation();
     }
   }
-
-  const activeSubs =
-    activeCategory && activeCategory in CATEGORY_SUBCATEGORIES
-      ? CATEGORY_SUBCATEGORIES[activeCategory as keyof typeof CATEGORY_SUBCATEGORIES]
-      : [];
 
   return (
     <div className="sticky top-20 flex max-h-[calc(100dvh-5.5rem)] flex-col rounded-xl border border-gray-200 bg-white p-4">
@@ -121,22 +140,63 @@ export default function CategorySidebar() {
                       Усі в категорії
                     </button>
                   </li>
-                  {subcategories.map((sub) => (
-                    <li key={sub}>
-                      <button
-                        type="button"
-                        onClick={() => selectSubcategory(sub)}
-                        className={cn(
-                          "w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-                          activeSubcategory === sub
-                            ? "bg-brand-50 font-medium text-brand-700"
-                            : "text-gray-600 hover:bg-gray-50"
+                  {subcategories.map((sub) => {
+                    const detailOptions = getCategoryDetailOptions(category, sub);
+                    const isSubActive = activeSubcategory === sub;
+
+                    return (
+                      <li key={sub}>
+                        <button
+                          type="button"
+                          onClick={() => selectSubcategory(sub)}
+                          className={cn(
+                            "w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                            isSubActive && !activeDetail
+                              ? "bg-brand-50 font-medium text-brand-700"
+                              : isSubActive
+                                ? "font-medium text-brand-700"
+                                : "text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          {sub}
+                        </button>
+                        {isSubActive && detailOptions.length > 0 && (
+                          <ul className="ml-2 mt-0.5 space-y-0.5 border-l border-gray-100 pl-2">
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => selectDetail(sub, "")}
+                                className={cn(
+                                  "w-full rounded-md px-2 py-1 text-left text-[11px] transition-colors",
+                                  !activeDetail
+                                    ? "bg-brand-50 font-medium text-brand-700"
+                                    : "text-gray-500 hover:bg-gray-50"
+                                )}
+                              >
+                                Усі в «{sub}»
+                              </button>
+                            </li>
+                            {detailOptions.map((detail) => (
+                              <li key={detail}>
+                                <button
+                                  type="button"
+                                  onClick={() => selectDetail(sub, detail)}
+                                  className={cn(
+                                    "w-full rounded-md px-2 py-1 text-left text-[11px] transition-colors",
+                                    activeDetail === detail
+                                      ? "bg-brand-50 font-medium text-brand-700"
+                                      : "text-gray-500 hover:bg-gray-50"
+                                  )}
+                                >
+                                  {detail}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
                         )}
-                      >
-                        {sub}
-                      </button>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </li>
