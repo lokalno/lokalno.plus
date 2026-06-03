@@ -6,6 +6,12 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { LISTINGS_PER_PAGE } from "@/lib/catalog";
 import { buildListingCategoryFilter } from "@/lib/constants";
+import {
+  buildVehicleWhere,
+  effectiveCarSubcategory,
+  hasCarSearchFilters,
+  isCarCatalogContext,
+} from "@/lib/vehicle";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
 type HomeListing = ListingWithSoldCount & {
@@ -39,6 +45,14 @@ export type HomeCatalogParams = {
   page?: string;
   minPrice?: string;
   maxPrice?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  fuel?: string;
+  transmission?: string;
+  body?: string;
+  mileageMax?: string;
+  carCondition?: string;
+  approxPrice?: string;
 };
 
 function getOrderBy(sort?: string) {
@@ -69,6 +83,14 @@ function hasActiveFilters(params: HomeCatalogParams) {
       params.q ||
       params.minPrice ||
       params.maxPrice ||
+      params.yearFrom ||
+      params.yearTo ||
+      params.fuel ||
+      params.transmission ||
+      params.body ||
+      params.mileageMax ||
+      params.carCondition ||
+      params.approxPrice ||
       (params.sort && params.sort !== "new")
   );
 }
@@ -80,15 +102,31 @@ function buildWhere(params: HomeCatalogParams) {
   if (minPrice !== undefined && !Number.isNaN(minPrice)) priceFilter.gte = minPrice;
   if (maxPrice !== undefined && !Number.isNaN(maxPrice)) priceFilter.lte = maxPrice;
 
+  const carContext = isCarCatalogContext(params.category, params.subcategory);
+  const categoryMain = carContext ? params.category : params.category;
+  const categorySub = carContext ? effectiveCarSubcategory(params.subcategory) : params.subcategory;
+
   return {
     status: "ACTIVE" as const,
     ...(params.city ? { city: params.city } : {}),
     ...buildListingCategoryFilter(
-      params.category,
-      params.subcategory,
+      categoryMain,
+      categorySub,
       params.detail,
       params.item
     ),
+    ...(carContext || hasCarSearchFilters(params)
+      ? buildVehicleWhere({
+          yearFrom: params.yearFrom,
+          yearTo: params.yearTo,
+          fuel: params.fuel,
+          transmission: params.transmission,
+          body: params.body,
+          mileageMax: params.mileageMax,
+          carCondition: params.carCondition,
+          approxPrice: params.approxPrice,
+        })
+      : {}),
     ...(params.q
       ? {
           OR: [{ title: { contains: params.q } }, { description: { contains: params.q } }],
@@ -154,6 +192,14 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.sort && params.sort !== "new") baseParams.sort = params.sort;
   if (params.minPrice) baseParams.minPrice = params.minPrice;
   if (params.maxPrice) baseParams.maxPrice = params.maxPrice;
+  if (params.yearFrom) baseParams.yearFrom = params.yearFrom;
+  if (params.yearTo) baseParams.yearTo = params.yearTo;
+  if (params.fuel) baseParams.fuel = params.fuel;
+  if (params.transmission) baseParams.transmission = params.transmission;
+  if (params.body) baseParams.body = params.body;
+  if (params.mileageMax) baseParams.mileageMax = params.mileageMax;
+  if (params.carCondition) baseParams.carCondition = params.carCondition;
+  if (params.approxPrice) baseParams.approxPrice = params.approxPrice;
 
   if (dbUnavailable) {
     return (
@@ -266,5 +312,13 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.page ?? "",
     params.minPrice ?? "",
     params.maxPrice ?? "",
+    params.yearFrom ?? "",
+    params.yearTo ?? "",
+    params.fuel ?? "",
+    params.transmission ?? "",
+    params.body ?? "",
+    params.mileageMax ?? "",
+    params.carCondition ?? "",
+    params.approxPrice ?? "",
   ].join("|");
 }

@@ -2,11 +2,13 @@ import { Suspense } from "react";
 import CategorySidebar from "@/components/CategorySidebar";
 import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
 import SearchFilters from "@/components/SearchFilters";
+import CarSearchFilters from "@/components/CarSearchFilters";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
 import { getPopularCities, getLatestSidebarListings } from "@/lib/home-sidebar-cache";
 import { parsePageParam } from "@/lib/catalog";
+import { hasCarSearchFilters, isCarCatalogContext } from "@/lib/vehicle";
 
 type SearchParams = Promise<{
   city?: string;
@@ -19,6 +21,14 @@ type SearchParams = Promise<{
   page?: string;
   minPrice?: string;
   maxPrice?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  fuel?: string;
+  transmission?: string;
+  body?: string;
+  mileageMax?: string;
+  carCondition?: string;
+  approxPrice?: string;
 }>;
 
 function hasActiveFilters(params: {
@@ -31,6 +41,14 @@ function hasActiveFilters(params: {
   minPrice?: string;
   maxPrice?: string;
   sort?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  fuel?: string;
+  transmission?: string;
+  body?: string;
+  mileageMax?: string;
+  carCondition?: string;
+  approxPrice?: string;
 }) {
   return Boolean(
     params.city ||
@@ -41,6 +59,7 @@ function hasActiveFilters(params: {
       params.q ||
       params.minPrice ||
       params.maxPrice ||
+      hasCarSearchFilters(params) ||
       (params.sort && params.sort !== "new")
   );
 }
@@ -49,6 +68,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const page = parsePageParam(params.page);
   const showLanding = !hasActiveFilters(params) && page === 1;
+  const carContext = isCarCatalogContext(params.category, params.subcategory);
 
   const [popularCities, latestListings] = await Promise.all([
     getPopularCities(),
@@ -71,7 +91,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           {!showLanding && (
             <Suspense fallback={null}>
               <div className="mb-4 lg:hidden">
-                <SearchFilters />
+                {carContext ? <CarSearchFilters /> : <SearchFilters />}
               </div>
             </Suspense>
           )}
@@ -85,7 +105,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <div className="sticky top-20 space-y-4">
             {!showLanding && (
               <Suspense fallback={null}>
-                <SearchFilters />
+                {carContext ? <CarSearchFilters /> : <SearchFilters />}
               </Suspense>
             )}
             <HomeRightSidebar latestListings={latestListings} />

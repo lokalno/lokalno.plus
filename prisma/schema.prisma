@@ -109,6 +109,11 @@ model Listing {
   condition   String
   city        String
   itemLocation String?
+  vehicleYear Int?
+  vehicleFuel String?
+  vehicleTransmission String?
+  vehicleBody String?
+  vehicleMileage Int?
   status      String    @default("ACTIVE")
   photos      String
   stock       Int       @default(1)

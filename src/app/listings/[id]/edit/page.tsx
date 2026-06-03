@@ -47,6 +47,11 @@ export default async function EditListingPage({ params }: Params) {
           stock: listing.stock,
           photos: parsePhotos(listing.photos),
           allowPriceOffers: listing.allowPriceOffers,
+          vehicleYear: listing.vehicleYear,
+          vehicleFuel: listing.vehicleFuel,
+          vehicleTransmission: listing.vehicleTransmission,
+          vehicleBody: listing.vehicleBody,
+          vehicleMileage: listing.vehicleMileage,
         }}
       />
     </div>

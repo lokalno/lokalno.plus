@@ -8,6 +8,7 @@ import {
   listCategoryDetailItems,
   listCategoryDetails,
 } from "@/lib/constants";
+import { CAR_SUBCATEGORY, TRANSPORT_CATEGORY } from "@/lib/vehicle";
 import { cn } from "@/lib/utils";
 
 export default function CategorySidebar() {
@@ -41,6 +42,9 @@ export default function CategorySidebar() {
     } else if (category) {
       params.set("category", category);
       clearNestedFilters(params);
+      if (category === TRANSPORT_CATEGORY) {
+        params.set("subcategory", CAR_SUBCATEGORY);
+      }
     } else {
       params.delete("category");
       clearNestedFilters(params);

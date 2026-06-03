@@ -7,6 +7,7 @@ import { formatPrice, formatDate, parsePhotos, formatViews, getTypicalResponseLa
 import { formatListingStock, getListingStockBadgeText, getStockAvailabilityLevel } from "@/lib/listing-stock";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCount } from "@/lib/listing-sales";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
+import { formatVehicleMileage } from "@/lib/vehicle";
 import { getSellerLevel } from "@/lib/seller-stats";
 import { markBuyerPriceOfferStatusRead } from "@/lib/notifications";
 import { getBuyerOfferUiState } from "@/lib/price-offers";
@@ -184,6 +185,17 @@ export default async function ListingPage({ params }: Params) {
   const characteristics = [
     { label: "Стан", value: CONDITIONS[listing.condition] || listing.condition },
     { label: "Виробник", value: listing.brand || "" },
+    ...(listing.vehicleYear
+      ? [{ label: "Рік випуску", value: String(listing.vehicleYear) }]
+      : []),
+    ...(listing.vehicleMileage !== null && listing.vehicleMileage !== undefined
+      ? [{ label: "Пробіг", value: formatVehicleMileage(listing.vehicleMileage) }]
+      : []),
+    ...(listing.vehicleFuel ? [{ label: "Паливо", value: listing.vehicleFuel }] : []),
+    ...(listing.vehicleTransmission
+      ? [{ label: "Коробка передач", value: listing.vehicleTransmission }]
+      : []),
+    ...(listing.vehicleBody ? [{ label: "Тип кузова", value: listing.vehicleBody }] : []),
     { label: "Категорія", value: listing.category },
     { label: "Місто", value: listing.city },
     {

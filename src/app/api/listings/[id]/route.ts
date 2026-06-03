@@ -7,6 +7,7 @@ import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
 import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
+import { parseVehiclePayload } from "@/lib/vehicle";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -132,6 +133,23 @@ export async function PATCH(request: Request, { params }: Params) {
       body.itemLocation = itemLocationCheck.value;
     }
 
+    const nextCategory = body.category !== undefined ? body.category : listing.category;
+    const vehicleInput = {
+      vehicleYear: body.vehicleYear !== undefined ? body.vehicleYear : listing.vehicleYear,
+      vehicleFuel: body.vehicleFuel !== undefined ? body.vehicleFuel : listing.vehicleFuel,
+      vehicleTransmission:
+        body.vehicleTransmission !== undefined
+          ? body.vehicleTransmission
+          : listing.vehicleTransmission,
+      vehicleBody: body.vehicleBody !== undefined ? body.vehicleBody : listing.vehicleBody,
+      vehicleMileage:
+        body.vehicleMileage !== undefined ? body.vehicleMileage : listing.vehicleMileage,
+    };
+    const vehicleCheck = parseVehiclePayload(vehicleInput, nextCategory);
+    if (!vehicleCheck.ok) {
+      return NextResponse.json({ error: vehicleCheck.error }, { status: 400 });
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {
@@ -151,6 +169,14 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.photos !== undefined ? { photos: JSON.stringify(body.photos) } : {}),
         ...(body.allowPriceOffers !== undefined
           ? { allowPriceOffers: Boolean(body.allowPriceOffers) }
+          : {}),
+        ...(body.category !== undefined ||
+        body.vehicleYear !== undefined ||
+        body.vehicleFuel !== undefined ||
+        body.vehicleTransmission !== undefined ||
+        body.vehicleBody !== undefined ||
+        body.vehicleMileage !== undefined
+          ? vehicleCheck.data
           : {}),
       },
     });
