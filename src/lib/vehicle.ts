@@ -32,7 +32,41 @@ export const CAR_BODY_TYPES = [
   "Інше",
 ] as const;
 
+export const CAR_BRANDS = [
+  "Audi",
+  "BMW",
+  "BYD",
+  "Chery",
+  "Chevrolet",
+  "Citroën",
+  "Daewoo",
+  "Fiat",
+  "Ford",
+  "Geely",
+  "Honda",
+  "Hyundai",
+  "Kia",
+  "Lada",
+  "Lexus",
+  "Mazda",
+  "Mercedes-Benz",
+  "Mitsubishi",
+  "Nissan",
+  "Opel",
+  "Peugeot",
+  "Renault",
+  "Skoda",
+  "Subaru",
+  "Suzuki",
+  "Tesla",
+  "Toyota",
+  "Volkswagen",
+  "Volvo",
+  "Інша",
+] as const;
+
 export type CarSearchParams = {
+  carBrand?: string;
   yearFrom?: string;
   yearTo?: string;
   fuel?: string;
@@ -72,6 +106,11 @@ export function approxPriceRange(approxPrice: number): { min: number; max: numbe
 
 export function buildVehicleWhere(params: CarSearchParams & { carCondition?: string }) {
   const where: Record<string, unknown> = {};
+
+  const brandQuery = params.carBrand?.trim();
+  if (brandQuery && brandQuery !== "Інша") {
+    where.brand = { contains: brandQuery, mode: "insensitive" };
+  }
 
   const yearFrom = parsePositiveInt(params.yearFrom);
   const yearTo = parsePositiveInt(params.yearTo);
@@ -184,7 +223,8 @@ export function formatVehicleMileage(km: number): string {
 
 export function hasCarSearchFilters(params: CarSearchParams): boolean {
   return Boolean(
-    params.yearFrom ||
+    params.carBrand ||
+      params.yearFrom ||
       params.yearTo ||
       params.fuel ||
       params.transmission ||

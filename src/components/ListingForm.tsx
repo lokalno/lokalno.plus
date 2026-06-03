@@ -18,6 +18,7 @@ import {
 import { getListingFormProgress, getRecommendedPriceRange } from "@/lib/listing-form-progress";
 import {
   CAR_BODY_TYPES,
+  CAR_BRANDS,
   CAR_FUEL_TYPES,
   CAR_TRANSMISSIONS,
   isCarListingCategory,
@@ -580,13 +581,24 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
           </div>
         )}
         <div>
-          <FieldLabel>Бренд</FieldLabel>
-          <input
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            maxLength={80}
-            placeholder={isCarListing ? "Наприклад, Toyota" : "Наприклад, Apple"}
-          />
+          <FieldLabel>{isCarListing ? "Марка *" : "Бренд"}</FieldLabel>
+          {isCarListing ? (
+            <select value={brand} onChange={(e) => setBrand(e.target.value)} required>
+              <option value="">Оберіть марку</option>
+              {CAR_BRANDS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              maxLength={80}
+              placeholder="Наприклад, Apple"
+            />
+          )}
         </div>
         <div>
           <FieldLabel>Стан *</FieldLabel>
@@ -855,13 +867,24 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <FieldLabel>Бренд</FieldLabel>
-                  <input
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    maxLength={80}
-                    placeholder={isCarListing ? "Наприклад, Toyota, Volkswagen" : "Наприклад, Apple, Samsung, Nike"}
-                  />
+                  <FieldLabel>{isCarListing ? "Марка" : "Бренд"}</FieldLabel>
+                  {isCarListing ? (
+                    <select value={brand} onChange={(e) => setBrand(e.target.value)} required>
+                      <option value="">Оберіть марку</option>
+                      {CAR_BRANDS.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      maxLength={80}
+                      placeholder="Наприклад, Apple, Samsung, Nike"
+                    />
+                  )}
                 </div>
                 <div>
                   <FieldLabel>

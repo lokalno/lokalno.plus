@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SettlementSearch from "@/components/SettlementSearch";
 import {
   CAR_BODY_TYPES,
+  CAR_BRANDS,
   CAR_FUEL_TYPES,
   CAR_SUBCATEGORY,
   CAR_TRANSMISSIONS,
@@ -25,6 +26,7 @@ export default function CarSearchFilters() {
     setCity(searchParams.get("city") || "");
   }, [searchParams]);
 
+  const carBrand = searchParams.get("carBrand") || "";
   const approxPrice = searchParams.get("approxPrice") || "";
   const yearFrom = searchParams.get("yearFrom") || "";
   const yearTo = searchParams.get("yearTo") || "";
@@ -70,6 +72,7 @@ export default function CarSearchFilters() {
       else params.delete(key);
     };
 
+    setOrDelete("carBrand", String(data.get("carBrand") || "").trim());
     setOrDelete("yearFrom", String(data.get("yearFrom") || "").trim());
     setOrDelete("yearTo", String(data.get("yearTo") || "").trim());
     setOrDelete("fuel", String(data.get("fuel") || "").trim());
@@ -105,7 +108,7 @@ export default function CarSearchFilters() {
         {isPending && <span className="text-xs text-gray-400">завантаження…</span>}
       </div>
       <p className="text-xs text-gray-500">
-        Легкові авто по всій Україні — орієнтовна ціна ±15%, рік, паливо, КПП, кузов, стан, пробіг.
+        Легкові авто по всій Україні — марка, ціна ±15%, рік, паливо, КПП, кузов, стан, пробіг.
       </p>
 
       <SettlementSearch
@@ -123,6 +126,18 @@ export default function CarSearchFilters() {
           Показати всю Україну
         </button>
       )}
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Марка авто</label>
+        <select name="carBrand" defaultValue={carBrand} key={`brand-${carBrand}`}>
+          <option value="">Будь-яка</option>
+          {CAR_BRANDS.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">Орієнтовна ціна (₴)</label>

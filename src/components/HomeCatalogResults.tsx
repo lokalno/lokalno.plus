@@ -45,6 +45,7 @@ export type HomeCatalogParams = {
   page?: string;
   minPrice?: string;
   maxPrice?: string;
+  carBrand?: string;
   yearFrom?: string;
   yearTo?: string;
   fuel?: string;
@@ -83,6 +84,7 @@ function hasActiveFilters(params: HomeCatalogParams) {
       params.q ||
       params.minPrice ||
       params.maxPrice ||
+      params.carBrand ||
       params.yearFrom ||
       params.yearTo ||
       params.fuel ||
@@ -117,6 +119,7 @@ function buildWhere(params: HomeCatalogParams) {
     ),
     ...(carContext || hasCarSearchFilters(params)
       ? buildVehicleWhere({
+          carBrand: params.carBrand,
           yearFrom: params.yearFrom,
           yearTo: params.yearTo,
           fuel: params.fuel,
@@ -192,6 +195,7 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   if (params.sort && params.sort !== "new") baseParams.sort = params.sort;
   if (params.minPrice) baseParams.minPrice = params.minPrice;
   if (params.maxPrice) baseParams.maxPrice = params.maxPrice;
+  if (params.carBrand) baseParams.carBrand = params.carBrand;
   if (params.yearFrom) baseParams.yearFrom = params.yearFrom;
   if (params.yearTo) baseParams.yearTo = params.yearTo;
   if (params.fuel) baseParams.fuel = params.fuel;
@@ -260,6 +264,7 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
               {total} {total === 1 ? "оголошення" : "оголошень"}
               {params.city ? ` · ${params.city.split(",")[0]}` : ""}
               {params.category ? ` · ${params.category}` : ""}
+              {params.carBrand ? ` · ${params.carBrand}` : ""}
               {params.subcategory ? ` · ${params.subcategory}` : ""}
               {params.detail ? ` · ${params.detail}` : ""}
               {params.item ? ` · ${params.item}` : ""}
@@ -312,6 +317,7 @@ export function homeCatalogCacheKey(params: HomeCatalogParams): string {
     params.page ?? "",
     params.minPrice ?? "",
     params.maxPrice ?? "",
+    params.carBrand ?? "",
     params.yearFrom ?? "",
     params.yearTo ?? "",
     params.fuel ?? "",
