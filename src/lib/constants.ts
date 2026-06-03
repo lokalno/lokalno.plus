@@ -189,6 +189,17 @@ export const CATEGORY_DETAIL_SUBCATEGORIES: Partial<
       "Інше",
     ],
   },
+  "Одяг і взуття": {
+    Чоловіче: [
+      "Верхній одяг",
+      "Одяг",
+      "Низ",
+      "Взуття",
+      "Нижня білизна",
+      "Аксесуари",
+      "Premium",
+    ],
+  },
 };
 
 export function getCategoryDetailConfig(
