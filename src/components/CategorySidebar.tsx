@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CATEGORIES,
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 export default function CategorySidebar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const activeCategory = searchParams.get("category") || "";
   const activeSubcategory = searchParams.get("subcategory") || "";
   const activeDetail = searchParams.get("detail") || "";
@@ -19,7 +21,10 @@ export default function CategorySidebar() {
 
   function pushParams(params: URLSearchParams) {
     params.delete("page");
-    router.push(`/?${params.toString()}`);
+    const url = params.toString() ? `/?${params.toString()}` : "/";
+    startTransition(() => {
+      router.replace(url, { scroll: false });
+    });
   }
 
   function clearNestedFilters(params: URLSearchParams) {
@@ -106,8 +111,17 @@ export default function CategorySidebar() {
   }
 
   return (
-    <div className="sticky top-20 flex max-h-[calc(100dvh-5.5rem)] flex-col rounded-xl border border-gray-200 bg-white p-4">
-      <h2 className="mb-3 shrink-0 text-sm font-bold text-gray-900">Каталог</h2>
+    <div
+      className={cn(
+        "sticky top-20 flex max-h-[calc(100dvh-5.5rem)] flex-col rounded-xl border border-gray-200 bg-white p-4",
+        isPending && "opacity-70"
+      )}
+      aria-busy={isPending}
+    >
+      <h2 className="mb-3 shrink-0 text-sm font-bold text-gray-900">
+        Каталог
+        {isPending && <span className="ml-2 text-xs font-normal text-gray-400">завантаження…</span>}
+      </h2>
       <ul
         className="-mr-1 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
         onWheel={handleCatalogWheel}

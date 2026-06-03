@@ -1,17 +1,24 @@
 "use client";
 
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CATEGORIES } from "@/lib/constants";
 
 export default function PopularCategories() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   function select(category: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", category);
     params.delete("page");
-    router.push(`/?${params.toString()}`);
+    params.delete("subcategory");
+    params.delete("detail");
+    params.delete("item");
+    startTransition(() => {
+      router.replace(`/?${params.toString()}`, { scroll: false });
+    });
   }
 
   return (
