@@ -38,6 +38,7 @@ model User {
   following       SellerFollow[] @relation("Following")
   followers       SellerFollow[] @relation("Followers")
   supportTickets  SupportTicket[]
+  supportReplies  SupportReply[]
   walletTransactions WalletTransaction[]
   withdrawals        Withdrawal[]
   priceOffers        PriceOffer[]
@@ -232,16 +233,30 @@ model SiteSettings {
 }
 
 model SupportTicket {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject   String
-  message   String
-  phone     String?
-  status    String   @default("OPEN")
-  adminNote String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  message     String
+  phone       String?
+  status      String         @default("OPEN")
+  adminNote   String?
+  adminUnread Boolean        @default(false)
+  userUnread  Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  replies     SupportReply[]
+}
+
+model SupportReply {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  isAdmin   Boolean
+  content   String
+  createdAt DateTime      @default(now())
 }
 
 model WalletTransaction {

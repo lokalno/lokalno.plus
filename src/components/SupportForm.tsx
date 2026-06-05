@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SUPPORT_SUBJECTS } from "@/lib/constants";
 
@@ -10,11 +12,13 @@ type SupportFormProps = {
 };
 
 export default function SupportForm({ userName, userEmail, userPhone }: SupportFormProps) {
+  const router = useRouter();
   const [subject, setSubject] = useState<string>(SUPPORT_SUBJECTS[0]);
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState(userPhone || "");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [ticketId, setTicketId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,7 +41,9 @@ export default function SupportForm({ userName, userEmail, userPhone }: SupportF
     }
 
     setDone(true);
+    setTicketId(data.id || null);
     setMessage("");
+    router.refresh();
   }
 
   if (done) {
@@ -45,12 +51,23 @@ export default function SupportForm({ userName, userEmail, userPhone }: SupportF
       <div className="rounded-xl border border-brand-200 bg-brand-50 p-6 text-center">
         <p className="font-semibold text-brand-800">Повідомлення надіслано!</p>
         <p className="text-sm text-brand-700 mt-2">
-          Адміністратор побачить його в адмін-панелі та відповість найближчим часом.
+          Адміністратор відповість у цьому діалозі. Ви отримаєте сповіщення тут на сторінці підтримки.
         </p>
+        {ticketId && (
+          <Link
+            href={`/contact/tickets/${ticketId}`}
+            className="mt-4 inline-block bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 font-medium"
+          >
+            Відкрити діалог
+          </Link>
+        )}
         <button
           type="button"
-          onClick={() => setDone(false)}
-          className="mt-4 text-sm text-brand-700 underline"
+          onClick={() => {
+            setDone(false);
+            setTicketId(null);
+          }}
+          className="mt-3 block w-full text-sm text-brand-700 underline"
         >
           Надіслати ще одне
         </button>

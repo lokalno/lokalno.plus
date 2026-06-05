@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         subject,
         message,
         phone,
+        adminUnread: true,
       },
     });
 
