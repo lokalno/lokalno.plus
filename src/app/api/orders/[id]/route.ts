@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { reversePaidOrder } from "@/lib/wallet-credit";
 import {
-  notifyBuyerOrderCancelledBySeller,
   notifyBuyerOrderConfirmed,
   notifyBuyerOrderShipped,
 } from "@/lib/order-notifications";
 import { ORDER_PAYMENT_NP_COD_RECEIVED } from "@/lib/order-payment";
 import { getNovaPoshtaTrackingUrl, validateNovaPoshtaTtn } from "@/lib/order-shipping";
+import { validateSellerCancelInput } from "@/lib/order-cancel";
+import { cancelOrderInTransaction } from "@/lib/order-cancel-service";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -38,7 +38,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const body = await request.json();
-  const { status, action, novaPoshtaTtn } = body;
+  const { status, action, novaPoshtaTtn, cancelReason, cancelReasonNote } = body;
 
   if (action === "ship" || status === "SHIPPED") {
     if (!isSeller) {
@@ -115,9 +115,9 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   if (status === "COMPLETED") {
-    if (order.status !== "SHIPPED") {
+    if (order.status !== "SHIPPED" || !order.novaPoshtaTtn) {
       return NextResponse.json(
-        { error: "Завершити можна лише після відправки Nova Poshta" },
+        { error: "Завершити можна лише після відправки Nova Poshta з ТТН" },
         { status: 400 }
       );
     }
@@ -134,54 +134,31 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   if (status === "CANCELLED" && order.status !== "CANCELLED" && order.status !== "COMPLETED") {
-    const updated = await prisma.$transaction(async (tx) => {
-      await reversePaidOrder(tx, id);
+    if (isSeller) {
+      const validation = validateSellerCancelInput({ cancelReason, cancelReasonNote });
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+    }
 
-      const currentOrder = await tx.order.update({
-        where: { id },
-        data: {
-          status: "CANCELLED",
+    try {
+      const updated = await prisma.$transaction(async (tx) => {
+        return cancelOrderInTransaction(tx, {
+          orderId: id,
           cancelledById: session.user!.id,
-        },
+          cancelledByRole: isSeller ? "SELLER" : "BUYER",
+          cancelReason: isSeller ? cancelReason : null,
+          cancelReasonNote: isSeller ? cancelReasonNote : null,
+        });
       });
 
-      const listing = await tx.listing.findUnique({ where: { id: order.listingId } });
-      if (listing) {
-        const restoreQty = order.quantity > 0 ? order.quantity : 1;
-        const newStock = listing.stock + restoreQty;
-        await tx.listing.update({
-          where: { id: order.listingId },
-          data: {
-            stock: newStock,
-            ...(listing.status === "SOLD" ? { status: "ACTIVE" } : {}),
-          },
-        });
+      return NextResponse.json(updated);
+    } catch (error) {
+      if (error instanceof Error && error.message === "INVALID_STATUS") {
+        return NextResponse.json({ error: "Це замовлення вже не можна скасувати" }, { status: 400 });
       }
-
-      if (isSeller) {
-        await notifyBuyerOrderCancelledBySeller(tx, {
-          listingId: order.listingId,
-          sellerId: order.sellerId,
-          buyerId: order.buyerId,
-          listingTitle: order.listing.title,
-          orderNumber: order.orderNumber,
-        });
-      }
-
-      if (order.priceOfferId) {
-        await tx.priceOffer.update({
-          where: { id: order.priceOfferId },
-          data: {
-            orderId: null,
-            status: "CLOSED",
-          },
-        });
-      }
-
-      return currentOrder;
-    });
-
-    return NextResponse.json(updated);
+      throw error;
+    }
   }
 
   return NextResponse.json({ error: "Невірна дія" }, { status: 400 });

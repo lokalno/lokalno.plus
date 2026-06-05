@@ -173,6 +173,7 @@ export default function OrderDetailsModal({
                 status={order.status}
                 isBuyer={false}
                 isSeller
+                createdAt={order.createdAt}
                 deliveryLines={deliveryLines}
                 codAmount={orderTotal}
                 embedded

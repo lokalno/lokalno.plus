@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { formatOrderNumber } from "@/lib/order-number";
+import { getCancelReasonLabel } from "@/lib/order-cancel";
 
 function orderRef(orderNumber: number): string {
   return formatOrderNumber(orderNumber);
@@ -40,12 +41,47 @@ export async function notifySellerNewOrder(
 
 export function buildSellerCancelledOrderMessage(
   orderNumber: number,
-  listingTitle: string
+  listingTitle: string,
+  cancelReason?: string | null,
+  cancelReasonNote?: string | null
 ): string {
-  return `🔔 Продавець скасував ${orderRef(orderNumber)} на «${listingTitle}». Перегляньте деталі в розділі «Мої покупки» або напишіть продавцю, якщо потрібні пояснення.`;
+  const reason = getCancelReasonLabel(cancelReason, cancelReasonNote);
+  const reasonLine = reason ? `\nПричина: ${reason}` : "";
+  return `🔔 Продавець скасував ${orderRef(orderNumber)} на «${listingTitle}».${reasonLine}\nПерегляньте деталі в розділі «Мої покупки» або напишіть продавцю, якщо потрібні пояснення.`;
 }
 
 export async function notifyBuyerOrderCancelledBySeller(
+  tx: Prisma.TransactionClient,
+  params: {
+    listingId: string;
+    sellerId: string;
+    buyerId: string;
+    listingTitle: string;
+    orderNumber: number;
+    cancelReason?: string | null;
+    cancelReasonNote?: string | null;
+  }
+): Promise<void> {
+  await tx.message.create({
+    data: {
+      listingId: params.listingId,
+      senderId: params.sellerId,
+      receiverId: params.buyerId,
+      content: buildSellerCancelledOrderMessage(
+        params.orderNumber,
+        params.listingTitle,
+        params.cancelReason,
+        params.cancelReasonNote
+      ),
+    },
+  });
+}
+
+export function buildBuyerAutoCancelledOrderMessage(orderNumber: number, listingTitle: string): string {
+  return `⏱️ ${orderRef(orderNumber)} на «${listingTitle}» автоматично скасовано: продавець не вказав ТТН протягом 3 днів.`;
+}
+
+export async function notifyBuyerOrderAutoCancelled(
   tx: Prisma.TransactionClient,
   params: {
     listingId: string;
@@ -60,7 +96,31 @@ export async function notifyBuyerOrderCancelledBySeller(
       listingId: params.listingId,
       senderId: params.sellerId,
       receiverId: params.buyerId,
-      content: buildSellerCancelledOrderMessage(params.orderNumber, params.listingTitle),
+      content: buildBuyerAutoCancelledOrderMessage(params.orderNumber, params.listingTitle),
+    },
+  });
+}
+
+export function buildSellerAutoCancelledOrderMessage(orderNumber: number, listingTitle: string): string {
+  return `⏱️ ${orderRef(orderNumber)} на «${listingTitle}» автоматично скасовано: ТТН не було вказано протягом 3 днів.`;
+}
+
+export async function notifySellerOrderAutoCancelled(
+  tx: Prisma.TransactionClient,
+  params: {
+    listingId: string;
+    sellerId: string;
+    buyerId: string;
+    listingTitle: string;
+    orderNumber: number;
+  }
+): Promise<void> {
+  await tx.message.create({
+    data: {
+      listingId: params.listingId,
+      senderId: params.buyerId,
+      receiverId: params.sellerId,
+      content: buildSellerAutoCancelledOrderMessage(params.orderNumber, params.listingTitle),
     },
   });
 }

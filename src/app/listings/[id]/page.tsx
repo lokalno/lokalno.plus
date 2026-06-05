@@ -142,7 +142,11 @@ export default async function ListingPage({ params }: Params) {
         },
       }),
       prisma.order.count({
-        where: { sellerId: listing.sellerId, status: "COMPLETED" },
+        where: {
+          sellerId: listing.sellerId,
+          status: "COMPLETED",
+          novaPoshtaTtn: { not: null },
+        },
       }),
     ]).catch(() => [[], null, null, { _avg: { rating: null }, _count: 0 }, 0, 0, 0, 0, 0] as const);
 

@@ -1,15 +1,18 @@
 import type { OrderListItem } from "@/components/OrdersList";
+import { isOrderShipped, isSuccessfulSale } from "@/lib/order-cancel";
 
 export type SellerOrderFilter = "all" | "new" | "processing" | "sent" | "completed" | "cancelled";
 
 export type SellerOrderBucket = SellerOrderFilter | "cancelled";
 
-export function getSellerOrderBucket(order: Pick<OrderListItem, "status" | "paymentStatus">): SellerOrderBucket {
+export function getSellerOrderBucket(
+  order: Pick<OrderListItem, "status" | "paymentStatus" | "novaPoshtaTtn">
+): SellerOrderBucket {
   if (order.status === "CANCELLED") return "cancelled";
   if (order.status === "PENDING") return "new";
-  if (order.status === "COMPLETED") return "completed";
-  if (order.status === "SHIPPED") return "sent";
-  if (order.status === "CONFIRMED") return "processing";
+  if (isSuccessfulSale(order)) return "completed";
+  if (isOrderShipped(order)) return "sent";
+  if (order.status === "CONFIRMED" || order.status === "SHIPPED") return "processing";
   return "processing";
 }
 

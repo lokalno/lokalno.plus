@@ -5,7 +5,7 @@ import AdminActivityCharts from "@/components/AdminActivityCharts";
 import AdminUkraineMap from "@/components/AdminUkraineMap";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatAdminMoney, getAdminStatsSnapshot } from "@/lib/admin-stats";
+import { formatAdminMoney, getAdminCancellationStats, getAdminStatsSnapshot } from "@/lib/admin-stats";
 export const dynamic = "force-dynamic";
 
 export default async function AdminStatsPage() {
@@ -16,7 +16,10 @@ export default async function AdminStatsPage() {
   const isAdmin = await requireAdmin(session.user.id);
   if (!isAdmin) redirect("/");
 
-  const stats = await getAdminStatsSnapshot(prisma);
+  const [stats, cancellationStats] = await Promise.all([
+    getAdminStatsSnapshot(prisma),
+    getAdminCancellationStats(prisma),
+  ]);
   const allTime = stats.periods.find((period) => period.key === "allTime");
 
   return (
@@ -81,6 +84,58 @@ export default async function AdminStatsPage() {
         dailyActivity={stats.dailyActivity}
         weekdayActivityByRange={stats.weekdayActivityByRange}
       />
+
+      <div className="mb-8 rounded-2xl border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-gray-900">Скасовані замовлення</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Статистика скасувань продавцем та автоматичних скасувань без ТТН
+        </p>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
+            <p className="text-sm text-gray-600">Скасовано продавцем</p>
+            <p className="mt-1 text-2xl font-bold text-red-700">
+              {cancellationStats.sellerCancelled.toLocaleString("uk-UA")}
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-4">
+            <p className="text-sm text-gray-600">Автоскасування (без ТТН 3 дні)</p>
+            <p className="mt-1 text-2xl font-bold text-amber-700">
+              {cancellationStats.autoCancelled.toLocaleString("uk-UA")}
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-600">Скасовано покупцем</p>
+            <p className="mt-1 text-2xl font-bold text-gray-700">
+              {cancellationStats.buyerCancelled.toLocaleString("uk-UA")}
+            </p>
+            <p className="mt-1 text-xs text-gray-400">не впливає на рейтинг продавця</p>
+          </div>
+        </div>
+
+        {cancellationStats.bySellerReason.length > 0 ? (
+          <div className="mt-5 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-4 py-3">Причина</th>
+                  <th className="px-4 py-3">Кількість</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {cancellationStats.bySellerReason.map((row) => (
+                  <tr key={row.key} className="hover:bg-gray-50/70">
+                    <td className="px-4 py-3 text-gray-900">{row.label}</td>
+                    <td className="px-4 py-3 font-semibold">{row.count.toLocaleString("uk-UA")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-gray-500">Скасувань від продавця поки немає.</p>
+        )}
+      </div>
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="overflow-x-auto">

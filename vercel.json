@@ -1,9 +1,10 @@
 {
-
   "buildCommand": "prisma generate && prisma db push --accept-data-loss && tsx scripts/ensure-order-numbers.ts && next build",
-
-  "framework": "nextjs"
-
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/auto-cancel-orders",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
-
-

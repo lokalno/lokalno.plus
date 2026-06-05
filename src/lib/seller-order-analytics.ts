@@ -1,7 +1,8 @@
 import type { OrderListItem } from "@/components/OrdersList";
 import { getSellerOrderBucket } from "@/lib/seller-orders";
 import { getOrderTotalAmount, getOrderQuantity } from "@/lib/order-total";
-
+import { isSuccessfulSale } from "@/lib/order-cancel";
+import { ORDER_PAYMENT_NP_COD_RECEIVED } from "@/lib/order-payment";
 export type SellerStatsPeriod = "day" | "week" | "month" | "year";
 
 export const SELLER_STATS_PERIOD_LABELS: Record<SellerStatsPeriod, string> = {
@@ -54,10 +55,13 @@ export function getSellerPeriodStats(
 
   const active = inPeriod.filter((order) => order.status !== "CANCELLED");
   const newOrders = active.filter((order) => getSellerOrderBucket(order) === "new").length;
-  const completedOrders = active.filter((order) => getSellerOrderBucket(order) === "completed").length;
+  const completedOrders = inPeriod.filter((order) => isSuccessfulSale(order)).length;
   const income = inPeriod
-    .filter((order) => order.paymentStatus === "PAID")
-    .reduce((sum, order) => sum + getOrderTotalAmount(order.listing.price, getOrderQuantity(order)), 0);
+    .filter(
+      (order) =>
+        isSuccessfulSale(order) &&
+        (order.paymentStatus === "PAID" || order.paymentStatus === ORDER_PAYMENT_NP_COD_RECEIVED)
+    )    .reduce((sum, order) => sum + getOrderTotalAmount(order.listing.price, getOrderQuantity(order)), 0);
 
   return {
     totalOrders: active.length,

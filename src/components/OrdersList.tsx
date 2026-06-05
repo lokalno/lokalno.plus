@@ -8,6 +8,7 @@ import { ORDER_STATUSES } from "@/lib/constants";
 import { formatOrderDelivery } from "@/lib/order-shipping";
 import { getOrderTotalFromRecord, getOrderUnitPrice, getOrderQuantity, formatOrderQuantityLabel } from "@/lib/order-total";
 import { getBuyerOrderStatusBanner } from "@/lib/order-status-ui";
+import { getCancelReasonLabel, getOrderCancelRole } from "@/lib/order-cancel";
 import OrderActions from "@/components/OrderActions";
 import { OrderTrackingInfo } from "@/components/OrderShipForm";
 import OrderPaymentInfo from "@/components/OrderPaymentInfo";
@@ -23,6 +24,10 @@ export type OrderListItem = {
   buyerId: string;
   sellerId: string;
   cancelledById?: string | null;
+  cancelledByRole?: string | null;
+  cancelReason?: string | null;
+  cancelReasonNote?: string | null;
+  cancelledAt?: Date | string | null;
   novaPoshtaTtn?: string | null;
   shippedAt?: Date | string | null;
   createdAt: Date | string;
@@ -80,15 +85,16 @@ export default function OrdersList({
         const quantity = getOrderQuantity(order);
         const unitPrice = getOrderUnitPrice(order);
         const orderTotal = getOrderTotalFromRecord(order);
+        const cancelRole = getOrderCancelRole(order);
         const buyerStatusBanner = isBuyer
           ? getBuyerOrderStatusBanner(order.status, {
-              cancelledBySeller:
-                order.status === "CANCELLED" && order.cancelledById === order.sellerId,
-              cancelledByBuyer:
-                order.status === "CANCELLED" && order.cancelledById === order.buyerId,
+              cancelledBySeller: order.status === "CANCELLED" && cancelRole === "SELLER",
+              cancelledByBuyer: order.status === "CANCELLED" && cancelRole === "BUYER",
               novaPoshtaTtn: order.novaPoshtaTtn,
             })
           : null;
+        const cancelReasonLabel =
+          order.status === "CANCELLED" ? getCancelReasonLabel(order.cancelReason, order.cancelReasonNote) : "";
 
         return (
           <div key={order.id} className="flex gap-4 rounded-xl border bg-white p-4">
@@ -174,11 +180,16 @@ export default function OrdersList({
                 <OrderTrackingInfo ttn={order.novaPoshtaTtn} />
               )}
 
+              {order.status === "CANCELLED" && cancelReasonLabel && (sellerView || isSeller) && (
+                <p className="mt-2 text-xs text-gray-500">Причина: {cancelReasonLabel}</p>
+              )}
+
               <OrderActions
                 orderId={order.id}
                 status={order.status}
                 isBuyer={isBuyer}
                 isSeller={isSeller}
+                createdAt={order.createdAt}
                 deliveryLines={deliveryLines}
                 codAmount={orderTotal}
               />

@@ -187,6 +187,10 @@ model Order {
   unitPrice          Float?
   priceOfferId       String?
   cancelledById      String?
+  cancelledByRole    String?
+  cancelReason       String?
+  cancelReasonNote   String?
+  cancelledAt        DateTime?
   novaPoshtaTtn      String?
   shippedAt          DateTime?
   createdAt          DateTime @default(now())

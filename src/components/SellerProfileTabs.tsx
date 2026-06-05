@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { getPositiveReviewPercent, getSellerAchievements } from "@/lib/seller-stats";
+import { countsTowardSellerAchievement } from "@/lib/order-cancel";
 import ListingCard from "./ListingCard";
 import SellerListingsInventory from "./SellerListingsInventory";
 import OrdersNavLink from "./OrdersNavLink";
@@ -271,7 +272,7 @@ export default function SellerProfileTabs(props: SellerProfileTabsProps) {
               listingCount: props.listingCount,
               reviewCount: props.reviewCount,
               followerCount: props.followerCount,
-              orderCount: props.sellerOrders?.length ?? 0,
+              orderCount: props.sellerOrders?.filter(countsTowardSellerAchievement).length ?? 0,
               verified: props.verified,
             });
             const unlockedCount = achievements.filter((item) => item.unlocked).length;

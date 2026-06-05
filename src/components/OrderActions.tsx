@@ -3,12 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import OrderShipForm from "@/components/OrderShipForm";
+import OrderSellerCancelDialog from "@/components/OrderSellerCancelDialog";
+import { formatTtnDeadline, isPastTtnDeadline } from "@/lib/order-cancel";
+import type { SellerCancelReason } from "@/lib/order-cancel";
 
 type OrderActionsProps = {
   orderId: string;
   status: string;
   isBuyer: boolean;
   isSeller: boolean;
+  createdAt?: Date | string;
   deliveryLines?: string[];
   codAmount?: number;
   embedded?: boolean;
@@ -20,6 +24,7 @@ export default function OrderActions({
   status,
   isBuyer,
   isSeller,
+  createdAt,
   deliveryLines = [],
   codAmount,
   embedded = false,
@@ -28,43 +33,67 @@ export default function OrderActions({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  async function updateStatus(newStatus: string) {
+  async function patchOrder(body: Record<string, unknown>) {
     setLoading(true);
     setError("");
     const res = await fetch(`/api/orders/${orderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify(body),
     });
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
     setLoading(false);
 
     if (!res.ok) {
       setError(data?.error || "Не вдалося оновити замовлення");
-      return;
+      return false;
     }
 
     router.refresh();
+    return true;
+  }
+
+  async function updateStatus(newStatus: string) {
+    return patchOrder({ status: newStatus });
   }
 
   if (status === "COMPLETED" || status === "CANCELLED") return null;
 
-  async function cancelOrder() {
-    const confirmed = isSeller
-      ? confirm(
-          "Скасувати це замовлення? Покупець отримає сповіщення у повідомленнях і в розділі «Мої покупки»."
-        )
-      : confirm("Скасувати це замовлення?");
-    if (!confirmed) return;
+  async function cancelAsBuyer() {
+    if (!confirm("Скасувати це замовлення?")) return;
     await updateStatus("CANCELLED");
   }
+
+  async function cancelAsSeller(reason: SellerCancelReason, note: string) {
+    const ok = await patchOrder({
+      status: "CANCELLED",
+      cancelReason: reason,
+      cancelReasonNote: note,
+    });
+    if (ok) {
+      setCancelDialogOpen(false);
+    }
+  }
+
+  const showTtnDeadline =
+    isSeller &&
+    createdAt &&
+    (status === "PENDING" || status === "CONFIRMED") &&
+    !isPastTtnDeadline(createdAt);
 
   return (
     <div className={embedded ? "" : "mt-3"}>
       {isSeller && status === "PENDING" && (
         <p className="mb-2 text-xs text-gray-500">
           Підтвердіть замовлення, оформіть посилку в Nova Poshta з контролем оплати та вкажіть ТТН.
+        </p>
+      )}
+
+      {showTtnDeadline && (
+        <p className="mb-2 text-xs text-amber-700">
+          До {formatTtnDeadline(createdAt)} потрібно вказати ТТН, інакше замовлення скасується автоматично.
         </p>
       )}
 
@@ -103,7 +132,7 @@ export default function OrderActions({
         {status !== "SHIPPED" && (
           <button
             type="button"
-            onClick={cancelOrder}
+            onClick={() => (isSeller ? setCancelDialogOpen(true) : cancelAsBuyer())}
             disabled={loading}
             className="rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
@@ -111,6 +140,17 @@ export default function OrderActions({
           </button>
         )}
       </div>
+
+      <OrderSellerCancelDialog
+        open={cancelDialogOpen}
+        loading={loading}
+        error={error}
+        onClose={() => {
+          setCancelDialogOpen(false);
+          setError("");
+        }}
+        onConfirm={cancelAsSeller}
+      />
     </div>
   );
 }

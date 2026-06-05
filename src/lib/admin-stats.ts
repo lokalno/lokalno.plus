@@ -1,6 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
 import { getOrderTotalAmount, getOrderQuantity } from "@/lib/order-total";
 import {
+  AUTO_CANCEL_REASON,
+  getCancelReasonLabel,
+  getOrderCancelRole,
+} from "@/lib/order-cancel";
+import {
   buildCityMapPoints,
   normalizeCityKey,
   type AdminCityMapPoint,
@@ -51,6 +56,19 @@ export type AdminWeekdayChartPoint = {
 };
 
 export type AdminActivityChartRange = 7 | 30 | 90;
+
+export type AdminCancellationReasonStat = {
+  key: string;
+  label: string;
+  count: number;
+};
+
+export type AdminCancellationStats = {
+  sellerCancelled: number;
+  buyerCancelled: number;
+  autoCancelled: number;
+  bySellerReason: AdminCancellationReasonStat[];
+};
 
 export type AdminStatsSnapshot = {
   generatedAt: string;
@@ -516,4 +534,61 @@ export async function getAdminStatsSnapshot(prisma: PrismaClient): Promise<Admin
 
 export function formatAdminMoney(amount: number): string {
   return `${Math.round(amount).toLocaleString("uk-UA")} ₴`;
+}
+
+export async function getAdminCancellationStats(prisma: PrismaClient): Promise<AdminCancellationStats> {
+  const cancelled = await prisma.order.findMany({
+    where: { status: "CANCELLED" },
+    select: {
+      cancelledByRole: true,
+      cancelReason: true,
+      cancelReasonNote: true,
+      cancelledById: true,
+      buyerId: true,
+      sellerId: true,
+    },
+  });
+
+  let sellerCancelled = 0;
+  let buyerCancelled = 0;
+  let autoCancelled = 0;
+  const bySellerReason = new Map<string, number>();
+
+  for (const order of cancelled) {
+    const role =
+      getOrderCancelRole(order) ??
+      (order.cancelledById === order.buyerId
+        ? "BUYER"
+        : order.cancelledById === order.sellerId
+          ? "SELLER"
+          : "SYSTEM");
+
+    if (role === "SELLER") {
+      sellerCancelled += 1;
+      const key = order.cancelReason || "UNKNOWN";
+      bySellerReason.set(key, (bySellerReason.get(key) ?? 0) + 1);
+      continue;
+    }
+
+    if (role === "BUYER") {
+      buyerCancelled += 1;
+      continue;
+    }
+
+    autoCancelled += 1;
+    bySellerReason.set(AUTO_CANCEL_REASON, (bySellerReason.get(AUTO_CANCEL_REASON) ?? 0) + 1);
+  }
+
+  return {
+    sellerCancelled,
+    buyerCancelled,
+    autoCancelled,
+    bySellerReason: [...bySellerReason.entries()]
+      .map(([key, count]) => ({
+        key,
+        label: getCancelReasonLabel(key),
+        count,
+      }))
+      .sort((a, b) => b.count - a.count),
+  };
 }
