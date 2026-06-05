@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:push": "prisma db push --accept-data-loss",
     "db:seed": "tsx prisma/seed.ts",
+    "db:purge-demo": "tsx scripts/purge-demo-listings.ts",
     "build:settlements": "tsx scripts/build-settlements.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma db push --accept-data-loss && tsx scripts/ensure-order-numbers.ts && next build"

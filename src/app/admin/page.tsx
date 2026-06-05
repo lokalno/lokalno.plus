@@ -6,6 +6,8 @@ import { authOptions, requireAdmin } from "@/lib/auth";
 import { getAdminCityMapData } from "@/lib/admin-stats";
 import { prisma } from "@/lib/prisma";
 import { countOpenSupportTickets } from "@/lib/support-tickets";
+import { DEMO_SELLER_EMAILS } from "@/lib/purge-demo-listings";
+import AdminPurgeDemoButton from "@/components/AdminPurgeDemoButton";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ export default async function AdminPage() {
     openSupport,
     pendingWithdrawals,
     cityMap,
+    demoListingsCount,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.listing.count(),
@@ -37,11 +40,18 @@ export default async function AdminPage() {
     countOpenSupportTickets(),
     prisma.withdrawal.count({ where: { status: "PENDING" } }),
     getAdminCityMapData(prisma),
+    prisma.listing.count({
+      where: { seller: { email: { in: [...DEMO_SELLER_EMAILS] } } },
+    }),
   ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">Адмін-панель</h1>
+
+      <div className="mb-6">
+        <AdminPurgeDemoButton demoListingsCount={demoListingsCount} />
+      </div>
 
       {pendingListings > 0 && (
         <Link
