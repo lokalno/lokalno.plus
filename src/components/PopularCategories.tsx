@@ -22,7 +22,7 @@ export default function PopularCategories() {
   }
 
   return (
-    <section className="mb-8">
+    <section className="mb-8 hidden xl:block">
       <h2 className="text-lg font-bold text-gray-900 mb-4">Популярні категорії</h2>
       <div className="flex flex-wrap gap-2">
         {CATEGORIES.map((cat) => (

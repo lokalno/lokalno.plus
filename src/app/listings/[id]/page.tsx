@@ -16,6 +16,7 @@ import ViewTracker from "@/components/ViewTracker";
 import ListingGallery from "@/components/ListingGallery";
 import ShareButton from "@/components/ShareButton";
 import MarkSoldButton from "@/components/MarkSoldButton";
+import DeleteListingButton from "@/components/DeleteListingButton";
 import ListingCard from "@/components/ListingCard";
 import ListingStockEditor from "@/components/ListingStockEditor";
 import ListingBreadcrumbs from "@/components/ListingBreadcrumbs";
@@ -514,6 +515,11 @@ export default async function ListingPage({ params }: Params) {
                       Редагувати
                     </Link>
                   )}
+                  <DeleteListingButton
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                    redirectTo="/profile/settings"
+                  />
                 </div>
               </div>
             )}

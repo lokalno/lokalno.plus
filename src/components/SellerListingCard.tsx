@@ -3,6 +3,7 @@ import { formatPrice, parsePhotos, formatViews } from "@/lib/utils";
 import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 import ListingFavoriteBadge from "@/components/ListingFavoriteBadge";
+import DeleteListingButton from "@/components/DeleteListingButton";
 
 type SellerListingCardProps = {
   listing: ListingWithSoldCount & {
@@ -20,12 +21,14 @@ type SellerListingCardProps = {
   };
   compact?: boolean;
   showStoragePosition?: boolean;
+  showOwnerActions?: boolean;
 };
 
 export default function SellerListingCard({
   listing,
   compact = false,
   showStoragePosition = false,
+  showOwnerActions = false,
 }: SellerListingCardProps) {
   const photos = parsePhotos(listing.photos);
   const photo = photos[0];
@@ -36,13 +39,12 @@ export default function SellerListingCard({
     ? "absolute bg-black/60 text-white text-[10px] px-1.5 py-0 rounded-md"
     : "absolute bg-black/60 text-white text-xs px-2 py-0.5 rounded-full";
 
-  return (
-    <Link
-      href={`/listings/${listing.id}`}
-      className={`group bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${
-        compact ? "rounded-lg" : "rounded-xl"
-      }`}
-    >
+  const cardClass = `group bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${
+    compact ? "rounded-lg" : "rounded-xl"
+  }`;
+
+  const cardBody = (
+    <>
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -126,6 +128,39 @@ export default function SellerListingCard({
           👁 {formatViews(listing.views)}
         </p>
       </div>
+    </>
+  );
+
+  const ownerActions = showOwnerActions ? (
+    <div
+      className={`flex items-center gap-3 border-t border-gray-100 ${
+        compact ? "px-2 py-2" : "px-3 py-3"
+      }`}
+    >
+      <Link
+        href={`/listings/${listing.id}/edit`}
+        className={`font-medium text-brand-700 hover:underline ${compact ? "text-[10px]" : "text-xs"}`}
+      >
+        Редагувати
+      </Link>
+      <DeleteListingButton listingId={listing.id} listingTitle={listing.title} compact />
+    </div>
+  ) : null;
+
+  if (showOwnerActions) {
+    return (
+      <div className={cardClass}>
+        <Link href={`/listings/${listing.id}`} className="block">
+          {cardBody}
+        </Link>
+        {ownerActions}
+      </div>
+    );
+  }
+
+  return (
+    <Link href={`/listings/${listing.id}`} className={cardClass}>
+      {cardBody}
     </Link>
   );
 }

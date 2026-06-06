@@ -102,7 +102,7 @@ export default async function ProfileSettingsPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {user.listings.map((listing) => (
-                <SellerListingCard key={listing.id} listing={listing} />
+                <SellerListingCard key={listing.id} listing={listing} showOwnerActions />
               ))}
             </div>
           )}

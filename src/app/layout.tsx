@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import AppVersionGuard from "@/components/AppVersionGuard";
 import VersionRefreshScript from "@/components/VersionRefreshScript";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -47,8 +48,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <AppVersionGuard />
           <Header />
-          <main className="min-h-[calc(100vh-72px)]">{children}</main>
-          <Footer />
+          <main className="min-h-[calc(100vh-72px)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] xl:pb-0">
+            {children}
+          </main>
+          <div className="hidden xl:block">
+            <Footer />
+          </div>
+          <MobileBottomNav />
         </Providers>
       </body>
     </html>

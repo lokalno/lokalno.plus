@@ -10,6 +10,7 @@ import AgriSearchFilters from "@/components/AgriSearchFilters";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
+import MobileCategoryStrip from "@/components/MobileCategoryStrip";
 import { getPopularCities, getLatestSidebarListings } from "@/lib/home-sidebar-cache";
 import { parsePageParam } from "@/lib/catalog";
 import {
@@ -110,19 +111,27 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const catalogKey = homeCatalogCacheKey(params);
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <aside className="lg:col-span-2 hidden lg:block">
+    <div className="max-w-[1400px] mx-auto px-3 xl:px-4 py-4 xl:py-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-6">
+        <aside className="xl:col-span-2 hidden xl:block">
           <Suspense fallback={<div className="h-64 bg-white rounded-xl border animate-pulse" />}>
             <CategorySidebar />
           </Suspense>
           <PopularCitiesSidebar cities={popularCities} />
         </aside>
 
-        <div className="lg:col-span-7">
+        <div className="xl:col-span-7">
           {!showLanding && (
             <Suspense fallback={null}>
-              <div className="mb-4 space-y-4 lg:hidden">
+              <div className="mb-3 xl:hidden">
+                <MobileCategoryStrip />
+              </div>
+            </Suspense>
+          )}
+
+          {!showLanding && (
+            <Suspense fallback={null}>
+              <div className="mb-4 space-y-4 xl:hidden">
                 <CategorySidebar />
                 {transportFilters(params)}
               </div>
@@ -134,7 +143,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           </Suspense>
         </div>
 
-        <aside className="lg:col-span-3 hidden lg:block">
+        <aside className="xl:col-span-3 hidden xl:block">
           <div className="sticky top-20 space-y-4">
             {!showLanding && <Suspense fallback={null}>{transportFilters(params)}</Suspense>}
             <HomeRightSidebar latestListings={latestListings} />

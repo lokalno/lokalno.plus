@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { UKRAINIAN_CITIES } from "@/lib/constants";
 
-export default function HeaderSearch() {
+export default function MobileSearchBar() {
+  const pathname = usePathname();
+  if (pathname === "/") return null;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") || "");
@@ -22,12 +24,16 @@ export default function HeaderSearch() {
   }
 
   return (
-    <form onSubmit={search} className="flex-1 max-w-2xl hidden xl:flex items-center gap-0">
+    <form
+      id="mobile-search"
+      onSubmit={search}
+      className="xl:hidden flex items-center gap-2 border-t border-gray-100 bg-white px-3 py-2.5"
+    >
       <select
         value={city}
         onChange={(e) => setCity(e.target.value)}
-        className="w-36 shrink-0 rounded-l-xl rounded-r-none border-r-0 py-2.5 text-sm bg-gray-50"
-        aria-label="Регіон"
+        className="w-[7.5rem] shrink-0 rounded-xl border-gray-200 bg-gray-50 py-2.5 text-xs"
+        aria-label="Місто"
       >
         <option value="">Вся Україна</option>
         {UKRAINIAN_CITIES.map((c) => (
@@ -41,13 +47,13 @@ export default function HeaderSearch() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Що шукаєте?"
-        className="flex-1 rounded-none border-x-0 py-2.5 text-sm"
+        className="min-w-0 flex-1 rounded-xl py-2.5 text-sm"
       />
       <button
         type="submit"
-        className="shrink-0 bg-brand-600 text-white px-5 py-2.5 rounded-r-xl hover:bg-brand-700 font-medium text-sm"
+        className="shrink-0 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
       >
-        Пошук
+        Знайти
       </button>
     </form>
   );

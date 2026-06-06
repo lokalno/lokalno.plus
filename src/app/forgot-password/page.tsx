@@ -30,7 +30,8 @@ export default function ForgotPasswordPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border p-6 space-y-4">
         <p className="text-sm text-gray-600">
-          Введіть email — якщо акаунт існує, ми надішлемо інструкції для скидання пароля.
+          Введіть email, яким ви реєструвались. На пошту прийде посилання для встановлення нового
+          пароля (діє 1 годину).
         </p>
         <input
           type="email"
@@ -46,7 +47,9 @@ export default function ForgotPasswordPage() {
         >
           {loading ? "..." : "Надіслати"}
         </button>
-        {message && <p className="text-sm text-center text-gray-700">{message}</p>}
+        {message && (
+          <p className="text-sm text-center text-gray-700 bg-gray-50 rounded-lg px-3 py-2">{message}</p>
+        )}
       </form>
 
       <p className="text-center text-sm mt-4">

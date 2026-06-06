@@ -63,10 +63,10 @@ export default function MarketplaceCard({ listing, badge }: MarketplaceCardProps
           </span>
         )}
       </div>
-      <div className="p-3">
-        <h3 className="font-medium text-gray-900 text-sm truncate">{listing.title}</h3>
-        <p className="text-brand-700 font-bold mt-1">{formatPrice(listing.price)}</p>
-        <p className="text-xs text-gray-500 mt-2 truncate">
+      <div className="p-2.5 xl:p-3">
+        <h3 className="font-medium text-gray-900 text-xs xl:text-sm truncate">{listing.title}</h3>
+        <p className="text-brand-700 font-bold mt-0.5 xl:mt-1 text-sm xl:text-base">{formatPrice(listing.price)}</p>
+        <p className="text-[10px] xl:text-xs text-gray-500 mt-1 xl:mt-2 truncate">
           {shortLocation(listing.city)} · {formatTimeAgo(listing.createdAt)}
         </p>
       </div>

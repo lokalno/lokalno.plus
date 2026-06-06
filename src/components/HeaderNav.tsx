@@ -146,7 +146,7 @@ export default function HeaderNav({
 
   return (
     <>
-      <nav className="hidden lg:flex items-center gap-1 shrink-0">
+      <nav className="hidden xl:flex items-center gap-1 shrink-0">
         <Link
           href="/favorites"
           className="relative flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-gray-700 hover:bg-rose-50 md:px-3"
@@ -275,7 +275,7 @@ export default function HeaderNav({
 
       <button
         type="button"
-        className="lg:hidden p-2 rounded-xl border border-gray-200"
+        className="xl:hidden p-2 rounded-xl border border-gray-200"
         onClick={() => setOpen(!open)}
         aria-label="Меню"
       >
@@ -283,7 +283,7 @@ export default function HeaderNav({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-xl p-4 space-y-2 overflow-y-auto">
             <div className="flex justify-between items-center mb-4">

@@ -11,6 +11,7 @@ import { parseTransportVehiclePayload } from "@/lib/vehicle";
 import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
 import { isAgriListingCategory, parseAgriListingPayload } from "@/lib/agri";
 import { parseListingCategory } from "@/lib/constants";
+import { deleteListingById } from "@/lib/delete-listing";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -299,6 +300,10 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await prisma.listing.delete({ where: { id } });
+  const result = await deleteListingById(prisma, id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -32,7 +32,7 @@ function ResetForm() {
     setLoading(false);
 
     if (res.ok) {
-      router.push("/login");
+      router.push("/login?reset=success");
     } else {
       setMessage(data.error || "Помилка");
     }

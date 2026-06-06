@@ -4,7 +4,7 @@ export default function HomeCatalogSkeleton() {
       <div className="flex items-center justify-between">
         <div className="h-7 w-48 rounded-lg bg-gray-200" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 xl:gap-4">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
             <div className="aspect-[4/3] bg-gray-200" />

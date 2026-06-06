@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { LISTING_STATUSES } from "@/lib/constants";
 import SellerListingCard from "@/components/SellerListingCard";
+import DeleteListingButton from "@/components/DeleteListingButton";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
 
 type SellerListing = ListingWithSoldCount & {
@@ -88,7 +89,13 @@ export default function SellerListingsInventory({ listings }: SellerListingsInve
       ) : view === "grid" ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-3">
           {filtered.map((listing) => (
-            <SellerListingCard key={listing.id} listing={listing} compact showStoragePosition />
+            <SellerListingCard
+              key={listing.id}
+              listing={listing}
+              compact
+              showStoragePosition
+              showOwnerActions
+            />
           ))}
         </div>
       ) : (
@@ -149,12 +156,19 @@ export default function SellerListingsInventory({ listings }: SellerListingsInve
                       {LISTING_STATUSES[listing.status] || listing.status}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/listings/${listing.id}/edit`}
-                        className="text-sm font-medium text-brand-700 hover:underline"
-                      >
-                        Редагувати
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/listings/${listing.id}/edit`}
+                          className="text-sm font-medium text-brand-700 hover:underline"
+                        >
+                          Редагувати
+                        </Link>
+                        <DeleteListingButton
+                          listingId={listing.id}
+                          listingTitle={listing.title}
+                          compact
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

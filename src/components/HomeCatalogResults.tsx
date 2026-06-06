@@ -2,7 +2,10 @@ import HeroSection from "@/components/HeroSection";
 import MarketplaceCard from "@/components/MarketplaceCard";
 import Pagination from "@/components/Pagination";
 import PopularCategories from "@/components/PopularCategories";
+import MobilePopularCategories from "@/components/MobilePopularCategories";
 import { Suspense } from "react";
+import Link from "next/link";
+import { getMobileHomeStats } from "@/lib/mobile-home-stats";
 import { prisma } from "@/lib/prisma";
 import { LISTINGS_PER_PAGE } from "@/lib/catalog";
 import { buildListingCategoryFilter } from "@/lib/constants";
@@ -223,6 +226,7 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   let recommended: HomeListing[] = [];
   let popularNearby: HomeListing[] = [];
   let dbUnavailable = false;
+  const mobileStats = showLanding ? await getMobileHomeStats() : undefined;
 
   try {
     [total, listings, recommended, popularNearby] = await Promise.all([
@@ -241,7 +245,7 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
         ? prisma.listing.findMany({
             where: { status: "ACTIVE" },
             include: listingSoldCountInclude,
-            orderBy: { views: "desc" },
+            orderBy: { createdAt: "desc" },
             take: 8,
           })
         : Promise.resolve([]),
@@ -308,15 +312,24 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
 
   return (
     <>
-      {showLanding && <HeroSection />}
+      {showLanding && <HeroSection mobileStats={mobileStats} />}
+
+      {showLanding && mobileStats && (
+        <Suspense fallback={null}>
+          <MobilePopularCategories items={mobileStats.categoryCounts} />
+        </Suspense>
+      )}
 
       {showLanding && (
-        <section className="mb-8">
+        <section className="mb-8" id="latest-listings">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Рекомендовані оголошення</h2>
-            <span className="text-sm text-gray-500">{total} всього</span>
+            <h2 className="text-base xl:text-lg font-bold text-gray-900">Останні оголошення</h2>
+            <Link href="/?sort=views" className="text-sm font-medium text-brand-700 xl:hidden">
+              Дивитися всі
+            </Link>
+            <span className="hidden xl:inline text-sm text-gray-500">{total} всього</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 xl:gap-4">
             {recommended.map((listing) => (
               <MarketplaceCard key={listing.id} listing={listing} />
             ))}
@@ -325,16 +338,16 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
       )}
 
       {showLanding && popularNearby.length > 0 && (
-        <section className="mb-8">
+        <section className="mb-8 hidden xl:block">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Поблизу вас</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 h-40 md:h-auto min-h-[160px] flex items-center justify-center text-gray-400 text-sm bg-gradient-to-br from-brand-50 to-white">
+          <div className="grid xl:grid-cols-3 gap-3 xl:gap-4">
+            <div className="hidden xl:flex bg-white rounded-xl border border-gray-200 h-40 xl:h-auto min-h-[160px] items-center justify-center text-gray-400 text-sm bg-gradient-to-br from-brand-50 to-white">
               <div className="text-center">
                 <span className="text-3xl">🗺️</span>
                 <p className="mt-2 text-gray-500">Оголошення поруч</p>
               </div>
             </div>
-            <div className="md:col-span-2 grid grid-cols-2 gap-3">
+            <div className="xl:col-span-2 grid grid-cols-2 gap-3">
               {popularNearby.map((listing) => (
                 <MarketplaceCard key={listing.id} listing={listing} badge="new" />
               ))}
@@ -380,7 +393,7 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 xl:gap-4">
                 {listings.map((listing) => (
                   <MarketplaceCard key={listing.id} listing={listing} />
                 ))}
@@ -392,11 +405,11 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
       )}
 
       {showLanding && !hasActiveFilters(params) && (
-        <section className="mt-4">
+        <section className="mt-4 hidden xl:block" id="all-listings">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">Усі оголошення</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 xl:gap-4">
             {listings.slice(0, 6).map((listing) => (
               <MarketplaceCard key={`all-${listing.id}`} listing={listing} />
             ))}
