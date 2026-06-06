@@ -72,7 +72,7 @@ export default function HeroSection({ mobileStats }: HeroSectionProps) {
               fill
               className="object-contain object-top"
               sizes="120px"
-              priority
+              loading="lazy"
             />
           </div>
         </div>

@@ -1,2 +1,2 @@
 /** Bump on each production UI deploy so clients auto-refresh stale cached pages. */
-export const APP_VERSION = "v141-mobile-mockup-ui";
+export const APP_VERSION = "v142-mobile-perf";

@@ -1,18 +1,18 @@
 import { Suspense } from "react";
 import CategorySidebar from "@/components/CategorySidebar";
-import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
 import SearchFilters from "@/components/SearchFilters";
 import CarSearchFilters from "@/components/CarSearchFilters";
 import MotoSearchFilters from "@/components/MotoSearchFilters";
 import TruckSearchFilters from "@/components/TruckSearchFilters";
 import PartsSearchFilters from "@/components/PartsSearchFilters";
 import AgriSearchFilters from "@/components/AgriSearchFilters";
-import HomeRightSidebar from "@/components/HomeRightSidebar";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
 import MobileCategoryStrip from "@/components/MobileCategoryStrip";
-import { getPopularCities, getLatestSidebarListings } from "@/lib/home-sidebar-cache";
+import { HomeLeftSidebar, HomeRightSidebarPanel } from "@/components/HomeSidebars";
 import { parsePageParam } from "@/lib/catalog";
+
+export const revalidate = 60;
 import {
   hasTransportSearchFilters,
   isCarCatalogContext,
@@ -102,22 +102,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const page = parsePageParam(params.page);
   const showLanding = !hasActiveFilters(params) && page === 1;
-
-  const [popularCities, latestListings] = await Promise.all([
-    getPopularCities(),
-    getLatestSidebarListings(),
-  ]);
-
   const catalogKey = homeCatalogCacheKey(params);
+  const filters = transportFilters(params);
 
   return (
     <div className="max-w-[1400px] mx-auto px-3 xl:px-4 py-4 xl:py-6">
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-6">
         <aside className="xl:col-span-2 hidden xl:block">
-          <Suspense fallback={<div className="h-64 bg-white rounded-xl border animate-pulse" />}>
-            <CategorySidebar />
-          </Suspense>
-          <PopularCitiesSidebar cities={popularCities} />
+          <HomeLeftSidebar />
         </aside>
 
         <div className="xl:col-span-7">
@@ -133,7 +125,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <Suspense fallback={null}>
               <div className="mb-4 space-y-4 xl:hidden">
                 <CategorySidebar />
-                {transportFilters(params)}
+                {filters}
               </div>
             </Suspense>
           )}
@@ -144,10 +136,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         </div>
 
         <aside className="xl:col-span-3 hidden xl:block">
-          <div className="sticky top-20 space-y-4">
-            {!showLanding && <Suspense fallback={null}>{transportFilters(params)}</Suspense>}
-            <HomeRightSidebar latestListings={latestListings} />
-          </div>
+          <HomeRightSidebarPanel showLanding={showLanding} transportFilters={!showLanding ? filters : undefined} />
         </aside>
       </div>
     </div>

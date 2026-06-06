@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export type MobileHomeStats = {
@@ -14,7 +15,7 @@ const MOBILE_FEATURED_CATEGORIES = [
   "Одяг і взуття",
 ] as const;
 
-export async function getMobileHomeStats(): Promise<MobileHomeStats> {
+async function loadMobileHomeStats(): Promise<MobileHomeStats> {
   try {
     const [listingsCount, sellersGrouped, categoryGrouped] = await Promise.all([
       prisma.listing.count({ where: { status: "ACTIVE" } }),
@@ -50,6 +51,12 @@ export async function getMobileHomeStats(): Promise<MobileHomeStats> {
     };
   }
 }
+
+export const getMobileHomeStats = unstable_cache(
+  loadMobileHomeStats,
+  ["mobile-home-stats-v1"],
+  { revalidate: 120 }
+);
 
 export function formatStatCount(value: number): string {
   return `${value.toLocaleString("uk-UA")}+`;

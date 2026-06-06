@@ -30,7 +30,7 @@ const EMPTY: NotificationCounts = {
 
 
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 120_000;
 
 
 
@@ -81,10 +81,7 @@ export function useHeaderNotifications(enabled: boolean) {
 
 
   useEffect(() => {
-
-    void refresh();
-
-
+    const initial = window.setTimeout(() => void refresh(), 5000);
 
     const timer = window.setInterval(() => {
 
@@ -119,7 +116,7 @@ export function useHeaderNotifications(enabled: boolean) {
 
 
     return () => {
-
+      window.clearTimeout(initial);
       window.clearInterval(timer);
 
       window.removeEventListener("focus", onFocus);

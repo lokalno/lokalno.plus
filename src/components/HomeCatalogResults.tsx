@@ -226,38 +226,49 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
   let recommended: HomeListing[] = [];
   let popularNearby: HomeListing[] = [];
   let dbUnavailable = false;
-  const mobileStats = showLanding ? await getMobileHomeStats() : undefined;
+  let mobileStats: Awaited<ReturnType<typeof getMobileHomeStats>> | undefined;
+
+  const listingQuery = {
+    where: { status: "ACTIVE" as const },
+    select: {
+      id: true,
+      title: true,
+      price: true,
+      city: true,
+      photos: true,
+      createdAt: true,
+      views: true,
+      _count: listingSoldCountInclude._count,
+    },
+    orderBy: { createdAt: "desc" as const },
+  };
 
   try {
-    [total, listings, recommended, popularNearby] = await Promise.all([
-      prisma.listing.count({ where }),
-      prisma.listing.findMany({
-        where,
-        include: {
-          seller: { select: { name: true, storeName: true } },
-          ...listingSoldCountInclude,
-        },
-        orderBy: getOrderBy(params.sort),
-        skip: (page - 1) * LISTINGS_PER_PAGE,
-        take: LISTINGS_PER_PAGE,
-      }),
-      showLanding
-        ? prisma.listing.findMany({
-            where: { status: "ACTIVE" },
-            include: listingSoldCountInclude,
-            orderBy: { createdAt: "desc" },
-            take: 8,
-          })
-        : Promise.resolve([]),
-      showLanding
-        ? prisma.listing.findMany({
-            where: { status: "ACTIVE" },
-            include: listingSoldCountInclude,
-            orderBy: { createdAt: "desc" },
-            take: 4,
-          })
-        : Promise.resolve([]),
-    ]);
+    if (showLanding) {
+      const [stats, latest] = await Promise.all([
+        getMobileHomeStats(),
+        prisma.listing.findMany({ ...listingQuery, take: 8 }),
+      ]);
+      mobileStats = stats;
+      total = stats.listingsCount;
+      recommended = latest as HomeListing[];
+      popularNearby = latest.slice(0, 4) as HomeListing[];
+      listings = latest.slice(0, 6) as HomeListing[];
+    } else {
+      [total, listings] = await Promise.all([
+        prisma.listing.count({ where }),
+        prisma.listing.findMany({
+          where,
+          include: {
+            seller: { select: { name: true, storeName: true } },
+            ...listingSoldCountInclude,
+          },
+          orderBy: getOrderBy(params.sort),
+          skip: (page - 1) * LISTINGS_PER_PAGE,
+          take: LISTINGS_PER_PAGE,
+        }),
+      ]);
+    }
   } catch {
     dbUnavailable = true;
   }

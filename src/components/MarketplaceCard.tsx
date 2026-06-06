@@ -36,7 +36,9 @@ export default function MarketplaceCard({ listing, badge }: MarketplaceCardProps
           <img
             src={photo}
             alt={listing.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">📦</div>
