@@ -57,17 +57,19 @@ export default async function Header() {
           <HeaderSearch />
         </Suspense>
 
-        <HeaderNav
-          session={session}
-          unreadCount={0}
-          unreadPriceOffers={0}
-          favoriteCount={favoriteCount}
-          pendingListings={pendingListings}
-          openSupport={openSupport}
-          userAvatar={user?.avatar}
-          userName={user?.name}
-          ordersHref={ordersHref}
-        />
+        <div className="ml-auto shrink-0">
+          <HeaderNav
+            session={session}
+            unreadCount={0}
+            unreadPriceOffers={0}
+            favoriteCount={favoriteCount}
+            pendingListings={pendingListings}
+            openSupport={openSupport}
+            userAvatar={user?.avatar}
+            userName={user?.name}
+            ordersHref={ordersHref}
+          />
+        </div>
       </div>
 
       <Suspense fallback={null}>

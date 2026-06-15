@@ -19,9 +19,10 @@ async function loadMobileHomeStats(): Promise<MobileHomeStats> {
   try {
     const [listingsCount, sellersGrouped, categoryGrouped] = await Promise.all([
       prisma.listing.count({ where: { status: "ACTIVE" } }),
-      prisma.listing.groupBy({
-        by: ["sellerId"],
+      prisma.listing.findMany({
         where: { status: "ACTIVE" },
+        select: { sellerId: true },
+        distinct: ["sellerId"],
       }),
       prisma.listing.groupBy({
         by: ["category"],

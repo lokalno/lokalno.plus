@@ -14,9 +14,9 @@ import {
   SELLER_LEVEL_STYLES,
 } from "@/lib/seller-stats";
 import UserAvatar from "./UserAvatar";
-import BannerUpload from "./BannerUpload";
 import SellerProfileActions from "./SellerProfileActions";
 import SellerProfileTabs from "./SellerProfileTabs";
+import MobileSellerProfileView from "./MobileSellerProfileView";
 import type { OrderListItem } from "./OrdersList";
 
 type Review = {
@@ -38,6 +38,7 @@ type Listing = {
   photos: string;
   createdAt: Date;
   views: number;
+  category: string;
   seller: { name: string };
 };
 
@@ -57,7 +58,6 @@ type SellerProfileViewProps = {
   isLoggedIn: boolean;
   isFollowing: boolean;
   isOwner: boolean;
-  showOwnerBannerEdit?: boolean;
   showAsPublic?: boolean;
   backHref?: string;
   backLabel?: string;
@@ -105,7 +105,6 @@ export default function SellerProfileView({
   isLoggedIn,
   isFollowing,
   isOwner,
-  showOwnerBannerEdit = false,
   showAsPublic = false,
   backHref = "/",
   backLabel = "← До каталогу",
@@ -181,9 +180,30 @@ export default function SellerProfileView({
     />
   );
 
+  const mobileInitialTab =
+    initialTab === "reviews" || initialTab === "listings" ? initialTab : undefined;
+
   return (
     <>
-      <section className="relative mb-0 ml-[calc(50%-50vw+1cm)] w-[calc(100vw-2cm)] max-w-none overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/10">
+      <MobileSellerProfileView
+        displayName={displayName}
+        seller={seller}
+        sellerLevel={sellerLevel}
+        followerCount={followerCount}
+        reviewCount={reviewCount}
+        listingCount={listingCount}
+        avgRating={avgRating}
+        isOwner={isOwner}
+        isLoggedIn={isLoggedIn}
+        isFollowing={isFollowing}
+        profilePath={resolvedProfilePath}
+        messageListingId={messageListingId}
+        sellerOrders={sellerOrders}
+        pendingNotice={pendingNotice}
+        initialTab={mobileInitialTab}
+      />
+
+      <section className="relative mb-0 ml-[calc(50%-50vw+1cm)] hidden w-[calc(100vw-2cm)] max-w-none overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/10 xl:block">
           <div className="relative h-[260px] bg-zinc-950 md:h-[280px] lg:h-[300px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -193,8 +213,6 @@ export default function SellerProfileView({
             />
             <div className="pointer-events-none absolute inset-0 bg-black/55" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/95 via-black/60 to-black/20" />
-
-            {showOwnerBannerEdit && <BannerUpload initialBanner={seller.banner} compact />}
 
             <div className="relative z-10 flex h-full flex-col justify-between gap-2.5 p-3 md:gap-3 md:p-4 lg:p-5">
               <div className="flex items-start justify-between gap-2 md:gap-3">
@@ -310,7 +328,7 @@ export default function SellerProfileView({
           </div>
       </section>
 
-      <div className="-mt-px">
+      <div className="-mt-px hidden xl:block">
         <SellerProfileTabs
           isOwner={isOwner}
           sellerName={displayName}
@@ -335,7 +353,7 @@ export default function SellerProfileView({
         />
       </div>
 
-      <p className="mt-10 text-center">
+      <p className="mt-10 hidden text-center xl:block">
         <Link href={backHref} className="text-brand-700 hover:underline">
           {backLabel}
         </Link>

@@ -19,9 +19,13 @@ export default function ForgotPasswordPage() {
       body: JSON.stringify({ email }),
     });
 
-    const data = await res.json();
-    setLoading(false);
-    setMessage(data.message || data.error);
+      const data = await res.json();
+      setLoading(false);
+      if (!res.ok) {
+        setMessage(data.error || data.message || "Помилка");
+        return;
+      }
+      setMessage(data.message || data.error);
   }
 
   return (

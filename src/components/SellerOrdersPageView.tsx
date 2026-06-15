@@ -3,6 +3,7 @@ import ProfileCabinetShell from "@/components/ProfileCabinetShell";
 import SellerOrdersDashboard from "@/components/SellerOrdersDashboard";
 import SellerCabinetStatsPanel from "@/components/SellerCabinetStatsPanel";
 import OrdersNavLink from "@/components/OrdersNavLink";
+import { SELLER_ORDER_HISTORY_DAYS } from "@/lib/order-history";
 import type { getSellerOrdersPageData } from "@/lib/seller-orders-page-data";
 
 type SellerOrdersPageViewProps = {
@@ -24,7 +25,8 @@ export default function SellerOrdersPageView({ data }: SellerOrdersPageViewProps
               Мої замовлення
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Керуйте замовленнями, статусами та доставкою
+              Керуйте замовленнями, статусами та доставкою. Показуються замовлення за останні{" "}
+              {SELLER_ORDER_HISTORY_DAYS} днів.
             </p>
           </div>
           <OrdersNavLink

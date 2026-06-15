@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils";
 import { formatStars, getRatingLabel, getFollowerLabel } from "@/lib/seller-stats";
 import { STORE_NAME_HINT } from "@/lib/seller-display-name";
 import { uploadPhotoFile } from "@/lib/upload-photo";
+import { AVATAR_PHOTO_MAX_BYTES, AVATAR_PHOTO_MAX_WIDTH } from "@/lib/constants";
 
 type ProfileFormProps = {
   initial: {
@@ -40,7 +41,10 @@ export default function ProfileForm({ initial }: ProfileFormProps) {
   const [loading, setLoading] = useState(false);
 
   async function uploadAvatar(file: File) {
-    return uploadPhotoFile(file, { maxWidth: 800, maxBytes: 250_000 });
+    return uploadPhotoFile(file, {
+      maxWidth: AVATAR_PHOTO_MAX_WIDTH,
+      maxBytes: AVATAR_PHOTO_MAX_BYTES,
+    });
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {

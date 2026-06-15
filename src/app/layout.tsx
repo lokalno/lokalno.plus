@@ -5,15 +5,17 @@ import Providers from "@/components/Providers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import AppVersionGuard from "@/components/AppVersionGuard";
+import MobilePageFooter from "@/components/MobilePageFooter";
 import VersionRefreshScript from "@/components/VersionRefreshScript";
 import { getSiteSettings } from "@/lib/site-settings";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
+/** Header uses session/DB; keep layout dynamic but public pages get CDN cache via middleware. */
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata(): Promise<Metadata> {  const icons = {
+export async function generateMetadata(): Promise<Metadata> {
+  const icons = {
     icon: [{ url: "/icon", type: "image/png", sizes: "32x32" }],
     apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
     shortcut: ["/icon"],
@@ -46,10 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <Providers>
-          <AppVersionGuard />
           <Header />
           <main className="min-h-[calc(100vh-72px)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] xl:pb-0">
             {children}
+            <MobilePageFooter />
           </main>
           <div className="hidden xl:block">
             <Footer />

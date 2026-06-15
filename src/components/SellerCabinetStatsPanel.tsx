@@ -14,7 +14,7 @@ type SellerCabinetStatsPanelProps = {
   orders: OrderListItem[];
 };
 
-const PERIODS: SellerStatsPeriod[] = ["day", "week", "month", "year"];
+const PERIODS: SellerStatsPeriod[] = ["day", "week", "month", "year", "years"];
 
 export default function SellerCabinetStatsPanel({ orders }: SellerCabinetStatsPanelProps) {
   const [period, setPeriod] = useState<SellerStatsPeriod>("week");

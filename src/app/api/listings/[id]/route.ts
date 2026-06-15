@@ -5,13 +5,25 @@ import { prisma } from "@/lib/prisma";
 import { validateListingPhotos, hasListingPhotos } from "@/lib/listing-photos";
 import { validateListingStock } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
+import { validateListingTitle } from "@/lib/listing-title";
 import { checkListingContent } from "@/lib/moderation";
 import { parsePhotos } from "@/lib/utils";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
 import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
 import { isAgriListingCategory, parseAgriListingPayload } from "@/lib/agri";
 import { parseListingCategory } from "@/lib/constants";
+import { getListingConditions, parseClothingSizePayload } from "@/lib/clothing-sizes";
+import {
+  isClothingVariantsCategory,
+  serializeListingVariants,
+  sumVariantStock,
+  validateListingVariants,
+  type ListingVariant,
+} from "@/lib/listing-variants";
 import { deleteListingById } from "@/lib/delete-listing";
+import { normalizePromCharacteristics } from "@/lib/prom-import-characteristics";
+import { mirrorListingPhotos } from "@/lib/mirror-listing-photo";
+import { isExternalListingPhotoUrl } from "@/lib/listing-image-hosts";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -39,7 +51,10 @@ export async function GET(_request: Request, { params }: Params) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(listing);
+    return NextResponse.json({
+      ...listing,
+      promCharacteristics: normalizePromCharacteristics(listing.promCharacteristics),
+    });
   } catch {
     return NextResponse.json({ error: "Оголошення тимчасово недоступне" }, { status: 503 });
   }
@@ -73,6 +88,11 @@ export async function PATCH(request: Request, { params }: Params) {
         return NextResponse.json({ error: photosCheck.error }, { status: 400 });
       }
       body.photos = photosCheck.photos;
+    }
+
+    if (!isAdmin && body.status === "SOLD") {
+      body.stock = 0;
+      body.status = "ACTIVE";
     }
 
     if (body.stock !== undefined) {
@@ -115,6 +135,29 @@ export async function PATCH(request: Request, { params }: Params) {
             { status: 400 }
           );
         }
+      }
+    }
+
+    if (body.title !== undefined) {
+      const titleCheck = validateListingTitle(body.title);
+      if (!titleCheck.ok) {
+        return NextResponse.json({ error: titleCheck.error }, { status: 400 });
+      }
+      body.title = titleCheck.title;
+    }
+
+    const nextTitle = body.title !== undefined ? body.title : listing.title;
+    const nextDescription =
+      body.description !== undefined ? body.description.trim() : listing.description;
+    if (body.title !== undefined || body.description !== undefined) {
+      const forbidden = checkListingContent(nextTitle, nextDescription);
+      if (forbidden) {
+        return NextResponse.json(
+          {
+            error: `Заборонене слово в оголошенні: «${forbidden}». Оголошення не збережено.`,
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -164,6 +207,50 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const { main, sub } = parseListingCategory(nextCategory);
+    const allowedConditions = getListingConditions(main, sub);
+    const nextCondition = body.condition !== undefined ? body.condition : listing.condition;
+    if (!(nextCondition in allowedConditions)) {
+      return NextResponse.json({ error: "Невірний стан товару" }, { status: 400 });
+    }
+
+    const sizeTouched = body.category !== undefined || body.itemSize !== undefined;
+    const variantsTouched = body.variants !== undefined || body.category !== undefined;
+    let parsedItemSize: string | null | undefined;
+    let parsedVariantsJson: string | null | undefined;
+    let parsedStockFromVariants: number | undefined;
+
+    if (isClothingVariantsCategory(nextCategory)) {
+      if (variantsTouched && body.variants !== undefined) {
+        if (!Array.isArray(body.variants)) {
+          return NextResponse.json(
+            { error: "Додайте хоча б один варіант товару." },
+            { status: 400 }
+          );
+        }
+        const variantsCheck = validateListingVariants(body.variants as ListingVariant[], nextCategory);
+        if (!variantsCheck.ok) {
+          return NextResponse.json({ error: variantsCheck.error }, { status: 400 });
+        }
+        parsedVariantsJson = serializeListingVariants(variantsCheck.variants);
+        parsedStockFromVariants = sumVariantStock(variantsCheck.variants);
+        parsedItemSize = null;
+      }
+    } else if (sizeTouched) {
+      const sizeCheck = parseClothingSizePayload(
+        nextCategory,
+        body.itemSize !== undefined ? body.itemSize : listing.itemSize
+      );
+      if (!sizeCheck.ok) {
+        return NextResponse.json({ error: sizeCheck.error }, { status: 400 });
+      }
+      parsedItemSize = sizeCheck.itemSize;
+      if (body.category !== undefined) {
+        parsedVariantsJson = null;
+      }
+    } else if (body.category !== undefined && !isClothingVariantsCategory(nextCategory)) {
+      parsedVariantsJson = null;
+    }
+
     const isParts = isPartsListingCategory(main, sub);
     const isAgri = isAgriListingCategory(main, sub);
     const partsTouched =
@@ -237,6 +324,23 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    const nextStatus =
+      body.status !== undefined ? body.status : autoStatus !== undefined ? autoStatus : listing.status;
+    let mirroredPhotosJson: string | undefined;
+
+    if (nextStatus === "ACTIVE") {
+      const currentPhotos =
+        body.photos !== undefined ? (body.photos as string[]) : parsePhotos(listing.photos);
+      const needsMirror = currentPhotos.some(isExternalListingPhotoUrl);
+      if (needsMirror) {
+        const mirrored = await mirrorListingPhotos(currentPhotos, listing.sellerId);
+        const mirroredCheck = validateListingPhotos(mirrored);
+        if (mirroredCheck.ok) {
+          mirroredPhotosJson = JSON.stringify(mirroredCheck.photos);
+        }
+      }
+    }
+
     const updated = await prisma.listing.update({
       where: { id },
       data: {
@@ -250,14 +354,24 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(partsBrand !== undefined ? { brand: partsBrand } : {}),
         ...(agriBrand !== undefined ? { brand: agriBrand } : {}),
         ...(body.condition !== undefined ? { condition: body.condition } : {}),
+        ...(parsedItemSize !== undefined ? { itemSize: parsedItemSize } : {}),
+        ...(parsedVariantsJson !== undefined ? { variants: parsedVariantsJson } : {}),
         ...(body.city !== undefined ? { city: body.city } : {}),
         ...(body.itemLocation !== undefined ? { itemLocation: body.itemLocation } : {}),
-        ...(body.stock !== undefined ? { stock: body.stock } : {}),
+        ...(parsedStockFromVariants !== undefined
+          ? { stock: parsedStockFromVariants }
+          : body.stock !== undefined
+            ? { stock: body.stock }
+            : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(autoStatus ? { status: autoStatus } : {}),
         ...(body.photos !== undefined ? { photos: JSON.stringify(body.photos) } : {}),
+        ...(mirroredPhotosJson !== undefined ? { photos: mirroredPhotosJson } : {}),
         ...(body.allowPriceOffers !== undefined
           ? { allowPriceOffers: Boolean(body.allowPriceOffers) }
+          : {}),
+        ...(body.allowSelfPickup !== undefined
+          ? { allowSelfPickup: Boolean(body.allowSelfPickup) }
           : {}),
         ...(body.category !== undefined ||
         body.vehicleYear !== undefined ||

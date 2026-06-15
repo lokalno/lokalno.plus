@@ -3,6 +3,7 @@
 import { useState } from "react";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import FavoriteButton from "@/components/FavoriteButton";
+import OptimizedListingImage from "@/components/OptimizedListingImage";
 
 type ListingGalleryProps = {
   photos: string[];
@@ -73,16 +74,16 @@ export default function ListingGallery({
           <button
             type="button"
             onClick={() => openLightbox(active)}
-            className="group relative block w-full cursor-zoom-in"
+            className={`group relative block w-full cursor-zoom-in ${
+              compact ? `aspect-[4/5] ${COMPACT_GALLERY_HEIGHT}` : "aspect-square"
+            }`}
             aria-label="Відкрити фото на весь екран"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <OptimizedListingImage
               src={main}
               alt={title}
-              className={`w-full object-cover transition group-hover:brightness-[0.98] ${
-                compact ? `aspect-[4/5] ${COMPACT_GALLERY_HEIGHT}` : "aspect-square"
-              }`}
+              priority
+              className="object-cover transition group-hover:brightness-[0.98]"
             />
           </button>
 
@@ -128,7 +129,13 @@ export default function ListingGallery({
                 aria-current={active === i ? "true" : undefined}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={photo}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
               </button>
             ))}
           </div>

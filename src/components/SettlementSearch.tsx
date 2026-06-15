@@ -86,10 +86,12 @@ export default function SettlementSearch({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            onChange(e.target.value);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+          }}
           required={required}
           placeholder={placeholder}
           autoComplete="off"

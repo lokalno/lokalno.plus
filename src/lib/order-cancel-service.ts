@@ -6,6 +6,12 @@ import {
   notifyBuyerOrderCancelledBySeller,
   notifySellerOrderAutoCancelled,
 } from "@/lib/order-notifications";
+import {
+  incrementVariantStock,
+  parseListingVariants,
+  serializeListingVariants,
+  sumVariantStock,
+} from "@/lib/listing-variants";
 
 type CancelOrderParams = {
   orderId: string;
@@ -30,7 +36,7 @@ export async function cancelOrderInTransaction(
     throw new Error("NOT_FOUND");
   }
 
-  if (order.status === "CANCELLED" || order.status === "COMPLETED" || order.status === "SHIPPED") {
+  if (order.status === "CANCELLED" || order.status === "COMPLETED" || order.status === "SHIPPED" || order.status === "NOT_RECEIVED_BY_BUYER") {
     throw new Error("INVALID_STATUS");
   }
 
@@ -51,14 +57,35 @@ export async function cancelOrderInTransaction(
   const listing = await tx.listing.findUnique({ where: { id: order.listingId } });
   if (listing) {
     const restoreQty = order.quantity > 0 ? order.quantity : 1;
-    const newStock = listing.stock + restoreQty;
-    await tx.listing.update({
-      where: { id: order.listingId },
-      data: {
-        stock: newStock,
-        ...(listing.status === "SOLD" ? { status: "ACTIVE" } : {}),
-      },
-    });
+
+    if (order.variantColor && order.variantSize && listing.variants) {
+      const parsedVariants = parseListingVariants(listing.variants);
+      const restoredVariants = incrementVariantStock(
+        parsedVariants,
+        order.variantColor,
+        order.variantSize,
+        restoreQty
+      );
+      if (restoredVariants) {
+        await tx.listing.update({
+          where: { id: order.listingId },
+          data: {
+            variants: serializeListingVariants(restoredVariants),
+            stock: sumVariantStock(restoredVariants),
+            ...(listing.status === "SOLD" ? { status: "ACTIVE" } : {}),
+          },
+        });
+      }
+    } else {
+      const newStock = listing.stock + restoreQty;
+      await tx.listing.update({
+        where: { id: order.listingId },
+        data: {
+          stock: newStock,
+          ...(listing.status === "SOLD" ? { status: "ACTIVE" } : {}),
+        },
+      });
+    }
   }
 
   if (params.cancelledByRole === "SELLER" && params.notifyBuyerOnSellerCancel !== false) {

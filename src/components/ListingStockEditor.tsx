@@ -55,14 +55,14 @@ export default function ListingStockEditor({
         <p className="text-sm font-medium text-brand-900">Кількість на складі</p>
         <p className="text-xs text-brand-700 mt-1">
           Зараз: {formatListingStock(initialStock)}
-          {listingStatus === "SOLD" && " · оголошення позначене як продане"}
+          {initialStock <= 0 && " · товар розпроданий"}
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="number"
-          min="1"
+          min="0"
           max="9999"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
@@ -80,7 +80,8 @@ export default function ListingStockEditor({
       </div>
 
       <p className="text-xs text-gray-600">
-        Можна змінити в будь-який час — також через «Редагувати оголошення».
+        Поставте 0, щоб позначити товар як розпроданий — оголошення залишиться на сайті, але купити
+        не можна. Збільште кількість, щоб знову відкрити продаж.
       </p>
 
       {error && <p className="text-xs text-red-600">{error}</p>}

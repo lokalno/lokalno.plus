@@ -10,7 +10,7 @@ export async function compressImageFile(
   const maxWidth = options.maxWidth ?? 1600;
   const maxBytes = options.maxBytes ?? 350_000;
 
-  if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif)$/i.test(file.name)) {
+  if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name)) {
     throw new Error("Дозволені лише зображення (JPG, PNG, WEBP)");
   }
 
@@ -25,15 +25,18 @@ export async function compressImageFile(
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    throw new Error("Формат фото не підтримується. Збережіть як JPG або PNG.");
+    throw new Error(
+      "Формат фото не підтримується. На iPhone: Налаштування → Камера → Формати → «Найсумісніші» або збережіть як JPG."
+    );
   }
   const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
 
   try {
+    const sourceMb = file.size / (1024 * 1024);
     let width = Math.min(bitmap.width, maxWidth);
-    let quality = 0.82;
+    let quality = sourceMb > 6 ? 0.68 : sourceMb > 3 ? 0.74 : sourceMb > 1 ? 0.8 : 0.85;
 
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 22; attempt++) {
       const height = Math.max(1, Math.round(bitmap.height * (width / bitmap.width)));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(width));
@@ -58,11 +61,13 @@ export async function compressImageFile(
         return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
       }
 
-      if (quality > 0.45) {
-        quality -= 0.08;
+      if (quality > 0.32) {
+        quality -= 0.07;
+      } else if (width > 360) {
+        width = Math.round(width * 0.82);
+        quality = 0.72;
       } else {
-        width = Math.round(width * 0.85);
-        if (width < 480) break;
+        quality = Math.max(0.22, quality - 0.05);
       }
     }
 

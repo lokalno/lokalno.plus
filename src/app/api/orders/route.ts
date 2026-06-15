@@ -7,6 +7,16 @@ import { validateOrderShipping } from "@/lib/order-shipping";
 import { ORDER_PAYMENT_NP_COD } from "@/lib/order-payment";
 import { parseOrderQuantity } from "@/lib/order-total";
 import { notifySellerNewOrder } from "@/lib/order-notifications";
+import { getBuyerOrderLimitSnapshot } from "@/lib/buyer-active-order-limit";
+import { assertBuyerCanPurchase } from "@/lib/buyer-purchase-protection";
+import {
+  decrementVariantStock,
+  findVariant,
+  listingUsesVariants,
+  parseListingVariants,
+  serializeListingVariants,
+  sumVariantStock,
+} from "@/lib/listing-variants";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -71,6 +81,16 @@ export async function POST(request: Request) {
     }
 
     const order = await prisma.$transaction(async (tx) => {
+      const purchaseCheck = await assertBuyerCanPurchase(session.user!.id, tx);
+      if (!purchaseCheck.ok) {
+        throw new Error(`PURCHASE_BLOCK:${purchaseCheck.error}`);
+      }
+
+      const limitCheck = await getBuyerOrderLimitSnapshot(session.user!.id, tx);
+      if (!limitCheck.ok) {
+        throw new Error(`LIMIT:${limitCheck.error}`);
+      }
+
       const listing = await tx.listing.findUnique({
         where: { id: listingId },
       });
@@ -83,17 +103,56 @@ export async function POST(request: Request) {
         throw new Error("OWN_LISTING");
       }
 
+      const usesVariants = listingUsesVariants(listing);
+      const variantColor =
+        typeof body.variantColor === "string" ? body.variantColor.trim() : "";
+      const variantSize =
+        typeof body.variantSize === "string" ? body.variantSize.trim() : "";
+
+      if (usesVariants) {
+        if (!variantColor || !variantSize) {
+          throw new Error("VARIANT_REQUIRED");
+        }
+      }
+
       if (listing.stock < 1) {
         throw new Error("OUT_OF_STOCK");
       }
 
-      const quantityCheck = parseOrderQuantity(body.quantity ?? 1, listing.stock);
+      let quantityCheck;
+      if (usesVariants) {
+        const parsedVariants = parseListingVariants(listing.variants);
+        const selectedVariant = findVariant(parsedVariants, variantColor, variantSize);
+        if (!selectedVariant || selectedVariant.stock < 1) {
+          throw new Error("OUT_OF_STOCK");
+        }
+        quantityCheck = parseOrderQuantity(body.quantity ?? 1, selectedVariant.stock);
+      } else {
+        quantityCheck = parseOrderQuantity(body.quantity ?? 1, listing.stock);
+      }
+
       if (!quantityCheck.ok) {
         throw new Error(`QTY:${quantityCheck.error}`);
       }
 
       const { quantity } = quantityCheck;
-      const newStock = listing.stock - quantity;
+      let newStock = listing.stock - quantity;
+      let updatedVariantsJson: string | undefined;
+
+      if (usesVariants) {
+        const parsedVariants = parseListingVariants(listing.variants);
+        const updatedVariants = decrementVariantStock(
+          parsedVariants,
+          variantColor,
+          variantSize,
+          quantity
+        );
+        if (!updatedVariants) {
+          throw new Error("OUT_OF_STOCK");
+        }
+        updatedVariantsJson = serializeListingVariants(updatedVariants);
+        newStock = sumVariantStock(updatedVariants);
+      }
 
       let unitPrice: number | undefined;
       let linkedOfferId: string | undefined;
@@ -121,7 +180,7 @@ export async function POST(request: Request) {
         where: { id: listingId },
         data: {
           stock: newStock,
-          ...(newStock === 0 ? { status: "SOLD" } : {}),
+          ...(updatedVariantsJson ? { variants: updatedVariantsJson } : {}),
         },
       });
 
@@ -132,6 +191,7 @@ export async function POST(request: Request) {
           sellerId: listing.sellerId,
           quantity,
           paymentStatus: ORDER_PAYMENT_NP_COD,
+          ...(usesVariants ? { variantColor, variantSize } : {}),
           ...(unitPrice !== undefined ? { unitPrice } : {}),
           ...(linkedOfferId ? { priceOfferId: linkedOfferId } : {}),
           ...shippingCheck.data,
@@ -168,6 +228,12 @@ export async function POST(request: Request) {
     if (message === "OUT_OF_STOCK") {
       return NextResponse.json({ error: "Товар відсутній на складі" }, { status: 400 });
     }
+    if (message === "VARIANT_REQUIRED") {
+      return NextResponse.json(
+        { error: "Оберіть колір і розмір, які є в наявності." },
+        { status: 400 }
+      );
+    }
     if (message === "OWN_LISTING") {
       return NextResponse.json({ error: "Не можна купити власне оголошення" }, { status: 400 });
     }
@@ -182,6 +248,12 @@ export async function POST(request: Request) {
         { error: "Погоджена ціна недоступна. Перевірте пропозицію на сторінці товару." },
         { status: 400 }
       );
+    }
+    if (message.startsWith("LIMIT:")) {
+      return NextResponse.json({ error: message.slice(6) }, { status: 400 });
+    }
+    if (message.startsWith("PURCHASE_BLOCK:")) {
+      return NextResponse.json({ error: message.slice(15) }, { status: 400 });
     }
     return NextResponse.json({ error: "Не вдалося створити замовлення" }, { status: 500 });
   }

@@ -1,8 +1,10 @@
 import { Suspense, type ReactNode } from "react";
 import CategorySidebar from "@/components/CategorySidebar";
 import PopularCitiesSidebar from "@/components/PopularCitiesSidebar";
-import { getPopularCities, getLatestSidebarListings } from "@/lib/home-sidebar-cache";
+import { getPopularCities, getLatestSidebarListings, getPopularSidebarListings } from "@/lib/home-sidebar-cache";
 import HomeRightSidebar from "@/components/HomeRightSidebar";
+import HomeHowItWorks from "@/components/HomeHowItWorks";
+import HomePopularListings from "@/components/HomePopularListings";
 
 type HomeSidebarsProps = {
   showLanding: boolean;
@@ -22,10 +24,16 @@ async function LeftSidebar() {
 }
 
 async function RightSidebar({ showLanding, transportFilters }: HomeSidebarsProps) {
-  const latestListings = await getLatestSidebarListings();
+  const [latestListings, popularListings] = await Promise.all([
+    getLatestSidebarListings(),
+    showLanding ? getPopularSidebarListings() : Promise.resolve([]),
+  ]);
+
   return (
     <div className="sticky top-20 space-y-4">
       {!showLanding && transportFilters}
+      {showLanding && <HomeHowItWorks />}
+      {showLanding && <HomePopularListings listings={popularListings} />}
       <HomeRightSidebar latestListings={latestListings} />
     </div>
   );

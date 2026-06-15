@@ -4,13 +4,22 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assertNotBanned, getInitialListingStatus } from "@/lib/user-check";
 import { checkListingContent } from "@/lib/moderation";
-import { validateListingPhotos } from "@/lib/listing-photos";
-import { validateListingStock } from "@/lib/listing-stock";
+import { validateListingPhotos, withListingCoverPhotoOnly } from "@/lib/listing-photos";
+import { validateListingStockForCreate } from "@/lib/listing-stock";
 import { validateItemLocation } from "@/lib/listing-location";
+import { validateListingTitle } from "@/lib/listing-title";
 import { parseTransportVehiclePayload } from "@/lib/vehicle";
 import { isPartsListingCategory, parsePartsListingPayload } from "@/lib/parts";
 import { isAgriListingCategory, parseAgriListingPayload } from "@/lib/agri";
 import { parseListingCategory } from "@/lib/constants";
+import { getListingConditions, parseClothingSizePayload } from "@/lib/clothing-sizes";
+import {
+  isClothingVariantsCategory,
+  serializeListingVariants,
+  sumVariantStock,
+  validateListingVariants,
+  type ListingVariant,
+} from "@/lib/listing-variants";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -44,7 +53,7 @@ export async function GET(request: Request) {
       take: 200,
     });
 
-    return NextResponse.json(listings);
+    return NextResponse.json(listings.map(withListingCoverPhotoOnly));
   } catch {
     return NextResponse.json({ error: "Каталог тимчасово недоступний" }, { status: 503 });
   }
@@ -64,7 +73,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume, vehicleLoadCapacity, partForVehicle, partType, partPopular } =
+    const { title, description, price, category, brand, condition, city, itemLocation, photos, stock, allowPriceOffers, allowSelfPickup, itemSize, variants, vehicleYear, vehicleFuel, vehicleTransmission, vehicleBody, vehicleMileage, vehicleType, vehicleEngineVolume, vehicleLoadCapacity, partForVehicle, partType, partPopular } =
       body;
 
     if (!title || !description || !price || !category || !condition || !city) {
@@ -74,15 +83,22 @@ export async function POST(request: Request) {
       );
     }
 
+    const titleCheck = validateListingTitle(title);
+    if (!titleCheck.ok) {
+      return NextResponse.json({ error: titleCheck.error }, { status: 400 });
+    }
+
     const itemLocationCheck = validateItemLocation(itemLocation);
     if (!itemLocationCheck.ok) {
       return NextResponse.json({ error: itemLocationCheck.error }, { status: 400 });
     }
 
-    const forbidden = checkListingContent(title.trim(), description.trim());
+    const forbidden = checkListingContent(titleCheck.title, description.trim());
     if (forbidden) {
       return NextResponse.json(
-        { error: `Заборонене слово в оголошенні: «${forbidden}». Оголошення не опубліковано.` },
+        {
+          error: `Заборонений товар або слово «${forbidden}». Продаж таких товарів заборонено законодавством України.`,
+        },
         { status: 400 }
       );
     }
@@ -105,9 +121,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: photosCheck.error }, { status: 400 });
     }
 
-    const stockCheck = validateListingStock(stock ?? 1);
-    if (!stockCheck.ok) {
-      return NextResponse.json({ error: stockCheck.error }, { status: 400 });
+    const usesClothingVariants = isClothingVariantsCategory(category);
+    let parsedVariantsJson: string | null = null;
+    let listingStock = 0;
+    let parsedItemSize: string | null = null;
+
+    if (usesClothingVariants) {
+      if (!Array.isArray(variants)) {
+        return NextResponse.json(
+          { error: "Додайте хоча б один варіант товару." },
+          { status: 400 }
+        );
+      }
+      const variantsCheck = validateListingVariants(variants as ListingVariant[], category);
+      if (!variantsCheck.ok) {
+        return NextResponse.json({ error: variantsCheck.error }, { status: 400 });
+      }
+      parsedVariantsJson = serializeListingVariants(variantsCheck.variants);
+      listingStock = sumVariantStock(variantsCheck.variants);
+      if (listingStock < 1) {
+        return NextResponse.json(
+          { error: "Додайте хоча б один варіант з кількістю більше 0." },
+          { status: 400 }
+        );
+      }
+    } else {
+      const stockCheck = validateListingStockForCreate(stock ?? 1);
+      if (!stockCheck.ok) {
+        return NextResponse.json({ error: stockCheck.error }, { status: 400 });
+      }
+      listingStock = stockCheck.stock;
+      const sizeCheck = parseClothingSizePayload(category, itemSize);
+      if (!sizeCheck.ok) {
+        return NextResponse.json({ error: sizeCheck.error }, { status: 400 });
+      }
+      parsedItemSize = sizeCheck.itemSize;
     }
 
     const initialStatus = await getInitialListingStatus();
@@ -130,6 +178,11 @@ export async function POST(request: Request) {
     }
 
     const { main, sub } = parseListingCategory(category);
+    const allowedConditions = getListingConditions(main, sub);
+    if (!(condition in allowedConditions)) {
+      return NextResponse.json({ error: "Невірний стан товару" }, { status: 400 });
+    }
+
     const isParts = isPartsListingCategory(main, sub);
     const isAgri = isAgriListingCategory(main, sub);
     const emptyParts: {
@@ -172,17 +225,20 @@ export async function POST(request: Request) {
 
     const listing = await prisma.listing.create({
       data: {
-        title: title.trim(),
+        title: titleCheck.title,
         description: description.trim(),
         price: Number(price),
         category,
         brand: listingBrand,
+        itemSize: parsedItemSize,
+        variants: parsedVariantsJson,
         condition,
         city,
         itemLocation: normalizedItemLocation,
         photos: JSON.stringify(photosCheck.photos),
-        stock: stockCheck.stock,
+        stock: listingStock,
         allowPriceOffers: Boolean(allowPriceOffers),
+        allowSelfPickup: Boolean(allowSelfPickup),
         sellerId: session.user.id,
         status: initialStatus,
         ...vehicleData,

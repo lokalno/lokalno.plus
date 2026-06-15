@@ -19,6 +19,8 @@
    | `DATABASE_URL_UNPOOLED` | direct connection з Neon (для `prisma db push`) |
    | `NEXTAUTH_SECRET` | довгий випадковий рядок (32+ символів) |
    | `NEXTAUTH_URL` | `https://lokalno.plus` |
+   | `RESEND_API_KEY` | ключ з [resend.com](https://resend.com/api-keys) |
+   | `EMAIL_FROM` | `Lokalno+ <noreply@lokalno.plus>` (домен Verified у Resend) |
 
 4. **Deploy** — зачекайте 2–5 хвилин.
 

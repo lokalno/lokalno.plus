@@ -5,11 +5,15 @@ import { prisma } from "@/lib/prisma";
 import {
   notifyBuyerOrderConfirmed,
   notifyBuyerOrderShipped,
+  notifySellerReturnRequested,
 } from "@/lib/order-notifications";
 import { ORDER_PAYMENT_NP_COD_RECEIVED } from "@/lib/order-payment";
 import { getNovaPoshtaTrackingUrl, validateNovaPoshtaTtn } from "@/lib/order-shipping";
-import { validateSellerCancelInput } from "@/lib/order-cancel";
+import { markOrderNotReceivedByBuyerInTransaction } from "@/lib/order-not-received-service";
+import { validateSellerCancelInput, validateBuyerCancelInput } from "@/lib/order-cancel";
 import { cancelOrderInTransaction } from "@/lib/order-cancel-service";
+import { canRequestOrderReturn } from "@/lib/order-history";
+import { getReturnReasonLabel, validateReturnRequestInput } from "@/lib/order-return";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -38,7 +42,59 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const body = await request.json();
-  const { status, action, novaPoshtaTtn, cancelReason, cancelReasonNote } = body;
+  const { status, action, novaPoshtaTtn, cancelReason, cancelReasonNote, returnReason, returnReasonNote } =
+    body;
+
+  if (action === "request_return") {
+    if (!isBuyer) {
+      return NextResponse.json({ error: "Лише покупець може запросити повернення" }, { status: 403 });
+    }
+
+    if (order.returnRequestedAt) {
+      return NextResponse.json({ error: "Запит на повернення вже надіслано" }, { status: 400 });
+    }
+
+    if (!canRequestOrderReturn(order)) {
+      return NextResponse.json(
+        {
+          error:
+            "Запросити повернення можна лише протягом 3 днів після підтвердження отримання. Зверніться до продавця напряму.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const validation = validateReturnRequestInput({ returnReason, returnReasonNote });
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const reasonLabel = getReturnReasonLabel(validation.reason, validation.note);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.order.update({
+        where: { id },
+        data: {
+          returnRequestedAt: new Date(),
+          returnReason: validation.reason,
+          returnReasonNote: validation.note,
+        },
+      });
+
+      await notifySellerReturnRequested(tx, {
+        listingId: order.listingId,
+        sellerId: order.sellerId,
+        buyerId: order.buyerId,
+        listingTitle: order.listing.title,
+        orderNumber: order.orderNumber,
+        reasonLabel,
+      });
+
+      return currentOrder;
+    });
+
+    return NextResponse.json(updated);
+  }
 
   if (action === "ship" || status === "SHIPPED") {
     if (!isSeller) {
@@ -85,6 +141,45 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json(updated);
   }
 
+  if (action === "not_received_by_buyer") {
+    if (!isSeller) {
+      return NextResponse.json(
+        { error: "Лише продавець може позначити, що покупець не забрав посилку" },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        return markOrderNotReceivedByBuyerInTransaction(tx, {
+          orderId: id,
+          sellerId: session.user!.id,
+        });
+      });
+
+      return NextResponse.json(result.order);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "NOT_FOUND") {
+          return NextResponse.json({ error: "Замовлення не знайдено" }, { status: 404 });
+        }
+        if (error.message === "FORBIDDEN") {
+          return NextResponse.json({ error: "Немає доступу до цього замовлення" }, { status: 403 });
+        }
+        if (error.message === "INVALID_STATUS") {
+          return NextResponse.json(
+            {
+              error:
+                "Позначити «не забрано» можна лише для відправленого замовлення з ТТН Nova Poshta",
+            },
+            { status: 400 }
+          );
+        }
+      }
+      throw error;
+    }
+  }
+
   if (status === "CONFIRMED") {
     if (!isSeller) {
       return NextResponse.json({ error: "Лише продавець може підтвердити замовлення" }, { status: 403 });
@@ -126,6 +221,7 @@ export async function PATCH(request: Request, { params }: Params) {
       where: { id },
       data: {
         status: "COMPLETED",
+        completedAt: new Date(),
         ...(order.paymentStatus !== "PAID" ? { paymentStatus: ORDER_PAYMENT_NP_COD_RECEIVED } : {}),
       },
     });
@@ -139,6 +235,11 @@ export async function PATCH(request: Request, { params }: Params) {
       if (!validation.ok) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
+    } else if (isBuyer) {
+      const validation = validateBuyerCancelInput({ cancelReason, cancelReasonNote });
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
     }
 
     try {
@@ -147,8 +248,8 @@ export async function PATCH(request: Request, { params }: Params) {
           orderId: id,
           cancelledById: session.user!.id,
           cancelledByRole: isSeller ? "SELLER" : "BUYER",
-          cancelReason: isSeller ? cancelReason : null,
-          cancelReasonNote: isSeller ? cancelReasonNote : null,
+          cancelReason: cancelReason ?? null,
+          cancelReasonNote: cancelReasonNote ?? null,
         });
       });
 

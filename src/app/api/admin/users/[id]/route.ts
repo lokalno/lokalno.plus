@@ -67,6 +67,45 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Не можна блокувати адміна" }, { status: 400 });
     }
 
+    if (body.action === "block_purchases") {
+      const user = await prisma.user.update({
+        where: { id },
+        data: {
+          buyerPurchasesBlocked: true,
+          buyerPurchasesBlockedReason:
+            typeof body.buyerPurchasesBlockedReason === "string" &&
+            body.buyerPurchasesBlockedReason.trim()
+              ? body.buyerPurchasesBlockedReason.trim()
+              : "Обмежено адміністратором",
+        },
+        select: {
+          id: true,
+          buyerPurchasesBlocked: true,
+          buyerPurchasesBlockedUntil: true,
+          buyerPurchasesBlockedReason: true,
+        },
+      });
+      return NextResponse.json(user);
+    }
+
+    if (body.action === "unblock_purchases") {
+      const user = await prisma.user.update({
+        where: { id },
+        data: {
+          buyerPurchasesBlocked: false,
+          buyerPurchasesBlockedUntil: null,
+          buyerPurchasesBlockedReason: null,
+        },
+        select: {
+          id: true,
+          buyerPurchasesBlocked: true,
+          buyerPurchasesBlockedUntil: true,
+          buyerPurchasesBlockedReason: true,
+        },
+      });
+      return NextResponse.json(user);
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: {

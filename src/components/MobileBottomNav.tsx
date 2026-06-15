@@ -43,7 +43,7 @@ function NavIcon({
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { counts } = useHeaderNotifications(Boolean(session?.user?.id));
+  const { counts } = useHeaderNotifications();
   const isLoggedIn = Boolean(session?.user?.id);
 
   const profileHref = isLoggedIn ? "/profile" : "/login";

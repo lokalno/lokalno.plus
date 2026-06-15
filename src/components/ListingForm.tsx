@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
   CATEGORY_SUBCATEGORIES,
-  CONDITIONS,
+  LISTING_TITLE_MAX,
   MAX_LISTING_PHOTOS,
   LISTING_PHOTO_MAX_BYTES,
   LISTING_PHOTO_MAX_WIDTH,
@@ -16,6 +16,7 @@ import {
   parseListingCategory,
 } from "@/lib/constants";
 import { getListingFormProgress, getRecommendedPriceRange } from "@/lib/listing-form-progress";
+import { validateListingStock, validateListingStockForCreate } from "@/lib/listing-stock";
 import {
   CAR_BODY_TYPES,
   CAR_BRANDS,
@@ -48,6 +49,19 @@ import { getListingPhotosPayloadSize, validateListingPhotos } from "@/lib/listin
 import { uploadPhotoFile } from "@/lib/upload-photo";
 import SettlementSearch from "@/components/SettlementSearch";
 import ListingCreatePreview from "@/components/ListingCreatePreview";
+import ClothingSizeFields, { getInitialChildSizeMode } from "@/components/ClothingSizeFields";
+import PlatformDisclaimerNotice from "@/components/PlatformDisclaimerNotice";
+import ProhibitedGoodsNotice from "@/components/ProhibitedGoodsNotice";
+import { getClothingSizeKind, getListingConditions } from "@/lib/clothing-sizes";
+import { checkListingContent } from "@/lib/moderation";
+import ListingVariantsEditor from "@/components/ListingVariantsEditor";
+import {
+  isClothingVariantsCategory,
+  parseListingVariants,
+  sumVariantStock,
+  validateListingVariants,
+  type ListingVariant,
+} from "@/lib/listing-variants";
 
 const DRAFT_STORAGE_KEY = "lokalno-listing-draft";
 const DESCRIPTION_MAX = 1000;
@@ -67,6 +81,7 @@ type ListingFormProps = {
     stock?: number;
     photos: string[];
     allowPriceOffers?: boolean;
+    allowSelfPickup?: boolean;
     vehicleYear?: number | null;
     vehicleFuel?: string | null;
     vehicleTransmission?: string | null;
@@ -78,8 +93,21 @@ type ListingFormProps = {
     partForVehicle?: string | null;
     partType?: string | null;
     partPopular?: string | null;
+    itemSize?: string | null;
+    variants?: string | null;
   };
 };
+
+function getInitialListingVariants(initial?: ListingFormProps["initial"]): ListingVariant[] {
+  if (initial?.variants) {
+    const parsed = parseListingVariants(initial.variants);
+    if (parsed.length > 0) return parsed;
+  }
+  if (initial?.category && isClothingVariantsCategory(initial.category) && initial.itemSize) {
+    return [{ color: "", size: initial.itemSize, stock: initial.stock ?? 1 }];
+  }
+  return [{ color: "", size: "", stock: 1 }];
+}
 
 function FormSection({
   title,
@@ -129,6 +157,32 @@ function PriceOffersCheckbox({
   );
 }
 
+function SelfPickupCheckbox({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50/80 p-3">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+      />
+      <span className="text-sm leading-snug text-gray-700">
+        <span className="font-medium text-gray-900">Є самовивіз</span>
+        <span className="mt-1 block text-xs text-gray-500">
+          Покупець зможе забрати товар особисто у вашому місті. Доставка Nova Poshta також
+          залишається доступною.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 export default function ListingForm({ variant = "create", initial }: ListingFormProps) {
   const router = useRouter();
   const isEdit = Boolean(initial?.id);
@@ -148,6 +202,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [itemLocation, setItemLocation] = useState(initial?.itemLocation || "");
   const [stock, setStock] = useState(initial?.stock?.toString() || "1");
   const [allowPriceOffers, setAllowPriceOffers] = useState(initial?.allowPriceOffers ?? false);
+  const [allowSelfPickup, setAllowSelfPickup] = useState(initial?.allowSelfPickup ?? false);
   const [vehicleYear, setVehicleYear] = useState(initial?.vehicleYear?.toString() || "");
   const [vehicleMileage, setVehicleMileage] = useState(initial?.vehicleMileage?.toString() || "");
   const [vehicleFuel, setVehicleFuel] = useState(initial?.vehicleFuel || "");
@@ -163,6 +218,11 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [partForVehicle, setPartForVehicle] = useState(initial?.partForVehicle || "");
   const [partType, setPartType] = useState(initial?.partType || "");
   const [partPopular, setPartPopular] = useState(initial?.partPopular || "");
+  const [itemSize, setItemSize] = useState(initial?.itemSize || "");
+  const [variants, setVariants] = useState<ListingVariant[]>(() => getInitialListingVariants(initial));
+  const [childSizeMode, setChildSizeMode] = useState<"age" | "height">(
+    getInitialChildSizeMode(initial?.itemSize)
+  );
   const [photos, setPhotos] = useState<string[]>(initial?.photos || []);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -170,6 +230,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
   const [dragActive, setDragActive] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isFirstSubcategoryEffect = useRef(true);
 
   const progress = getListingFormProgress({
     title,
@@ -220,11 +281,36 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
       ? MOTO_BRANDS
       : CAR_BRANDS;
   const isBrandSelect = isCarListing || isMotoListing || isTruckListing;
+  const clothingSizeKind = getClothingSizeKind(
+    category,
+    subcategory,
+    categoryDetail || undefined
+  );
+  const useClothingVariants = category === "Одяг і взуття";
+  const conditionOptions = getListingConditions(category, subcategory);
 
   useEffect(() => {
+    if (isFirstSubcategoryEffect.current) {
+      isFirstSubcategoryEffect.current = false;
+      return;
+    }
     setCategoryDetail("");
     setCategoryItem("");
+    setItemSize("");
+    setChildSizeMode("age");
   }, [subcategory]);
+
+  useEffect(() => {
+    if (!clothingSizeKind) {
+      setItemSize("");
+    }
+  }, [clothingSizeKind, categoryDetail]);
+
+  useEffect(() => {
+    if (!(condition in conditionOptions)) {
+      setCondition("LIKE_NEW");
+    }
+  }, [condition, conditionOptions]);
 
   useEffect(() => {
     setCategoryItem("");
@@ -368,23 +454,69 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         throw new Error("Вкажіть позицію на складі — де фізично лежить цей товар");
       }
 
+      if (clothingSizeKind && !useClothingVariants && !itemSize.trim()) {
+        throw new Error("Оберіть розмір товару");
+      }
+
+      let resolvedStock = stock;
+      let resolvedVariants: ListingVariant[] | undefined;
+      const formattedCategory = formatListingCategory(
+        category,
+        subcategory,
+        categoryDetail || undefined,
+        categoryItem || undefined
+      );
+
+      if (useClothingVariants) {
+        const variantsCheck = validateListingVariants(variants, formattedCategory);
+        if (!variantsCheck.ok) {
+          throw new Error(variantsCheck.error);
+        }
+        resolvedVariants = variantsCheck.variants;
+        resolvedStock = String(sumVariantStock(variantsCheck.variants));
+      }
+
+      if (title.trim().length > LISTING_TITLE_MAX) {
+        throw new Error(`Назва товару — не більше ${LISTING_TITLE_MAX} символів`);
+      }
+
+      const forbiddenWord = checkListingContent(title, description);
+      if (forbiddenWord) {
+        throw new Error(
+          `Заборонений товар або слово «${forbiddenWord}». Перегляньте правила сайту.`
+        );
+      }
+
+      const stockCheck = useClothingVariants
+        ? validateListingStock(resolvedStock, { min: 0 })
+        : isCreate
+          ? validateListingStockForCreate(stock)
+          : validateListingStock(stock);
+      if (!stockCheck.ok) {
+        throw new Error(stockCheck.error);
+      }
+
+      if (useClothingVariants && isCreate && stockCheck.stock < 1) {
+        throw new Error("Додайте хоча б один варіант з кількістю більше 0.");
+      }
+
       const payload = {
         title,
         description,
         price: Number(price),
-        category: formatListingCategory(
-          category,
-          subcategory,
-          categoryDetail || undefined,
-          categoryItem || undefined
-        ),
+        category: formattedCategory,
         brand: brand.trim() || null,
         condition,
         city,
         itemLocation: position,
-        stock: Number(stock),
+        stock: stockCheck.stock,
         allowPriceOffers,
+        allowSelfPickup,
         photos: photosCheck.photos,
+        itemSize: useClothingVariants ? null : clothingSizeKind ? itemSize.trim() : null,
+        ...(useClothingVariants && resolvedVariants
+          ? { variants: resolvedVariants }
+          : {}),
         ...(isCarListing
           ? {
               vehicleYear: Number(vehicleYear),
@@ -809,9 +941,19 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
+      <ProhibitedGoodsNotice />
+
       <div>
         <FieldLabel>Назва *</FieldLabel>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={100} />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={LISTING_TITLE_MAX}
+        />
+        <p className="mt-1 text-right text-xs text-gray-400">
+          {title.length}/{LISTING_TITLE_MAX}
+        </p>
       </div>
 
       <div>
@@ -836,17 +978,22 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
             required
           />
         </div>
-        <div>
-          <FieldLabel>Кількість в наявності *</FieldLabel>
-          <input
-            type="number"
-            min="1"
-            max="9999"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-            required
-          />
-        </div>
+        {!useClothingVariants && (
+          <div>
+            <FieldLabel>Кількість в наявності *</FieldLabel>
+            <input
+              type="number"
+              min="0"
+              max="9999"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              0 — товар тимчасово недоступний для покупки.
+            </p>
+          </div>
+        )}
         <SettlementSearch value={city} onChange={setCity} label="Місто / село" required />
       </div>
 
@@ -867,6 +1014,8 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
           Обов&apos;язково для кожного товару — щоб швидко знайти його серед сотень оголошень.
         </p>
       </div>
+
+      <SelfPickupCheckbox checked={allowSelfPickup} onChange={setAllowSelfPickup} />
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -938,10 +1087,26 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
             />
           )}
         </div>
+        {clothingSizeKind && !useClothingVariants && (
+          <ClothingSizeFields
+            kind={clothingSizeKind}
+            itemSize={itemSize}
+            onItemSizeChange={setItemSize}
+            childSizeMode={childSizeMode}
+            onChildSizeModeChange={setChildSizeMode}
+          />
+        )}
+        {useClothingVariants && (
+          <ListingVariantsEditor
+            variants={variants}
+            onChange={setVariants}
+            sizeKind={clothingSizeKind}
+          />
+        )}
         <div>
           <FieldLabel>Стан *</FieldLabel>
           <select value={condition} onChange={(e) => setCondition(e.target.value)}>
-            {Object.entries(CONDITIONS).map(([key, label]) => (
+            {Object.entries(conditionOptions).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
@@ -981,6 +1146,9 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         )}
       </div>
 
+      <div className="mb-3">
+        <PlatformDisclaimerNotice compact />
+      </div>
       <button
         type="submit"
         disabled={loading || photos.length === 0}
@@ -1018,6 +1186,10 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
+
+        <div className="mb-6">
+          <ProhibitedGoodsNotice />
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-6">
@@ -1113,9 +1285,12 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
-                  maxLength={100}
+                  maxLength={LISTING_TITLE_MAX}
                   placeholder="Наприклад, iPhone 13 Pro 128GB Alpine Green"
                 />
+                <p className="mt-2 text-right text-xs text-gray-400">
+                  {title.length}/{LISTING_TITLE_MAX}
+                </p>
               </div>
               <div>
                 <FieldLabel>
@@ -1190,12 +1365,30 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                     </select>
                   </div>
                 )}
+                {clothingSizeKind && !useClothingVariants && (
+                  <ClothingSizeFields
+                    kind={clothingSizeKind}
+                    itemSize={itemSize}
+                    onItemSizeChange={setItemSize}
+                    childSizeMode={childSizeMode}
+                    onChildSizeModeChange={setChildSizeMode}
+                  />
+                )}
+                {useClothingVariants && (
+                  <div className="sm:col-span-2">
+                    <ListingVariantsEditor
+                      variants={variants}
+                      onChange={setVariants}
+                      sizeKind={clothingSizeKind}
+                    />
+                  </div>
+                )}
                 <div>
                   <FieldLabel>
                     Стан <span className="text-red-500">*</span>
                   </FieldLabel>
                   <select value={condition} onChange={(e) => setCondition(e.target.value)}>
-                    {Object.entries(CONDITIONS).map(([key, label]) => (
+                    {Object.entries(conditionOptions).map(([key, label]) => (
                       <option key={key} value={key}>
                         {label}
                       </option>
@@ -1224,30 +1417,32 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                     />
                   )}
                 </div>
-                <div>
-                  <FieldLabel>
-                    Кількість <span className="text-red-500">*</span>
-                  </FieldLabel>
-                  <div className="flex h-[42px] items-stretch overflow-hidden rounded-lg border border-gray-300">
-                    <button
-                      type="button"
-                      onClick={() => adjustStock(-1)}
-                      className="w-12 bg-gray-50 text-lg text-gray-600 hover:bg-gray-100"
-                    >
-                      −
-                    </button>
-                    <div className="flex flex-1 items-center justify-center border-x border-gray-300 bg-white text-sm font-medium">
-                      {stock}
+                {!useClothingVariants && (
+                  <div>
+                    <FieldLabel>
+                      Кількість <span className="text-red-500">*</span>
+                    </FieldLabel>
+                    <div className="flex h-[42px] items-stretch overflow-hidden rounded-lg border border-gray-300">
+                      <button
+                        type="button"
+                        onClick={() => adjustStock(-1)}
+                        className="w-12 bg-gray-50 text-lg text-gray-600 hover:bg-gray-100"
+                      >
+                        −
+                      </button>
+                      <div className="flex flex-1 items-center justify-center border-x border-gray-300 bg-white text-sm font-medium">
+                        {stock}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => adjustStock(1)}
+                        className="w-12 bg-gray-50 text-lg text-gray-600 hover:bg-gray-100"
+                      >
+                        +
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => adjustStock(1)}
-                      className="w-12 bg-gray-50 text-lg text-gray-600 hover:bg-gray-100"
-                    >
-                      +
-                    </button>
                   </div>
-                </div>
+                )}
               </div>
               {transportFieldsSection}
             </FormSection>
@@ -1308,6 +1503,7 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                   Де саме лежить цей товар — ви зможете шукати за позицією у «Мої оголошення».
                 </p>
               </div>
+              <SelfPickupCheckbox checked={allowSelfPickup} onChange={setAllowSelfPickup} />
             </FormSection>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -1330,9 +1526,12 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
               >
                 {loading ? "Збереження..." : "Опублікувати оголошення"}
               </button>
-              <p className="mt-3 text-center text-xs text-gray-400">
-                Натискаючи кнопку, ви погоджуєтесь з правилами сайту
-              </p>
+              <div className="mt-3 space-y-2">
+                <PlatformDisclaimerNotice compact />
+                <p className="text-center text-xs text-gray-400">
+                  Натискаючи кнопку, ви погоджуєтесь з правилами сайту
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1352,6 +1551,8 @@ export default function ListingForm({ variant = "create", initial }: ListingForm
                 categoryItem || undefined
               )}
               condition={condition}
+              itemSize={itemSize}
+              allowSelfPickup={allowSelfPickup}
               photos={photos}
             />
           </aside>

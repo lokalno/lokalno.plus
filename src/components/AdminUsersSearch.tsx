@@ -27,7 +27,7 @@ export default function AdminUsersSearch() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Пошук за ім’ям, email або містом..."
+        placeholder="Пошук за ім’ям, магазином, email або містом..."
         className="w-full flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm"
       />
       <div className="flex gap-2">

@@ -87,8 +87,8 @@ export default async function ProfilePage({
       : undefined;
 
   return (
-    <div className="max-w-6xl mx-auto overflow-x-visible px-3 py-6 sm:px-4 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div className="max-w-6xl mx-auto overflow-x-visible px-3 py-4 sm:px-4 sm:py-8 xl:py-8">
+      <div className="mb-4 hidden flex-wrap items-center justify-between gap-3 xl:flex">
         <h1 className="text-2xl font-bold">Мій профіль</h1>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -103,6 +103,12 @@ export default async function ProfilePage({
           >
             🛒 Мої замовлення
           </OrdersNavLink>
+          <Link
+            href="/profile/import"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-800 hover:bg-brand-100"
+          >
+            📥 Імпорт з Prom
+          </Link>
           <Link
             href="/listings/new"
             className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
@@ -124,7 +130,6 @@ export default async function ProfilePage({
         isLoggedIn
         isFollowing={false}
         isOwner
-        showOwnerBannerEdit
         showAsPublic
         backHref="/"
         backLabel="← До каталогу"

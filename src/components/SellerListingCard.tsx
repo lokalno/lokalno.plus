@@ -63,7 +63,7 @@ export default function SellerListingCard({
           </div>
         )}
         <span className={`${badgeClass} top-1.5 left-1.5`}>
-          📷 {photos.length}
+          {compact ? `👁 ${formatViews(listing.views)}` : `📷 ${photos.length}`}
         </span>
         {listing.status !== "ACTIVE" && (
           <span

@@ -7,8 +7,10 @@ import PublicFollowPreview from "./PublicFollowPreview";
 const lightButtonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60";
 
-const bannerSecondaryButtonClass =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/25 bg-zinc-900/70 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-zinc-800/85 disabled:opacity-60 md:rounded-xl md:px-3.5 md:py-2 md:text-sm";
+const bannerButtonBaseClass =
+  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold leading-none md:h-9 md:rounded-xl md:px-3.5 md:text-sm";
+
+const bannerSecondaryButtonClass = `${bannerButtonBaseClass} border border-white/25 bg-zinc-900/70 text-white backdrop-blur-md transition hover:bg-zinc-800/85 disabled:opacity-60`;
 
 type SellerProfileActionsProps = {
   sellerId: string;
@@ -64,7 +66,11 @@ export default function SellerProfileActions({
   }
 
   return (
-    <div className={`flex flex-wrap items-center gap-1.5 md:gap-2 ${inBanner ? "justify-end" : ""}`}>
+    <div
+      className={`flex flex-wrap gap-1.5 md:gap-2 ${
+        inBanner ? "items-center justify-end" : "items-center"
+      }`}
+    >
       {isOwner && showAsPublic ? (
         <PublicFollowPreview followerCount={followerCount} onDark={inBanner} hideFollowerCount />
       ) : !isOwner ? (

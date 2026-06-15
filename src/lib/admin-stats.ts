@@ -22,10 +22,15 @@ export const DEMO_USER_EMAILS = [
 ] as const;
 
 export type AdminStatsPeriodKey =
-  | "today"
-  | "yesterday"
+  | "last1h"
+  | "last2h"
+  | "last3h"
+  | "last4h"
   | "last24h"
+  | "today"
+  | "last48h"
   | "last7d"
+  | "yesterday"
   | "last30d"
   | "thisYear"
   | "allTime";
@@ -68,6 +73,15 @@ export type AdminCancellationStats = {
   buyerCancelled: number;
   autoCancelled: number;
   bySellerReason: AdminCancellationReasonStat[];
+  byBuyerReason: AdminCancellationReasonStat[];
+};
+
+export type AdminPlatformTotals = {
+  totalListings: number;
+  activeListings: number;
+  totalUsers: number;
+  totalEarnings: number;
+  paidOrders: number;
 };
 
 export type AdminStatsSnapshot = {
@@ -75,6 +89,7 @@ export type AdminStatsSnapshot = {
   realUsersTotal: number;
   demoUsersTotal: number;
   totalListingViews: number;
+  platformTotals: AdminPlatformTotals;
   periods: AdminPeriodStats[];
   dailyActivity: AdminActivityChartPoint[];
   weekdayActivityByRange: Record<AdminActivityChartRange, AdminWeekdayChartPoint[]>;
@@ -85,14 +100,32 @@ export type AdminStatsSnapshot = {
 };
 
 const PERIOD_LABELS: Record<AdminStatsPeriodKey, string> = {
-  today: "Сьогодні",
-  yesterday: "Вчора",
+  last1h: "За 1 годину",
+  last2h: "За 2 години",
+  last3h: "За 3 години",
+  last4h: "За 4 години",
   last24h: "За 24 години",
-  last7d: "За 7 днів",
+  today: "Сьогодні",
+  last48h: "За 2 дні",
+  last7d: "За тиждень",
+  yesterday: "Вчора",
   last30d: "За місяць",
   thisYear: "За рік",
   allTime: "За весь час",
 };
+
+/** Періоди для блоку «Нові реєстрації» в адмінці. */
+export const ADMIN_REGISTRATION_PERIOD_KEYS: AdminStatsPeriodKey[] = [
+  "last1h",
+  "last2h",
+  "last3h",
+  "last4h",
+  "last24h",
+  "today",
+  "last48h",
+  "last7d",
+  "allTime",
+];
 
 type PaidOrderRow = {
   createdAt: Date;
@@ -256,7 +289,14 @@ function getKyivYear(date: Date): number {
 
 function getPeriodStart(key: AdminStatsPeriodKey, now = new Date()): Date | null {
   if (key === "allTime") return null;
-  if (key === "last24h") return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const hourMs = 60 * 60 * 1000;
+  if (key === "last1h") return new Date(now.getTime() - hourMs);
+  if (key === "last2h") return new Date(now.getTime() - 2 * hourMs);
+  if (key === "last3h") return new Date(now.getTime() - 3 * hourMs);
+  if (key === "last4h") return new Date(now.getTime() - 4 * hourMs);
+  if (key === "last24h") return new Date(now.getTime() - 24 * hourMs);
+  if (key === "last48h") return new Date(now.getTime() - 48 * hourMs);
 
   const kyivToday = getKyivDateString(now);
 
@@ -391,6 +431,8 @@ export async function getAdminStatsSnapshot(prisma: PrismaClient): Promise<Admin
   const [
     realUsersTotal,
     demoUsersTotal,
+    totalListings,
+    activeListings,
     totalListingViewsAgg,
     users,
     demoUsers,
@@ -401,6 +443,8 @@ export async function getAdminStatsSnapshot(prisma: PrismaClient): Promise<Admin
   ] = await Promise.all([
     prisma.user.count({ where: { email: { notIn: [...DEMO_USER_EMAILS] } } }),
     prisma.user.count({ where: { email: { in: [...DEMO_USER_EMAILS] } } }),
+    prisma.listing.count(),
+    prisma.listing.count({ where: { status: "ACTIVE" } }),
     prisma.listing.aggregate({ _sum: { views: true } }),
     prisma.user.findMany({
       where: { email: { notIn: [...DEMO_USER_EMAILS] } },
@@ -442,14 +486,28 @@ export async function getAdminStatsSnapshot(prisma: PrismaClient): Promise<Admin
   const demoUserIds = new Set(demoUsers.map((user) => user.id));
 
   const periodKeys: AdminStatsPeriodKey[] = [
-    "today",
-    "yesterday",
+    "last1h",
+    "last2h",
+    "last3h",
+    "last4h",
     "last24h",
+    "today",
+    "last48h",
     "last7d",
+    "yesterday",
     "last30d",
     "thisYear",
     "allTime",
   ];
+
+  const allTimeSales = sumSales(paidOrders, "allTime", now);
+  const platformTotals: AdminPlatformTotals = {
+    totalListings,
+    activeListings,
+    totalUsers: realUsersTotal,
+    totalEarnings: allTimeSales.salesAmount,
+    paidOrders: allTimeSales.salesOrders,
+  };
 
   const periods = periodKeys.map((key) => {
     const registrations = users.filter((user) => isInPeriod(user.createdAt, key, now)).length;
@@ -525,6 +583,7 @@ export async function getAdminStatsSnapshot(prisma: PrismaClient): Promise<Admin
     realUsersTotal,
     demoUsersTotal,
     totalListingViews: totalListingViewsAgg._sum.views ?? 0,
+    platformTotals,
     periods,
     dailyActivity,
     weekdayActivityByRange,
@@ -553,6 +612,7 @@ export async function getAdminCancellationStats(prisma: PrismaClient): Promise<A
   let buyerCancelled = 0;
   let autoCancelled = 0;
   const bySellerReason = new Map<string, number>();
+  const byBuyerReason = new Map<string, number>();
 
   for (const order of cancelled) {
     const role =
@@ -572,6 +632,8 @@ export async function getAdminCancellationStats(prisma: PrismaClient): Promise<A
 
     if (role === "BUYER") {
       buyerCancelled += 1;
+      const key = order.cancelReason || "UNKNOWN";
+      byBuyerReason.set(key, (byBuyerReason.get(key) ?? 0) + 1);
       continue;
     }
 
@@ -587,6 +649,13 @@ export async function getAdminCancellationStats(prisma: PrismaClient): Promise<A
       .map(([key, count]) => ({
         key,
         label: getCancelReasonLabel(key),
+        count,
+      }))
+      .sort((a, b) => b.count - a.count),
+    byBuyerReason: [...byBuyerReason.entries()]
+      .map(([key, count]) => ({
+        key,
+        label: key === "UNKNOWN" ? "Без причини" : getCancelReasonLabel(key),
         count,
       }))
       .sort((a, b) => b.count - a.count),

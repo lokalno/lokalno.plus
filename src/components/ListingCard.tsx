@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OptimizedListingImage from "@/components/OptimizedListingImage";
 import { getSellerDisplayName } from "@/lib/seller-display-name";
 import { formatPrice, parsePhotos } from "@/lib/utils";
 import { CONDITIONS } from "@/lib/constants";
@@ -30,11 +31,10 @@ export default function ListingCard({ listing }: ListingCardProps) {
     >
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <OptimizedListingImage
             src={photo}
             alt={listing.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SettlementSearch from "@/components/SettlementSearch";
@@ -22,6 +23,12 @@ type OrderCheckoutFormProps = {
   priceOfferId?: string;
   buyLabel?: string;
   compact?: boolean;
+  activeOrderLimitMessage?: string | null;
+  variantColor?: string;
+  variantSize?: string;
+  requiresVariantSelection?: boolean;
+  onRequireVariant?: () => void;
+  disableCheckout?: boolean;
 };
 
 export default function OrderCheckoutForm({
@@ -31,6 +38,12 @@ export default function OrderCheckoutForm({
   priceOfferId,
   buyLabel,
   compact = false,
+  activeOrderLimitMessage = null,
+  variantColor,
+  variantSize,
+  requiresVariantSelection = false,
+  onRequireVariant,
+  disableCheckout = false,
 }: OrderCheckoutFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -79,6 +92,12 @@ export default function OrderCheckoutForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    if (requiresVariantSelection && (!variantColor || !variantSize)) {
+      onRequireVariant?.();
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -90,6 +109,8 @@ export default function OrderCheckoutForm({
           listingId,
           quantity,
           ...(priceOfferId ? { priceOfferId } : {}),
+          ...(variantColor ? { variantColor } : {}),
+          ...(variantSize ? { variantSize } : {}),
           recipientFirstName: firstName,
           recipientLastName: lastName,
           recipientPhone: phone,
@@ -115,20 +136,42 @@ export default function OrderCheckoutForm({
   }
 
   if (!open) {
+    if (activeOrderLimitMessage) {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+          <p>{activeOrderLimitMessage}</p>
+          <Link
+            href="/orders?view=buyer"
+            className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline"
+          >
+            Перейти до моїх покупок →
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div>
         <button
           type="button"
+          disabled={disableCheckout}
           onClick={() => {
+            if (requiresVariantSelection && (!variantColor || !variantSize)) {
+              onRequireVariant?.();
+              return;
+            }
             setQuantity(1);
             setOpen(true);
           }}
-          className={`w-full rounded-lg bg-brand-600 font-semibold text-white transition hover:bg-brand-700 ${
+          className={`w-full rounded-lg bg-brand-600 font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 ${
             compact ? "max-w-sm py-2 text-sm" : "py-3.5 text-base"
           }`}
         >
           {buyLabel || "Купити з доставкою"}
         </button>
+        {disableCheckout && requiresVariantSelection && (
+          <p className="mt-2 text-xs text-gray-500">Спочатку оберіть колір і розмір.</p>
+        )}
       </div>
     );
   }

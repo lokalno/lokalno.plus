@@ -11,7 +11,12 @@ import {
 import { CAR_SUBCATEGORY, TRANSPORT_CATEGORY } from "@/lib/vehicle";
 import { cn } from "@/lib/utils";
 
-export default function CategorySidebar() {
+type CategorySidebarProps = {
+  /** У мобільному «Весь каталог» — без sticky, прокрутка зовнішнього контейнера. */
+  embedded?: boolean;
+};
+
+export default function CategorySidebar({ embedded = false }: CategorySidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -117,7 +122,10 @@ export default function CategorySidebar() {
   return (
     <div
       className={cn(
-        "sticky top-20 flex max-h-[calc(100dvh-5.5rem)] flex-col rounded-xl border border-gray-200 bg-white p-4",
+        "flex flex-col bg-white",
+        embedded
+          ? "p-2"
+          : "rounded-xl border border-gray-200 p-4 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-5.5rem)]",
         isPending && "opacity-70"
       )}
       aria-busy={isPending}
@@ -127,8 +135,13 @@ export default function CategorySidebar() {
         {isPending && <span className="ml-2 text-xs font-normal text-gray-400">завантаження…</span>}
       </h2>
       <ul
-        className="-mr-1 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
-        onWheel={handleCatalogWheel}
+        className={cn(
+          "space-y-1",
+          embedded
+            ? ""
+            : "-mr-1 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
+        )}
+        onWheel={embedded ? undefined : handleCatalogWheel}
       >
         <li>
           <button

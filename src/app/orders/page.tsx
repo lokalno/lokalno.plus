@@ -7,6 +7,8 @@ import SellerOrdersPageView from "@/components/SellerOrdersPageView";
 import { getSellerOrdersPageData } from "@/lib/seller-orders-page-data";
 import Link from "next/link";
 import { BUYER_ORDER_PLACED_MESSAGE } from "@/lib/order-status-ui";
+import { BUYER_ORDER_HISTORY_DAYS, getHistoryCutoffDate } from "@/lib/order-history";
+import BuyerPurchaseStatusNotice from "@/components/BuyerPurchaseStatusNotice";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,15 +36,21 @@ export default async function OrdersPage({
     return <SellerOrdersPageView data={data} />;
   }
 
-  const orders = await prisma.order.findMany({
-    where: { buyerId: userId },
-    include: {
-      listing: true,
-      buyer: { select: { name: true } },
-      seller: { select: { name: true, storeName: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [orders, listingCount] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        buyerId: userId,
+        createdAt: { gte: getHistoryCutoffDate(BUYER_ORDER_HISTORY_DAYS) },
+      },
+      include: {
+        listing: true,
+        buyer: { select: { name: true } },
+        seller: { select: { name: true, storeName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.listing.count({ where: { sellerId: userId } }),
+  ]);
 
   const orderIds = orders.map((order) => order.id);
   const reviews = await prisma.review.findMany({
@@ -67,11 +75,19 @@ export default async function OrdersPage({
         </div>
       )}
 
+      <p className="mb-4 text-sm text-gray-500">
+        Показуються замовлення за останні {BUYER_ORDER_HISTORY_DAYS} днів з дати покупки.
+      </p>
+
+      <div className="mb-6">
+        <BuyerPurchaseStatusNotice userId={userId} listingCount={listingCount} />
+      </div>
+
       <OrdersList
         orders={orders}
         currentUserId={userId}
         reviewedOrderIds={reviewedOrderIds}
-        emptyMessage="Ви ще нічого не замовляли"
+        emptyMessage="Замовлень за останні 14 днів немає"
       />
     </div>
   );

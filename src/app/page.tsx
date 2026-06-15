@@ -1,26 +1,16 @@
-import { Suspense } from "react";
-import CategorySidebar from "@/components/CategorySidebar";
-import SearchFilters from "@/components/SearchFilters";
-import CarSearchFilters from "@/components/CarSearchFilters";
-import MotoSearchFilters from "@/components/MotoSearchFilters";
-import TruckSearchFilters from "@/components/TruckSearchFilters";
-import PartsSearchFilters from "@/components/PartsSearchFilters";
-import AgriSearchFilters from "@/components/AgriSearchFilters";
+import { Suspense, type ReactNode } from "react";
 import HomeCatalogResults, { homeCatalogCacheKey } from "@/components/HomeCatalogResults";
 import HomeCatalogSkeleton from "@/components/HomeCatalogSkeleton";
 import MobileCategoryStrip from "@/components/MobileCategoryStrip";
+import MobileCatalogFilters from "@/components/MobileCatalogFilters";
+import MobileCollapsedFilters from "@/components/MobileCollapsedFilters";
 import { HomeLeftSidebar, HomeRightSidebarPanel } from "@/components/HomeSidebars";
 import { parsePageParam } from "@/lib/catalog";
 
 export const revalidate = 60;
-import {
-  hasTransportSearchFilters,
-  isCarCatalogContext,
-  isMotoCatalogContext,
-  isTruckCatalogContext,
-} from "@/lib/vehicle";
-import { hasPartsSearchFilters, isPartsCatalogContext } from "@/lib/parts";
-import { hasAgriSearchFilters, isAgriCatalogContext } from "@/lib/agri";
+import { hasTransportSearchFilters } from "@/lib/vehicle";
+import { hasPartsSearchFilters } from "@/lib/parts";
+import { hasAgriSearchFilters } from "@/lib/agri";
 
 type SearchParams = Promise<{
   city?: string;
@@ -79,31 +69,19 @@ function hasActiveFilters(params: Record<string, string | undefined>) {
   );
 }
 
-function transportFilters(params: { category?: string; subcategory?: string }) {
-  if (isAgriCatalogContext(params.category, params.subcategory)) {
-    return <AgriSearchFilters />;
-  }
-  if (isPartsCatalogContext(params.category, params.subcategory)) {
-    return <PartsSearchFilters />;
-  }
-  if (isTruckCatalogContext(params.category, params.subcategory)) {
-    return <TruckSearchFilters />;
-  }
-  if (isMotoCatalogContext(params.category, params.subcategory)) {
-    return <MotoSearchFilters />;
-  }
-  if (isCarCatalogContext(params.category, params.subcategory)) {
-    return <CarSearchFilters />;
-  }
-  return <SearchFilters />;
-}
-
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const page = parsePageParam(params.page);
   const showLanding = !hasActiveFilters(params) && page === 1;
   const catalogKey = homeCatalogCacheKey(params);
-  const filters = transportFilters(params);
+
+  let filters: ReactNode;
+  if (!showLanding) {
+    const { default: HomeTransportFilters } = await import("@/components/HomeTransportFilters");
+    filters = (
+      <HomeTransportFilters category={params.category} subcategory={params.subcategory} />
+    );
+  }
 
   return (
     <div className="max-w-[1400px] mx-auto px-3 xl:px-4 py-4 xl:py-6">
@@ -115,17 +93,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <div className="xl:col-span-7">
           {!showLanding && (
             <Suspense fallback={null}>
-              <div className="mb-3 xl:hidden">
+              <div className="mb-3 xl:hidden space-y-3">
                 <MobileCategoryStrip />
-              </div>
-            </Suspense>
-          )}
-
-          {!showLanding && (
-            <Suspense fallback={null}>
-              <div className="mb-4 space-y-4 xl:hidden">
-                <CategorySidebar />
-                {filters}
+                <MobileCatalogFilters />
               </div>
             </Suspense>
           )}
@@ -133,6 +103,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <Suspense key={catalogKey} fallback={<HomeCatalogSkeleton />}>
             <HomeCatalogResults params={params} />
           </Suspense>
+
+          {!showLanding && (
+            <Suspense fallback={null}>
+              <MobileCollapsedFilters>{filters}</MobileCollapsedFilters>
+            </Suspense>
+          )}
         </div>
 
         <aside className="xl:col-span-3 hidden xl:block">

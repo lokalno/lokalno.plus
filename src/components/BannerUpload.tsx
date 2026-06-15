@@ -3,13 +3,13 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { uploadPhotoFile } from "@/lib/upload-photo";
+import { BANNER_PHOTO_MAX_BYTES, BANNER_PHOTO_MAX_WIDTH } from "@/lib/constants";
 
 type BannerUploadProps = {
   initialBanner?: string | null;
-  compact?: boolean;
 };
 
-export default function BannerUpload({ initialBanner, compact = false }: BannerUploadProps) {
+export default function BannerUpload({ initialBanner }: BannerUploadProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [banner, setBanner] = useState(initialBanner || "");
@@ -17,7 +17,10 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
   const [message, setMessage] = useState("");
 
   async function uploadFile(file: File) {
-    return uploadPhotoFile(file, { maxWidth: 1400, maxBytes: 350_000 });
+    return uploadPhotoFile(file, {
+      maxWidth: BANNER_PHOTO_MAX_WIDTH,
+      maxBytes: BANNER_PHOTO_MAX_BYTES,
+    });
   }
 
   async function saveBanner(url: string | null) {
@@ -62,32 +65,6 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
     }
   }
 
-  if (compact) {
-    return (
-      <div className="absolute top-3 right-3 z-20 flex gap-2">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => inputRef.current?.click()}
-          className="bg-white/95 text-gray-800 text-xs px-3 py-1.5 rounded-lg shadow border hover:bg-white"
-        >
-          {loading ? "..." : banner ? "Змінити банер" : "Завантажити банер"}
-        </button>
-        {banner && (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={removeBanner}
-            className="bg-white/95 text-red-600 text-xs px-3 py-1.5 rounded-lg shadow border hover:bg-white"
-          >
-            Видалити
-          </button>
-        )}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium">Банер сторінки продавця</label>
@@ -122,7 +99,13 @@ export default function BannerUpload({ initialBanner, compact = false }: BannerU
           </button>
         )}
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/*"
+        className="hidden"
+        onChange={handleChange}
+      />
       {message && <p className="text-xs text-brand-700">{message}</p>}
     </div>
   );

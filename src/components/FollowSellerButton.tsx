@@ -59,7 +59,7 @@ export default function FollowSellerButton({
 
   const buttonClass =
     variant === "bannerPremium"
-      ? `inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition disabled:opacity-60 md:rounded-xl md:px-3.5 md:py-2 md:text-sm ${
+      ? `inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold leading-none transition disabled:opacity-60 md:h-9 md:rounded-xl md:px-3.5 md:text-sm ${
           following
             ? "border border-white/30 bg-white/15 text-white backdrop-blur-md hover:bg-white/25"
             : "bg-brand-600 text-white shadow-md hover:bg-brand-700"
@@ -86,17 +86,25 @@ export default function FollowSellerButton({
                 : "border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
           }`;
 
+  const button = (
+    <button type="button" onClick={toggle} disabled={loading} className={buttonClass}>
+      {variant === "bannerPremium" ? (
+        <>{following ? "✓ Підписано" : "+ Підписатися"}</>
+      ) : onDark ? (
+        <>{following ? "✓ Підписано" : "Підписатися"}</>
+      ) : (
+        <>{following ? "✓ Підписано" : "📌 Підписатися"}</>
+      )}
+    </button>
+  );
+
+  if (variant === "bannerPremium" && hideFollowerCount) {
+    return button;
+  }
+
   return (
-    <div className={variant === "hero" || variant === "bannerPremium" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
-      <button type="button" onClick={toggle} disabled={loading} className={buttonClass}>
-        {variant === "bannerPremium" ? (
-          <>{following ? "✓ Підписано" : "+ Підписатися"}</>
-        ) : onDark ? (
-          <>{following ? "✓ Підписано" : "Підписатися"}</>
-        ) : (
-          <>{following ? "✓ Підписано" : "📌 Підписатися"}</>
-        )}
-      </button>
+    <div className={variant === "hero" ? "" : compact ? "mt-2" : onDark ? "mt-0" : "mt-3"}>
+      {button}
       {!hideFollowerCount && (
         <p
           className={`${onDark ? "text-white/70" : "text-gray-500"} ${compact ? "text-xs mt-1" : "text-sm mt-1.5"}`}

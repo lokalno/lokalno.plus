@@ -3,9 +3,13 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { sendPasswordResetEmail } from "@/lib/password-reset-email";
+import { isEmailConfigured } from "@/lib/email-config";
 
 const GENERIC_MESSAGE =
   "Якщо email зареєстровано на сайті, ми надіслали посилання для скидання пароля.";
+
+const EMAIL_NOT_CONFIGURED_MESSAGE =
+  "Наразі не вдалося надіслати лист. Спробуйте пізніше або зверніться в підтримку.";
 
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -18,6 +22,11 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ message: GENERIC_MESSAGE });
+  }
+
+  if (!isEmailConfigured()) {
+    console.error("[forgot-password] email not configured (RESEND_API_KEY or EMAIL_FROM)");
+    return NextResponse.json({ error: EMAIL_NOT_CONFIGURED_MESSAGE }, { status: 503 });
   }
 
   const token = randomBytes(32).toString("hex");
@@ -43,6 +52,7 @@ export async function POST(request: Request) {
     if (process.env.NODE_ENV === "development") {
       console.info("[forgot-password] reset link (dev):", resetUrl);
     }
+    return NextResponse.json({ error: EMAIL_NOT_CONFIGURED_MESSAGE }, { status: 503 });
   }
 
   return NextResponse.json({ message: GENERIC_MESSAGE });

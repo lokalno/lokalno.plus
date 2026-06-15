@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import OrderShipForm from "@/components/OrderShipForm";
 import OrderSellerCancelDialog from "@/components/OrderSellerCancelDialog";
+import OrderBuyerCancelDialog from "@/components/OrderBuyerCancelDialog";
 import { formatTtnDeadline, isPastTtnDeadline } from "@/lib/order-cancel";
-import type { SellerCancelReason } from "@/lib/order-cancel";
+import type { SellerCancelReason, BuyerCancelReason } from "@/lib/order-cancel";
+import {
+  BUYER_SELLER_WARNING_MESSAGE,
+  shouldWarnSellerAboutBuyer,
+} from "@/lib/buyer-purchase-protection";
 
 type OrderActionsProps = {
   orderId: string;
@@ -17,6 +22,7 @@ type OrderActionsProps = {
   codAmount?: number;
   embedded?: boolean;
   showShipForm?: boolean;
+  buyerNotReceivedCount?: number;
 };
 
 export default function OrderActions({
@@ -29,11 +35,13 @@ export default function OrderActions({
   codAmount,
   embedded = false,
   showShipForm = true,
+  buyerNotReceivedCount = 0,
 }: OrderActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [buyerCancelDialogOpen, setBuyerCancelDialogOpen] = useState(false);
 
   async function patchOrder(body: Record<string, unknown>) {
     setLoading(true);
@@ -59,11 +67,23 @@ export default function OrderActions({
     return patchOrder({ status: newStatus });
   }
 
-  if (status === "COMPLETED" || status === "CANCELLED") return null;
+  if (
+    status === "COMPLETED" ||
+    status === "CANCELLED" ||
+    status === "NOT_RECEIVED_BY_BUYER"
+  ) {
+    return null;
+  }
 
-  async function cancelAsBuyer() {
-    if (!confirm("Скасувати це замовлення?")) return;
-    await updateStatus("CANCELLED");
+  async function cancelAsBuyer(reason: BuyerCancelReason, note: string) {
+    const ok = await patchOrder({
+      status: "CANCELLED",
+      cancelReason: reason,
+      cancelReasonNote: note,
+    });
+    if (ok) {
+      setBuyerCancelDialogOpen(false);
+    }
   }
 
   async function cancelAsSeller(reason: SellerCancelReason, note: string) {
@@ -77,14 +97,32 @@ export default function OrderActions({
     }
   }
 
+  async function markNotReceivedByBuyer() {
+    const confirmed = confirm(
+      "Підтвердити, що покупець не забрав посилку з Nova Poshta?\n\nЗамовлення отримає статус «Не отримано покупцем», товар повернеться на склад."
+    );
+    if (!confirmed) return;
+
+    await patchOrder({ action: "not_received_by_buyer" });
+  }
+
   const showTtnDeadline =
     isSeller &&
     createdAt &&
     (status === "PENDING" || status === "CONFIRMED") &&
     !isPastTtnDeadline(createdAt);
 
+  const showBuyerWarning =
+    isSeller && shouldWarnSellerAboutBuyer(buyerNotReceivedCount);
+
   return (
     <div className={embedded ? "" : "mt-3"}>
+      {showBuyerWarning && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          ⚠️ {BUYER_SELLER_WARNING_MESSAGE}
+        </div>
+      )}
+
       {isSeller && status === "PENDING" && (
         <p className="mb-2 text-xs text-gray-500">
           Підтвердіть замовлення, оформіть посилку в Nova Poshta з контролем оплати та вкажіть ТТН.
@@ -129,10 +167,22 @@ export default function OrderActions({
             {isBuyer ? "Отримав і оплатив на NP" : "Покупець отримав"}
           </button>
         )}
+        {isSeller && status === "SHIPPED" && (
+          <button
+            type="button"
+            onClick={markNotReceivedByBuyer}
+            disabled={loading}
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+          >
+            Покупець не забрав посилку
+          </button>
+        )}
         {status !== "SHIPPED" && (
           <button
             type="button"
-            onClick={() => (isSeller ? setCancelDialogOpen(true) : cancelAsBuyer())}
+            onClick={() =>
+              isSeller ? setCancelDialogOpen(true) : setBuyerCancelDialogOpen(true)
+            }
             disabled={loading}
             className="rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
@@ -140,6 +190,17 @@ export default function OrderActions({
           </button>
         )}
       </div>
+
+      <OrderBuyerCancelDialog
+        open={buyerCancelDialogOpen}
+        loading={loading}
+        error={error}
+        onClose={() => {
+          setBuyerCancelDialogOpen(false);
+          setError("");
+        }}
+        onConfirm={cancelAsBuyer}
+      />
 
       <OrderSellerCancelDialog
         open={cancelDialogOpen}

@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import AdminUkraineMap from "@/components/AdminUkraineMap";
 import { authOptions, requireAdmin } from "@/lib/auth";
 import { getAdminCityMapData } from "@/lib/admin-stats";
+import { getSiteTrafficStats } from "@/lib/site-traffic";
 import { prisma } from "@/lib/prisma";
 import { countOpenSupportTickets } from "@/lib/support-tickets";
 import { DEMO_SELLER_EMAILS } from "@/lib/purge-demo-listings";
@@ -30,6 +31,7 @@ export default async function AdminPage() {
     pendingWithdrawals,
     cityMap,
     demoListingsCount,
+    siteTraffic,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.listing.count(),
@@ -43,6 +45,7 @@ export default async function AdminPage() {
     prisma.listing.count({
       where: { seller: { email: { in: [...DEMO_SELLER_EMAILS] } } },
     }),
+    getSiteTrafficStats(prisma),
   ]);
 
   return (
@@ -77,16 +80,24 @@ export default async function AdminPage() {
         </Link>
       )}
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
           { label: "Користувачі", value: usersCount },
           { label: "Оголошення", value: listingsCount },
           { label: "Активні", value: activeListings },
           { label: "Замовлення", value: ordersCount },
+          {
+            label: "Відвідувачі сьогодні",
+            value: siteTraffic.todayUniqueVisitors,
+            hint: `${siteTraffic.todayPageViews} переглядів`,
+          },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border bg-white p-4 text-center">
-            <p className="text-2xl font-bold text-brand-700">{stat.value}</p>
+            <p className="text-2xl font-bold text-brand-700">{stat.value.toLocaleString("uk-UA")}</p>
             <p className="text-sm text-gray-500">{stat.label}</p>
+            {"hint" in stat && stat.hint ? (
+              <p className="mt-1 text-xs text-gray-400">{stat.hint}</p>
+            ) : null}
           </div>
         ))}
       </div>
@@ -102,7 +113,7 @@ export default async function AdminPage() {
         >
           <h2 className="mb-1 text-lg font-semibold">📊 Статистика платформи</h2>
           <p className="text-sm text-gray-500">
-            Продажі, графіки активності, таблиця по періодах
+            Реєстрації, відвідувачі сайту, активні користувачі, заробіток
           </p>
         </Link>
 
@@ -146,6 +157,16 @@ export default async function AdminPage() {
           <h2 className="mb-1 text-lg font-semibold">🛒 Замовлення</h2>
           <p className="text-sm text-gray-500">
             Список замовлень з номерами ORD-10001 …
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/buyers-not-received"
+          className="rounded-xl border border-amber-100 bg-white p-6 transition-shadow hover:shadow-md"
+        >
+          <h2 className="mb-1 text-lg font-semibold">📭 Неотримані посилки</h2>
+          <p className="text-sm text-gray-500">
+            Покупці, які не забирали посилки · блокування покупок
           </p>
         </Link>
 

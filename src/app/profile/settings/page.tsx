@@ -7,6 +7,7 @@ import { formatViews } from "@/lib/utils";
 import ProfileForm from "@/components/ProfileForm";
 import PasswordChangeForm from "@/components/PasswordChangeForm";
 import SellerListingCard from "@/components/SellerListingCard";
+import BuyerPurchaseStatusNotice from "@/components/BuyerPurchaseStatusNotice";
 
 export default async function ProfileSettingsPage() {
   const session = await getServerSession(authOptions);
@@ -74,6 +75,10 @@ export default async function ProfileSettingsPage() {
             }}
           />
           <PasswordChangeForm />
+          <BuyerPurchaseStatusNotice
+            userId={user.id}
+            listingCount={user.listings.length}
+          />
         </div>
 
         <div className="lg:col-span-2">
@@ -82,12 +87,20 @@ export default async function ProfileSettingsPage() {
               <p className="text-sm text-gray-600">Усього переглядів ваших товарів</p>
               <p className="text-2xl font-bold text-brand-800">👁 {formatViews(totalViews)}</p>
             </div>
-            <Link
-              href="/listings/new"
-              className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700"
-            >
-              + Додати
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/profile/import"
+                className="text-sm border border-brand-200 bg-brand-50 text-brand-800 px-3 py-1.5 rounded-lg hover:bg-brand-100"
+              >
+                📥 Prom
+              </Link>
+              <Link
+                href="/listings/new"
+                className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700"
+              >
+                + Додати
+              </Link>
+            </div>
           </div>
 
           <h2 className="text-lg font-semibold mb-4">Мої оголошення ({user.listings.length})</h2>

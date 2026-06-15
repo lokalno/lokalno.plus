@@ -13,6 +13,8 @@ import OrderActions from "@/components/OrderActions";
 import { OrderTrackingInfo } from "@/components/OrderShipForm";
 import OrderPaymentInfo from "@/components/OrderPaymentInfo";
 import ReviewForm from "@/components/ReviewForm";
+import OrderReturnRequestButton from "@/components/OrderReturnRequestButton";
+import { getReturnReasonLabel } from "@/lib/order-return";
 
 export type OrderListItem = {
   id: string;
@@ -30,6 +32,12 @@ export type OrderListItem = {
   cancelledAt?: Date | string | null;
   novaPoshtaTtn?: string | null;
   shippedAt?: Date | string | null;
+  completedAt?: Date | string | null;
+  returnRequestedAt?: Date | string | null;
+  returnReason?: string | null;
+  returnReasonNote?: string | null;
+  variantColor?: string | null;
+  variantSize?: string | null;
   createdAt: Date | string;
   listing: {
     id: string;
@@ -38,7 +46,7 @@ export type OrderListItem = {
     photos: string;
     itemLocation?: string | null;
   };
-  buyer: { name: string };
+  buyer: { name: string; buyerNotReceivedCount?: number };
   seller: { name: string; storeName?: string | null };
   recipientFirstName: string;
   recipientLastName: string;
@@ -139,12 +147,23 @@ export default function OrdersList({
                 )}
               </p>
               <p className="text-xs text-gray-400">
+                Замовлено:{" "}
                 {formatDate(
                   typeof order.createdAt === "string"
                     ? new Date(order.createdAt)
                     : order.createdAt
                 )}
               </p>
+              {order.completedAt && (
+                <p className="text-xs text-gray-500">
+                  Отримано:{" "}
+                  {formatDate(
+                    typeof order.completedAt === "string"
+                      ? new Date(order.completedAt)
+                      : order.completedAt
+                  )}
+                </p>
+              )}
               <p className="mt-1 text-sm">
                 Статус:{" "}
                 <span className="font-medium">
@@ -170,6 +189,11 @@ export default function OrdersList({
               {deliveryLines.length > 0 && (
                 <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700">
                   <p className="mb-1 font-medium text-blue-900">📦 Доставка Nova Poshta</p>
+                  {order.variantColor && order.variantSize && (
+                    <p>
+                      Варіант: {order.variantColor}, розмір {order.variantSize}
+                    </p>
+                  )}
                   {deliveryLines.map((line) => (
                     <p key={line}>{line}</p>
                   ))}
@@ -180,7 +204,44 @@ export default function OrdersList({
                 <OrderTrackingInfo ttn={order.novaPoshtaTtn} />
               )}
 
-              {order.status === "CANCELLED" && cancelReasonLabel && (sellerView || isSeller) && (
+              {isBuyer && !sellerView && (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  <p className="font-medium text-gray-900">Історія покупки</p>
+                  <p className="mt-1">
+                    Продавець:{" "}
+                    <Link href={`/sellers/${order.sellerId}`} className="text-brand-700 hover:underline">
+                      {getSellerDisplayName(order.seller)}
+                    </Link>
+                  </p>
+                  <p className="mt-1">Товар: {order.listing.title}</p>
+                  <Link
+                    href={`/messages?listingId=${order.listing.id}&partnerId=${order.sellerId}`}
+                    className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline"
+                  >
+                    Зв&apos;язатися з продавцем →
+                  </Link>
+                </div>
+              )}
+
+              {sellerView && order.completedAt && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Отримано покупцем:{" "}
+                  {formatDate(
+                    typeof order.completedAt === "string"
+                      ? new Date(order.completedAt)
+                      : order.completedAt
+                  )}
+                </p>
+              )}
+
+              {sellerView && order.returnRequestedAt && (
+                <p className="mt-2 text-xs text-violet-700">
+                  ↩️ Запит повернення:{" "}
+                  {getReturnReasonLabel(order.returnReason, order.returnReasonNote)}
+                </p>
+              )}
+
+              {order.status === "CANCELLED" && cancelReasonLabel && (
                 <p className="mt-2 text-xs text-gray-500">Причина: {cancelReasonLabel}</p>
               )}
 
@@ -192,7 +253,23 @@ export default function OrdersList({
                 createdAt={order.createdAt}
                 deliveryLines={deliveryLines}
                 codAmount={orderTotal}
+                buyerNotReceivedCount={
+                  sellerView ? order.buyer.buyerNotReceivedCount ?? 0 : 0
+                }
               />
+
+              {isBuyer && !sellerView && (
+                <OrderReturnRequestButton
+                  orderId={order.id}
+                  listingId={order.listing.id}
+                  sellerId={order.sellerId}
+                  status={order.status}
+                  completedAt={order.completedAt}
+                  returnRequestedAt={order.returnRequestedAt}
+                  returnReason={order.returnReason}
+                  returnReasonNote={order.returnReasonNote}
+                />
+              )}
 
               {canReview && <ReviewForm orderId={order.id} />}
             </div>

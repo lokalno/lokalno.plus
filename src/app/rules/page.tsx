@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getSiteSettings } from "@/lib/site-settings";
 import { DEFAULT_RULES } from "@/lib/moderation";
+import PlatformDisclaimerNotice from "@/components/PlatformDisclaimerNotice";
 
 export default async function RulesPage() {
   const settings = await getSiteSettings();
@@ -9,6 +9,9 @@ export default async function RulesPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Правила користування</h1>
+      <div className="mb-6">
+        <PlatformDisclaimerNotice />
+      </div>
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <pre className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans text-sm">
           {content}

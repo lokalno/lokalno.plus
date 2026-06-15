@@ -8,7 +8,7 @@ export type SellerOrderBucket = SellerOrderFilter | "cancelled";
 export function getSellerOrderBucket(
   order: Pick<OrderListItem, "status" | "paymentStatus" | "novaPoshtaTtn">
 ): SellerOrderBucket {
-  if (order.status === "CANCELLED") return "cancelled";
+  if (order.status === "CANCELLED" || order.status === "NOT_RECEIVED_BY_BUYER") return "cancelled";
   if (order.status === "PENDING") return "new";
   if (isSuccessfulSale(order)) return "completed";
   if (isOrderShipped(order)) return "sent";
@@ -49,7 +49,9 @@ export const SELLER_ORDER_STATUS_STYLES: Record<
 export function getSellerOrderCounts(
   orders: Pick<OrderListItem, "status" | "paymentStatus">[]
 ) {
-  const active = orders.filter((order) => order.status !== "CANCELLED");
+  const active = orders.filter(
+    (order) => order.status !== "CANCELLED" && order.status !== "NOT_RECEIVED_BY_BUYER"
+  );
 
   return {
     total: active.length,
@@ -57,17 +59,23 @@ export function getSellerOrderCounts(
     processing: active.filter((order) => getSellerOrderBucket(order) === "processing").length,
     sent: active.filter((order) => getSellerOrderBucket(order) === "sent").length,
     completed: active.filter((order) => getSellerOrderBucket(order) === "completed").length,
-    cancelled: orders.filter((order) => order.status === "CANCELLED").length,
+    cancelled: orders.filter(
+      (order) => order.status === "CANCELLED" || order.status === "NOT_RECEIVED_BY_BUYER"
+    ).length,
   };
 }
 
 export function filterSellerOrders(orders: OrderListItem[], filter: SellerOrderFilter) {
   if (filter === "cancelled") {
-    return orders.filter((order) => order.status === "CANCELLED");
+    return orders.filter(
+      (order) => order.status === "CANCELLED" || order.status === "NOT_RECEIVED_BY_BUYER"
+    );
   }
 
   if (filter === "all") {
-    return orders.filter((order) => order.status !== "CANCELLED");
+    return orders.filter(
+      (order) => order.status !== "CANCELLED" && order.status !== "NOT_RECEIVED_BY_BUYER"
+    );
   }
 
   return orders.filter((order) => getSellerOrderBucket(order) === filter);

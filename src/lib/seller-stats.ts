@@ -72,6 +72,26 @@ export function formatMemberSinceFull(date: Date): string {
   }).format(date);
 }
 
+/** «На Lokalno з червня 2026» */
+export function formatMemberSinceMonthYear(date: Date): string {
+  const formatted = new Intl.DateTimeFormat("uk-UA", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return `На Lokalno з ${formatted}`;
+}
+
+export function getDaysOnSite(date: Date, now = new Date()): number {
+  const ms = now.getTime() - date.getTime();
+  return Math.max(1, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+export function formatDaysOnSiteLabel(days: number): string {
+  if (days === 1) return "1 день";
+  if (days >= 2 && days <= 4) return `${days} дні`;
+  return `${days} днів`;
+}
+
 export function formatMemberTenure(date: Date): string {
   const now = new Date();
   let years = now.getFullYear() - date.getFullYear();

@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 
-const INACTIVE_ORDER_STATUSES = ["CANCELLED", "COMPLETED"] as const;
+const INACTIVE_ORDER_STATUSES = ["CANCELLED", "COMPLETED", "NOT_RECEIVED_BY_BUYER"] as const;
 
 export async function deleteListingById(
   prisma: PrismaClient,

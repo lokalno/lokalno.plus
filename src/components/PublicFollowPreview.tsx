@@ -17,18 +17,18 @@ export default function PublicFollowPreview({
         : "підписників";
 
   return (
-    <div className="mt-3">
+    <div className={onDark ? "" : "mt-3"}>
       <button
         type="button"
         disabled
         aria-hidden
-        className={`text-sm px-4 py-2 rounded-lg border font-medium cursor-default ${
+        className={`cursor-default font-semibold ${
           onDark
-            ? "border-white/30 bg-white/10 text-white opacity-90"
-            : "border-brand-600 bg-brand-600 text-white opacity-90"
+            ? "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-2.5 text-xs leading-none text-white opacity-90 shadow-md md:h-9 md:rounded-xl md:px-3.5 md:text-sm"
+            : "rounded-lg border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white opacity-90"
         }`}
       >
-        📌 Підписатися
+        {onDark ? "+ Підписатися" : "📌 Підписатися"}
       </button>
       {!hideFollowerCount && (
         <p className={`text-sm mt-1.5 ${onDark ? "text-white/70" : "text-gray-500"}`}>

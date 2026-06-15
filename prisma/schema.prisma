@@ -21,6 +21,10 @@ model User {
   role             String    @default("USER")
   banned           Boolean   @default(false)
   bannedReason     String?
+  buyerNotReceivedCount Int  @default(0)
+  buyerPurchasesBlocked Boolean @default(false)
+  buyerPurchasesBlockedUntil DateTime?
+  buyerPurchasesBlockedReason String?
   balance          Float     @default(0)
   payoutCardHolder String?
   payoutCardNumber String?
@@ -42,6 +46,7 @@ model User {
   walletTransactions WalletTransaction[]
   withdrawals        Withdrawal[]
   priceOffers        PriceOffer[]
+  promImportSessions PromImportSession[]
 }
 
 model SellerFollow {
@@ -107,6 +112,7 @@ model Listing {
   price       Float
   category    String
   brand       String?
+  itemSize    String?
   condition   String
   city        String
   itemLocation String?
@@ -135,11 +141,38 @@ model Listing {
   favorites        Favorite[]
   reviews          Review[]
   allowPriceOffers Boolean      @default(false)
+  allowSelfPickup  Boolean      @default(false)
+  variants         String?
   priceOffers      PriceOffer[]
+  promImportKey    String?
+  promUniqueId     String?
+  promProductId    String?
+  promSku          String?
+  promColor            String?
+  promSize             String?
+  promVariantGroupId   String?
+  promCharacteristics  Json?
 
+  @@unique([sellerId, promImportKey])
   @@index([status, createdAt])
   @@index([status, city])
   @@index([status, category])
+  @@index([sellerId, status])
+}
+
+model PromImportSession {
+  id         String   @id @default(cuid())
+  sellerId   String
+  seller     User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  fileHash   String
+  fileName   String?
+  totalRows  Int
+  nextOffset Int      @default(0)
+  status     String   @default("IN_PROGRESS")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([sellerId, fileHash])
   @@index([sellerId, status])
 }
 
@@ -186,6 +219,8 @@ model Order {
   paidAt             DateTime?
   quantity           Int      @default(1)
   unitPrice          Float?
+  variantColor       String?
+  variantSize        String?
   priceOfferId       String?
   cancelledById      String?
   cancelledByRole    String?
@@ -194,6 +229,11 @@ model Order {
   cancelledAt        DateTime?
   novaPoshtaTtn      String?
   shippedAt          DateTime?
+  completedAt        DateTime?
+  returnRequestedAt  DateTime?
+  returnReason       String?
+  returnReasonNote   String?
+  notReceivedAt      DateTime?
   createdAt          DateTime @default(now())
   priceOffer         PriceOffer?
 
@@ -284,4 +324,21 @@ model Withdrawal {
   adminNote    String?
   createdAt    DateTime  @default(now())
   processedAt  DateTime?
+}
+
+model SiteTrafficDay {
+  day            DateTime @id @db.Date
+  pageViews      Int      @default(0)
+  uniqueVisitors Int      @default(0)
+}
+
+model SiteTrafficVisitor {
+  id        String   @id @default(cuid())
+  day       DateTime @db.Date
+  visitorId String
+  createdAt DateTime @default(now())
+
+  @@unique([day, visitorId])
+  @@index([day])
+  @@index([visitorId])
 }

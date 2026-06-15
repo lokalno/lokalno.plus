@@ -1,3 +1,5 @@
+import { getEmailFromAddress, getResendApiKey } from "@/lib/email-config";
+
 type SendEmailInput = {
   to: string;
   subject: string;
@@ -7,19 +9,31 @@ type SendEmailInput = {
 
 export type SendEmailResult = { ok: true } | { ok: false; error: string };
 
-function getFromAddress(): string | null {
-  const from = process.env.EMAIL_FROM?.trim();
-  return from || null;
+function parseResendError(data: unknown, status: number): string {
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    if (typeof record.message === "string" && record.message.trim()) {
+      return record.message;
+    }
+  }
+  return `Resend HTTP ${status}`;
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = getFromAddress();
+  const apiKey = getResendApiKey();
+  const from = getEmailFromAddress();
 
-  if (!apiKey || !from) {
+  if (!apiKey) {
     return {
       ok: false,
-      error: "Email не налаштовано (RESEND_API_KEY, EMAIL_FROM)",
+      error: "Email не налаштовано: додайте RESEND_API_KEY у Vercel",
+    };
+  }
+
+  if (!from) {
+    return {
+      ok: false,
+      error: "Email не налаштовано: додайте EMAIL_FROM у Vercel",
     };
   }
 
@@ -41,9 +55,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      const message =
-        typeof data.message === "string" ? data.message : `HTTP ${res.status}`;
-      return { ok: false, error: message };
+      return { ok: false, error: parseResendError(data, res.status) };
     }
 
     return { ok: true };

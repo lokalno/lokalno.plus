@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { getPositiveReviewPercent, getSellerAchievements } from "@/lib/seller-stats";
 import { countsTowardSellerAchievement } from "@/lib/order-cancel";
-import ListingCard from "./ListingCard";
+import SellerListingsCatalog from "./SellerListingsCatalog";
 import SellerListingsInventory from "./SellerListingsInventory";
 import OrdersNavLink from "./OrdersNavLink";
 import type { OrderListItem } from "./OrdersList";
@@ -29,6 +29,7 @@ type Listing = {
   photos: string;
   createdAt: Date;
   views: number;
+  category: string;
   itemLocation?: string | null;
   seller: { name: string };
 };
@@ -186,11 +187,7 @@ export default function SellerProfileTabs(props: SellerProfileTabsProps) {
           ) : props.isOwner ? (
             <SellerListingsInventory listings={props.listings} />
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-3">
-              {props.listings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            <SellerListingsCatalog listings={props.listings} />
           )}
         </section>
       )}

@@ -19,7 +19,7 @@ type SellerAnalyticsDashboardProps = {
   totalViews: number;
 };
 
-const PERIODS: SellerStatsPeriod[] = ["day", "week", "month", "year"];
+const PERIODS: SellerStatsPeriod[] = ["day", "week", "month", "year", "years"];
 
 function AnalyticsBarChart({
   title,
@@ -105,7 +105,7 @@ export default function SellerAnalyticsDashboard({
               Дохід і активність продажів за обраний період
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {PERIODS.map((value) => {
               const active = period === value;
               return (

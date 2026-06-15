@@ -187,3 +187,36 @@ export async function notifyBuyerOrderShipped(
     },
   });
 }
+
+export function buildBuyerReturnRequestMessage(
+  orderNumber: number,
+  listingTitle: string,
+  reasonLabel: string
+): string {
+  return `↩️ Покупець запросив повернення ${orderRef(orderNumber)} «${listingTitle}».\nПричина: ${reasonLabel}\nЗв'яжіться з покупцем у повідомленнях.`;
+}
+
+export async function notifySellerReturnRequested(
+  tx: Prisma.TransactionClient,
+  params: {
+    listingId: string;
+    sellerId: string;
+    buyerId: string;
+    listingTitle: string;
+    orderNumber: number;
+    reasonLabel: string;
+  }
+): Promise<void> {
+  await tx.message.create({
+    data: {
+      listingId: params.listingId,
+      senderId: params.buyerId,
+      receiverId: params.sellerId,
+      content: buildBuyerReturnRequestMessage(
+        params.orderNumber,
+        params.listingTitle,
+        params.reasonLabel
+      ),
+    },
+  });
+}

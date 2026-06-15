@@ -24,6 +24,26 @@ export const SELLER_CANCEL_REASON_LABELS: Record<SellerCancelReason, string> = {
   OTHER: "Інша причина",
 };
 
+export const BUYER_CANCEL_REASONS = [
+  "CHANGED_MIND",
+  "FOUND_CHEAPER",
+  "WRONG_ORDER",
+  "SELLER_TOO_SLOW",
+  "DELIVERY_ISSUE",
+  "OTHER",
+] as const;
+
+export type BuyerCancelReason = (typeof BUYER_CANCEL_REASONS)[number];
+
+export const BUYER_CANCEL_REASON_LABELS: Record<BuyerCancelReason, string> = {
+  CHANGED_MIND: "Передумав(ла)",
+  FOUND_CHEAPER: "Знайшов(ла) дешевше",
+  WRONG_ORDER: "Помилково оформив(ла) замовлення",
+  SELLER_TOO_SLOW: "Забагато чекав(ла) на відповідь продавця",
+  DELIVERY_ISSUE: "Не підходить доставка",
+  OTHER: "Інша причина",
+};
+
 export const AUTO_CANCEL_REASON = "AUTO_NO_TTN";
 
 export const AUTO_CANCEL_REASON_LABEL =
@@ -50,11 +70,22 @@ export function isSellerCancelReason(value: string): value is SellerCancelReason
   return (SELLER_CANCEL_REASONS as readonly string[]).includes(value);
 }
 
+export function isBuyerCancelReason(value: string): value is BuyerCancelReason {
+  return (BUYER_CANCEL_REASONS as readonly string[]).includes(value);
+}
+
 export function getCancelReasonLabel(reason: string | null | undefined, note?: string | null): string {
   if (!reason) return "";
   if (reason === AUTO_CANCEL_REASON) return AUTO_CANCEL_REASON_LABEL;
   if (isSellerCancelReason(reason)) {
     const base = SELLER_CANCEL_REASON_LABELS[reason];
+    if (reason === "OTHER" && note?.trim()) {
+      return `${base}: ${note.trim()}`;
+    }
+    return base;
+  }
+  if (isBuyerCancelReason(reason)) {
+    const base = BUYER_CANCEL_REASON_LABELS[reason];
     if (reason === "OTHER" && note?.trim()) {
       return `${base}: ${note.trim()}`;
     }
@@ -66,6 +97,17 @@ export function getCancelReasonLabel(reason: string | null | undefined, note?: s
 export function validateSellerCancelInput(input: OrderCancelInput): { ok: true } | { ok: false; error: string } {
   const reason = input.cancelReason?.trim();
   if (!reason || !isSellerCancelReason(reason)) {
+    return { ok: false, error: "Оберіть причину скасування" };
+  }
+  if (reason === "OTHER" && !input.cancelReasonNote?.trim()) {
+    return { ok: false, error: "Опишіть причину скасування" };
+  }
+  return { ok: true };
+}
+
+export function validateBuyerCancelInput(input: OrderCancelInput): { ok: true } | { ok: false; error: string } {
+  const reason = input.cancelReason?.trim();
+  if (!reason || !isBuyerCancelReason(reason)) {
     return { ok: false, error: "Оберіть причину скасування" };
   }
   if (reason === "OTHER" && !input.cancelReasonNote?.trim()) {

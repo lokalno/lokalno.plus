@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSellerOrderCounts } from "@/lib/seller-orders";
 import { getSellerCabinetBadges } from "@/lib/seller-cabinet-badges";
+import { SELLER_ORDER_HISTORY_DAYS, getHistoryCutoffDate } from "@/lib/order-history";
 
 export async function getSellerOrdersPageData(userId: string) {
   const [user, orders, badges] = await Promise.all([
@@ -13,10 +14,13 @@ export async function getSellerOrdersPageData(userId: string) {
       },
     }),
     prisma.order.findMany({
-      where: { sellerId: userId },
+      where: {
+        sellerId: userId,
+        createdAt: { gte: getHistoryCutoffDate(SELLER_ORDER_HISTORY_DAYS) },
+      },
       include: {
         listing: true,
-        buyer: { select: { name: true } },
+        buyer: { select: { name: true, buyerNotReceivedCount: true } },
         seller: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },

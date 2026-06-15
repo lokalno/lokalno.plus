@@ -153,6 +153,11 @@ export default function OrderDetailsModal({
           {deliveryLines.length > 0 && (
             <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm">
               <p className="mb-2 font-semibold text-blue-900">📦 Доставка Nova Poshta</p>
+              {order.variantColor && order.variantSize && (
+                <p className="text-gray-700">
+                  Варіант: {order.variantColor}, розмір {order.variantSize}
+                </p>
+              )}
               {deliveryLines.map((line) => (
                 <p key={line} className="text-gray-700">
                   {line}
@@ -165,7 +170,10 @@ export default function OrderDetailsModal({
             <OrderTrackingInfo ttn={order.novaPoshtaTtn} />
           )}
 
-          {isSeller && order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+          {isSeller &&
+            order.status !== "COMPLETED" &&
+            order.status !== "CANCELLED" &&
+            order.status !== "NOT_RECEIVED_BY_BUYER" && (
             <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
               <p className="mb-3 text-sm font-semibold text-gray-900">Дії з замовленням</p>
               <OrderActions
@@ -177,6 +185,7 @@ export default function OrderDetailsModal({
                 deliveryLines={deliveryLines}
                 codAmount={orderTotal}
                 embedded
+                buyerNotReceivedCount={order.buyer.buyerNotReceivedCount ?? 0}
               />
             </div>
           )}

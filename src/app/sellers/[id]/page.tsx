@@ -29,12 +29,6 @@ export default async function SellerPage({ params }: Params) {
         where: { status: "ACTIVE" },
         include: {
           seller: { select: { name: true, storeName: true } },
-          _count: {
-            select: {
-              orders: { where: { paymentStatus: "PAID" } },
-              favorites: true,
-            },
-          },
         },
         orderBy: { createdAt: "desc" },
       },

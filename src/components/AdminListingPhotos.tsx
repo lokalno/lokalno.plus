@@ -5,20 +5,31 @@ import PhotoLightbox from "@/components/PhotoLightbox";
 
 type AdminListingPhotosProps = {
   listingId: string;
+  /** Якщо передано — без окремого fetch на кожен рядок модерації. */
+  initialPhotos?: string[];
 };
 
 function isBrokenPhotoUrl(photo: string): boolean {
   return photo.startsWith("/uploads/");
 }
 
-export default function AdminListingPhotos({ listingId }: AdminListingPhotosProps) {
-  const [photos, setPhotos] = useState<string[]>([]);
+export default function AdminListingPhotos({
+  listingId,
+  initialPhotos,
+}: AdminListingPhotosProps) {
+  const [photos, setPhotos] = useState<string[]>(initialPhotos ?? []);
   const [failed, setFailed] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPhotos === undefined);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
+    if (initialPhotos !== undefined) {
+      setPhotos(initialPhotos);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     fetch(`/api/listings/${listingId}/photos`)
@@ -34,7 +45,7 @@ export default function AdminListingPhotos({ listingId }: AdminListingPhotosProp
     return () => {
       cancelled = true;
     };
-  }, [listingId]);
+  }, [initialPhotos, listingId]);
 
   function markFailed(index: number) {
     setFailed((prev) => new Set(prev).add(index));

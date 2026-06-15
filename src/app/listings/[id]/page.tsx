@@ -6,27 +6,41 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice, formatDate, parsePhotos, formatViews, getTypicalResponseLabel } from "@/lib/utils";
 import { formatListingStock, getListingStockBadgeText, getStockAvailabilityLevel } from "@/lib/listing-stock";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCount } from "@/lib/listing-sales";
-import { CONDITIONS, LISTING_STATUSES } from "@/lib/constants";
+import { getConditionLabel, LISTING_STATUSES } from "@/lib/constants";
 import { formatEngineVolume, formatLoadCapacity, formatVehicleMileage } from "@/lib/vehicle";
 import { getSellerLevel } from "@/lib/seller-stats";
 import { markBuyerPriceOfferStatusRead } from "@/lib/notifications";
 import { getBuyerOfferUiState } from "@/lib/price-offers";
+import { getBuyerOrderLimitSnapshot } from "@/lib/buyer-active-order-limit";
+import {
+  formatBuyerPurchasesBlockedMessage,
+  getBuyerPurchaseBlockSnapshot,
+} from "@/lib/buyer-purchase-protection";
 import OrderCheckoutForm from "@/components/OrderCheckoutForm";
 import ViewTracker from "@/components/ViewTracker";
 import ListingGallery from "@/components/ListingGallery";
 import ShareButton from "@/components/ShareButton";
 import MarkSoldButton from "@/components/MarkSoldButton";
 import DeleteListingButton from "@/components/DeleteListingButton";
+import DuplicateListingButton from "@/components/DuplicateListingButton";
 import ListingCard from "@/components/ListingCard";
 import ListingStockEditor from "@/components/ListingStockEditor";
 import ListingBreadcrumbs from "@/components/ListingBreadcrumbs";
 import ListingDescriptionExpandable from "@/components/ListingDescriptionExpandable";
 import ListingCharacteristics from "@/components/ListingCharacteristics";
+import { buildPromListingSpecs } from "@/lib/prom-listing-specs";
 import ListingContactButton from "@/components/ListingContactButton";
 import ListingSafeDealBanner from "@/components/ListingSafeDealBanner";
 import ListingSellerPanel from "@/components/ListingSellerPanel";
 import ListingPriceOfferForm from "@/components/ListingPriceOfferForm";
 import ReportButton from "@/components/ReportButton";
+import ListingVariantCheckout from "@/components/ListingVariantCheckout";
+import ListingVariantsStockEditor from "@/components/ListingVariantsStockEditor";
+import {
+  getAvailableColors,
+  listingUsesVariants,
+  parseListingVariants,
+} from "@/lib/listing-variants";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -76,6 +90,8 @@ export default async function ListingPage({ params }: Params) {
 
   const photos = parsePhotos(listing.photos);
   const isOwner = session?.user?.id === listing.sellerId;
+  const parsedVariants = parseListingVariants(listing.variants);
+  const usesVariants = listingUsesVariants(listing);
   const inStock = listing.stock > 0;
   const soldCount = getListingSoldCount(listing);
   const favoriteCount = getListingFavoriteCount(listing);
@@ -177,6 +193,21 @@ export default async function ListingPage({ params }: Params) {
   const offerUiState = getBuyerOfferUiState(buyerOfferForUi);
   const acceptedBuyerOffer = offerUiState === "accepted" ? buyerOfferForUi : null;
 
+  let buyerActiveOrderLimitMessage: string | null = null;
+  let buyerPurchaseBlockMessage: string | null = null;
+  if (canBuy && session?.user?.id) {
+    const [buyerOrderLimit, buyerPurchaseBlock] = await Promise.all([
+      getBuyerOrderLimitSnapshot(session.user.id),
+      getBuyerPurchaseBlockSnapshot(session.user.id),
+    ]);
+    if (!buyerOrderLimit.ok) {
+      buyerActiveOrderLimitMessage = buyerOrderLimit.error ?? null;
+    }
+    if (buyerPurchaseBlock.blocked) {
+      buyerPurchaseBlockMessage = formatBuyerPurchasesBlockedMessage(buyerPurchaseBlock);
+    }
+  }
+
   if (
     session?.user?.id &&
     !isOwner &&
@@ -187,8 +218,26 @@ export default async function ListingPage({ params }: Params) {
     await markBuyerPriceOfferStatusRead(session.user.id, id);
   }
 
+  const checkoutBlockMessage = buyerPurchaseBlockMessage || buyerActiveOrderLimitMessage;
+
+  const promSpecs = buildPromListingSpecs(listing, {
+    usesVariants,
+    hasItemSize: Boolean(listing.itemSize),
+  });
+
   const characteristics = [
-    { label: "Стан", value: CONDITIONS[listing.condition] || listing.condition },
+    { label: "Стан", value: getConditionLabel(listing.condition) },
+    ...(usesVariants
+      ? [
+          {
+            label: "Кольори",
+            value: getAvailableColors(parsedVariants).join(", ") || "немає в наявності",
+          },
+        ]
+      : listing.itemSize
+        ? [{ label: "Розмір", value: listing.itemSize }]
+        : []),
+    ...promSpecs,
     { label: "Виробник", value: listing.brand || "" },
     ...(listing.vehicleYear
       ? [{ label: "Рік випуску", value: String(listing.vehicleYear) }]
@@ -215,9 +264,12 @@ export default async function ListingPage({ params }: Params) {
     ...(listing.partPopular ? [{ label: "Популярне", value: listing.partPopular }] : []),
     { label: "Категорія", value: listing.category },
     { label: "Місто", value: listing.city },
+    ...(listing.allowSelfPickup
+      ? [{ label: "Самовивіз", value: "Доступний" }]
+      : []),
     {
       label: "Наявність",
-      value: inStock ? formatListingStock(listing.stock) : "Немає в наявності",
+      value: inStock ? formatListingStock(listing.stock) : "Розпродано",
     },
     { label: "Продано", value: soldCount > 0 ? formatSoldCount(soldCount) : "" },
     { label: "Опубліковано", value: formatDate(listing.createdAt) },
@@ -309,6 +361,12 @@ export default async function ListingPage({ params }: Params) {
           </div>
         )}
 
+        {isOwner && usesVariants && (
+          <div className="order-2 lg:order-3 lg:col-start-3 lg:row-start-1">
+            <ListingVariantsStockEditor listingId={listing.id} initialVariants={parsedVariants} />
+          </div>
+        )}
+
         <div className="order-3 min-w-0 lg:order-2 lg:col-start-2 lg:row-start-1">
           <div className="flex flex-wrap items-center gap-2">
             {showTopBadge && (
@@ -354,7 +412,7 @@ export default async function ListingPage({ params }: Params) {
             })()}
             {listing.status === "ACTIVE" && !inStock && (
               <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
-                Немає в наявності
+                Розпродано
               </span>
             )}
           </div>
@@ -373,7 +431,7 @@ export default async function ListingPage({ params }: Params) {
                 }`}
               >
                 <span aria-hidden>📦</span>
-                {inStock ? getListingStockBadgeText(listing.stock) : "Немає в наявності"}
+                {inStock ? getListingStockBadgeText(listing.stock) : "Розпродано"}
               </span>
             )}
             <span className="inline-flex items-center gap-1">
@@ -386,7 +444,7 @@ export default async function ListingPage({ params }: Params) {
             </span>
           </div>
 
-          {isOwner && (
+          {isOwner && !usesVariants && (
             <div className="mt-3">
               <ListingStockEditor
                 listingId={listing.id}
@@ -408,7 +466,23 @@ export default async function ListingPage({ params }: Params) {
               </div>
             )}
 
-            {canBuy && (
+            {canBuy && usesVariants && (
+              <ListingVariantCheckout
+                listingId={listing.id}
+                variants={parsedVariants}
+                unitPrice={acceptedBuyerOffer ? acceptedBuyerOffer.amount : listing.price}
+                priceOfferId={acceptedBuyerOffer?.id}
+                buyLabel={
+                  acceptedBuyerOffer
+                    ? `Купити за ${formatPrice(acceptedBuyerOffer.amount)}`
+                    : undefined
+                }
+                compact
+                activeOrderLimitMessage={checkoutBlockMessage}
+              />
+            )}
+
+            {canBuy && !usesVariants && (
               <OrderCheckoutForm
                 listingId={listing.id}
                 maxStock={listing.stock}
@@ -420,6 +494,7 @@ export default async function ListingPage({ params }: Params) {
                     : undefined
                 }
                 compact
+                activeOrderLimitMessage={checkoutBlockMessage}
               />
             )}
 
@@ -453,7 +528,7 @@ export default async function ListingPage({ params }: Params) {
                 />
               )}
 
-            {!session && listing.status === "ACTIVE" && (
+            {!session && !isOwner && listing.status === "ACTIVE" && inStock && (
               <>
                 <Link
                   href={`/login?callbackUrl=${encodeURIComponent(`/listings/${listing.id}`)}`}
@@ -470,9 +545,15 @@ export default async function ListingPage({ params }: Params) {
               </>
             )}
 
+            {!session && !isOwner && listing.status === "ACTIVE" && !inStock && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm text-gray-600">
+                Товар розпроданий
+              </div>
+            )}
+
             {session && !isOwner && listing.status === "ACTIVE" && !inStock && (
               <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm text-gray-600">
-                Товар тимчасово відсутній
+                Товар розпроданий
               </div>
             )}
 
@@ -505,7 +586,7 @@ export default async function ListingPage({ params }: Params) {
                       >
                         Редагувати
                       </Link>
-                      <MarkSoldButton listingId={listing.id} />
+                      <MarkSoldButton listingId={listing.id} disabled={!inStock} />
                     </div>
                   ) : (
                     <Link
@@ -515,6 +596,7 @@ export default async function ListingPage({ params }: Params) {
                       Редагувати
                     </Link>
                   )}
+                  <DuplicateListingButton listingId={listing.id} />
                   <DeleteListingButton
                     listingId={listing.id}
                     listingTitle={listing.title}

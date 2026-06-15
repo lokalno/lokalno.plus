@@ -46,11 +46,27 @@ export const CATEGORIES = [
   "Інше",
 ] as const;
 
+export const LISTING_TITLE_MAX = 80;
+
 export const MAX_LISTING_PHOTOS = 10;
+
+/** Max listing video file size on upload (MP4 / WebM / MOV). */
+export const MAX_LISTING_VIDEO_BYTES = 25 * 1024 * 1024;
 
 /** Target size per listing photo after client compression (~180 KB). */
 export const LISTING_PHOTO_MAX_BYTES = 180_000;
 export const LISTING_PHOTO_MAX_WIDTH = 1200;
+
+/** Банер профілю після стиснення (~200 KB). */
+export const BANNER_PHOTO_MAX_BYTES = 200_000;
+export const BANNER_PHOTO_MAX_WIDTH = 1600;
+
+/** Аватар після стиснення (~120 KB). */
+export const AVATAR_PHOTO_MAX_BYTES = 120_000;
+export const AVATAR_PHOTO_MAX_WIDTH = 800;
+
+/** Максимум тіла файлу на /api/upload після стиснення на клієнті. */
+export const UPLOAD_MAX_BYTES = 220_000;
 
 export const CONDITIONS: Record<string, string> = {
   NEW: "Нове",
@@ -58,6 +74,19 @@ export const CONDITIONS: Record<string, string> = {
   GOOD: "Добрий стан",
   FAIR: "Задовільний",
 };
+
+/** Стан для одягу та взуття — з варіантом «Б/у». */
+export const CLOTHING_CONDITIONS: Record<string, string> = {
+  NEW: "Нове",
+  LIKE_NEW: "Вживане — як нове",
+  USED: "Б/у",
+  GOOD: "Добрий стан",
+  FAIR: "Задовільний",
+};
+
+export function getConditionLabel(condition: string): string {
+  return CLOTHING_CONDITIONS[condition] || CONDITIONS[condition] || condition;
+}
 
 export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[]> = {
   Транспорт: ["Легкові авто", "Мото", "Вантажівки", "Запчастини", "Сільськогосподарська техніка", "Інше"],
@@ -85,7 +114,7 @@ export const CATEGORY_SUBCATEGORIES: Record<(typeof CATEGORIES)[number], string[
     "Мережеве обладнання",
     "Інше",
   ],
-  "Дім і сад": ["Меблі", "Кухня", "Інструменти", "Сад", "Декор"],
+  "Дім і сад": ["Меблі", "Кухня", "Побутова хімія", "Інструменти", "Сад", "Декор"],
   "Одяг і взуття": ["Чоловіче", "Жіноче", "Дитяче", "Взуття", "Аксесуари"],
   "Для дітей": [
     "Дитячий одяг",
@@ -311,6 +340,12 @@ export const CATEGORY_DETAIL_SUBCATEGORIES: Partial<
       "Спортивний одяг": ["Спортивні костюми", "Легінси", "Топи", "Кросівки"],
       "Premium та бренди": ["Брендовий одяг", "Дизайнерський одяг", "Вінтаж"],
     },
+    Аксесуари: {
+      "Чоловічі сумки": ["Рюкзаки", "Гаманці", "Поясні сумки", "Сумки"],
+      "Жіночі сумки": ["Сумки", "Клатчі", "Шопери", "Рюкзаки"],
+      "Годинники та прикраси": ["Годинники", "Браслети", "Кабелька", "Прикраси"],
+      "Інше": ["Ремені", "Окуляри", "Шарфи", "Шапки", "Рукавички", "Кепки"],
+    },
   },
   "Для дітей": {
     "Дитячий одяг": [
@@ -491,6 +526,7 @@ export const ORDER_STATUSES: Record<string, string> = {
   SHIPPED: "Відправлено",
   COMPLETED: "Завершено",
   CANCELLED: "Скасовано",
+  NOT_RECEIVED_BY_BUYER: "Не отримано покупцем",
 };
 
 export const REPORT_REASONS = [

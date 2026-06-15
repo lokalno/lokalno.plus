@@ -22,6 +22,7 @@ import {
 import { buildPartsWhere, hasPartsSearchFilters, isPartsCatalogContext } from "@/lib/parts";
 import { buildAgriWhere, buildAgriListingCategoryFilter, hasAgriSearchFilters, isAgriCatalogContext } from "@/lib/agri";
 import type { ListingWithSoldCount } from "@/lib/listing-sales";
+import { withListingCoverPhotoOnly } from "@/lib/listing-photos";
 
 type HomeListing = ListingWithSoldCount & {
   id: string;
@@ -273,6 +274,10 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
     dbUnavailable = true;
   }
 
+  recommended = recommended.map(withListingCoverPhotoOnly);
+  popularNearby = popularNearby.map(withListingCoverPhotoOnly);
+  listings = listings.map(withListingCoverPhotoOnly);
+
   const totalPages = Math.max(1, Math.ceil(total / LISTINGS_PER_PAGE));
   const baseParams: Record<string, string> = {};
   if (params.city) baseParams.city = params.city;
@@ -374,9 +379,9 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
       )}
 
       {(hasActiveFilters(params) || page > 1) && (
-        <section>
+        <section id="catalog-results" className="scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-base xl:text-lg font-bold text-gray-900">
               {total} {total === 1 ? "оголошення" : "оголошень"}
               {params.city ? ` · ${params.city.split(",")[0]}` : ""}
               {params.category ? ` · ${params.category}` : ""}
@@ -398,9 +403,12 @@ export default async function HomeCatalogResults({ params }: { params: HomeCatal
           </div>
 
           {listings.length === 0 ? (
-            <div className="bg-white rounded-xl border p-12 text-center text-gray-500">
+            <div className="min-h-[30vh] xl:min-h-0 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-8 xl:p-12 text-center text-gray-500">
               <p className="text-4xl mb-3">🔍</p>
-              <p>Оголошень не знайдено</p>
+              <p className="text-base font-medium text-gray-700">Оголошень не знайдено</p>
+              <p className="mt-2 text-sm text-gray-400">
+                Спробуйте іншу підкатегорію або скиньте фільтри вище
+              </p>
             </div>
           ) : (
             <>

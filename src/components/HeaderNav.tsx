@@ -77,7 +77,7 @@ export default function HeaderNav({
   const isAdmin = session?.user?.role === "ADMIN";
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { counts } = useHeaderNotifications(Boolean(session?.user?.id));
+  const { counts } = useHeaderNotifications();
   const liveMessages = session?.user?.id ? counts.unreadMessages : unreadCount;
   const livePriceOffers = session?.user?.id ? counts.unreadPriceOffers : unreadPriceOffers;
   const liveTotal = liveMessages + livePriceOffers;
@@ -95,7 +95,7 @@ export default function HeaderNav({
       <OrdersNavLink href={ordersHref} className="text-gray-700 py-2 block" onNavigate={() => setOpen(false)}>
         Мої замовлення
       </OrdersNavLink>
-      <Link href="/profile/wallet" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>💰 Баланс</Link>
+      <Link href="/profile/wallet" className="text-gray-700 py-2 block" onClick={() => setOpen(false)}>📊 Заробіток</Link>
       <Link href="/messages" className="relative flex items-center gap-2 py-2 text-gray-700" onClick={() => setOpen(false)}>
         <span className="relative inline-flex">
           💬
@@ -234,7 +234,7 @@ export default function HeaderNav({
                     ♡ Обране{favoriteCount > 0 ? ` (${favoriteCount})` : ""}
                   </Link>
                   <Link href="/profile/settings" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>Налаштування</Link>
-                  <Link href="/profile/wallet" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>💰 Баланс</Link>
+                  <Link href="/profile/wallet" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setProfileOpen(false)}>📊 Заробіток</Link>
                   <OrdersNavLink href={ordersHref} className="block px-4 py-2 hover:bg-gray-50" onNavigate={() => setProfileOpen(false)}>
                     🛒 Мої замовлення
                   </OrdersNavLink>
@@ -275,11 +275,14 @@ export default function HeaderNav({
 
       <button
         type="button"
-        className="xl:hidden p-2 rounded-xl border border-gray-200"
+        className="xl:hidden p-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
         onClick={() => setOpen(!open)}
         aria-label="Меню"
+        aria-expanded={open}
       >
-        ☰
+        <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
       </button>
 
       {open && (

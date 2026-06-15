@@ -3,13 +3,14 @@ import { getSellerOrderBucket } from "@/lib/seller-orders";
 import { getOrderTotalAmount, getOrderQuantity } from "@/lib/order-total";
 import { isSuccessfulSale } from "@/lib/order-cancel";
 import { ORDER_PAYMENT_NP_COD_RECEIVED } from "@/lib/order-payment";
-export type SellerStatsPeriod = "day" | "week" | "month" | "year";
+export type SellerStatsPeriod = "day" | "week" | "month" | "year" | "years";
 
 export const SELLER_STATS_PERIOD_LABELS: Record<SellerStatsPeriod, string> = {
   day: "1 день",
   week: "7 днів",
   month: "Місяць",
   year: "Рік",
+  years: "Роки",
 };
 
 export function getSellerStatsPeriodStart(period: SellerStatsPeriod, now = new Date()): Date {
@@ -24,11 +25,15 @@ export function getSellerStatsPeriodStart(period: SellerStatsPeriod, now = new D
       start.setHours(0, 0, 0, 0);
       return start;
     case "month":
-      start.setDate(start.getDate() - 29);
+      start.setDate(1);
       start.setHours(0, 0, 0, 0);
       return start;
     case "year":
-      start.setDate(start.getDate() - 364);
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      return start;
+    case "years":
+      start.setFullYear(start.getFullYear() - 9, 0, 1);
       start.setHours(0, 0, 0, 0);
       return start;
   }
@@ -53,7 +58,9 @@ export function getSellerPeriodStats(
   const periodStart = getSellerStatsPeriodStart(period, now);
   const inPeriod = orders.filter((order) => getOrderDate(order) >= periodStart);
 
-  const active = inPeriod.filter((order) => order.status !== "CANCELLED");
+  const active = inPeriod.filter(
+    (order) => order.status !== "CANCELLED" && order.status !== "NOT_RECEIVED_BY_BUYER"
+  );
   const newOrders = active.filter((order) => getSellerOrderBucket(order) === "new").length;
   const completedOrders = inPeriod.filter((order) => isSuccessfulSale(order)).length;
   const income = inPeriod

@@ -5,11 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { parsePhotos } from "@/lib/utils";
 import ListingForm from "@/components/ListingForm";
 
-type Params = { params: Promise<{ id: string }> };
+type PageParams = { params: Promise<{ id: string }>; searchParams: Promise<{ duplicated?: string }> };
 
-export default async function EditListingPage({ params }: Params) {
+export default async function EditListingPage({ params, searchParams }: PageParams) {
   const session = await getServerSession(authOptions);
   const { id } = await params;
+  const query = await searchParams;
 
   if (!session) redirect("/login");
 
@@ -20,9 +21,17 @@ export default async function EditListingPage({ params }: Params) {
     redirect("/");
   }
 
+  const showDuplicatedNotice = query.duplicated === "1";
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Редагувати оголошення</h1>
+      {showDuplicatedNotice && (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+          <p className="font-semibold">Оголошення скопійовано.</p>
+          <p className="mt-1">Відредагуйте деталі та опублікуйте.</p>
+        </div>
+      )}
       {parsePhotos(listing.photos).length === 0 && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           У цьому оголошенні немає фото. Додайте хоча б одне зображення нижче і натисніть «Зберегти
@@ -47,6 +56,7 @@ export default async function EditListingPage({ params }: Params) {
           stock: listing.stock,
           photos: parsePhotos(listing.photos),
           allowPriceOffers: listing.allowPriceOffers,
+          allowSelfPickup: listing.allowSelfPickup,
           vehicleYear: listing.vehicleYear,
           vehicleFuel: listing.vehicleFuel,
           vehicleTransmission: listing.vehicleTransmission,
@@ -58,6 +68,8 @@ export default async function EditListingPage({ params }: Params) {
           partForVehicle: listing.partForVehicle,
           partType: listing.partType,
           partPopular: listing.partPopular,
+          itemSize: listing.itemSize,
+          variants: listing.variants,
         }}
       />
     </div>

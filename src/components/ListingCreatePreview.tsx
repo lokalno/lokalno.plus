@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CONDITIONS } from "@/lib/constants";
+import { getConditionLabel } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 type ListingCreatePreviewProps = {
@@ -14,6 +14,8 @@ type ListingCreatePreviewProps = {
   brand: string;
   categoryLabel: string;
   condition: string;
+  itemSize?: string;
+  allowSelfPickup?: boolean;
   photos: string[];
 };
 
@@ -42,6 +44,8 @@ export default function ListingCreatePreview({
   brand,
   categoryLabel,
   condition,
+  itemSize,
+  allowSelfPickup,
   photos,
 }: ListingCreatePreviewProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -135,8 +139,23 @@ export default function ListingCreatePreview({
                   />
                 </svg>
               }
-              label={`Стан: ${CONDITIONS[condition] || condition}`}
+              label={`Стан: ${getConditionLabel(condition)}`}
             />
+            {itemSize?.trim() && (
+              <PreviewMetaRow
+                icon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                    />
+                  </svg>
+                }
+                label={`Розмір: ${itemSize.trim()}`}
+              />
+            )}
             <PreviewMetaRow
               icon={
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,6 +169,21 @@ export default function ListingCreatePreview({
               }
               label={categoryLabel}
             />
+            {allowSelfPickup && (
+              <PreviewMetaRow
+                icon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                    />
+                  </svg>
+                }
+                label="Самовивіз: доступний"
+              />
+            )}
             {brand.trim() && (
               <PreviewMetaRow
                 icon={

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OptimizedListingImage from "@/components/OptimizedListingImage";
 import { formatPrice, parsePhotos, formatTimeAgo, shortLocation } from "@/lib/utils";
 import { getListingSoldCount, getListingFavoriteCount, formatSoldCountLabel, formatFavoriteCountLabel, type ListingWithSoldCount } from "@/lib/listing-sales";
 
@@ -32,13 +33,10 @@ export default function MarketplaceCard({ listing, badge }: MarketplaceCardProps
     >
       <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <OptimizedListingImage
             src={photo}
             alt={listing.title}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-105"
+            className="object-cover motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">📦</div>
